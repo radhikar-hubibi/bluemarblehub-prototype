@@ -1206,7 +1206,8 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         <!-- Email -->
         <div class="full">
           <label class="register-label" for="reg-email">E-Mail Address <span class="req">*</span></label>
-          <input class="register-input" type="email" id="reg-email" required />
+          <input class="register-input" type="email" id="reg-email" oninput="checkRegEmail()" onblur="checkRegEmail(true)" autocomplete="email" required />
+          <div class="register-help" id="reg-email-msg"></div>
         </div>
 
         <!-- Password -->
@@ -1238,12 +1239,18 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <input class="register-input" type="text" id="reg-lastname" required />
         </div>
 
-        <!-- Job Title & Company -->
+        <!-- Job Title & Department -->
         <div>
           <label class="register-label" for="reg-jobtitle">Job Title <span class="req">*</span></label>
           <input class="register-input" type="text" id="reg-jobtitle" required />
         </div>
         <div>
+          <label class="register-label" for="reg-department">Department <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input class="register-input" type="text" id="reg-department" placeholder="e.g. Engineering" />
+        </div>
+
+        <!-- Company -->
+        <div class="full">
           <label class="register-label" for="reg-company">Company <span class="req">*</span></label>
           <input class="register-input" type="text" id="reg-company" required />
         </div>
@@ -1466,6 +1473,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   </button>
   <div class="proto-sep"></div>
   <button class="proto-btn" id="btn-workflow" onclick="toggleWorkflow()" style="font-size:11px">▶ Demo workflows</button>
+  <button class="proto-btn" onclick="resetPrototypeData()" style="font-size:11px" title="Clear all saved changes and return this persona's data to the original demo state">↺ Reset prototype data</button>
   <span class="proto-hint">
     <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,.35)" stroke-width="1.4"/><path d="M8 5v4M8 10.5v.5" stroke="rgba(255,255,255,.35)" stroke-width="1.4" stroke-linecap="round"/></svg>
     Toggle to preview each user's experience
@@ -1589,7 +1597,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn1')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn1" style="min-width:230px"><div class="dd-header" style="font-size:12px;font-weight:600;color:var(--text-primary)">Notifications</div><button class="dd-item" onclick="nav('a-licenses');closeDrop()">⚠️ 2 licenses expiring in 69 days</button><button class="dd-item">💬 Ticket #5081 awaiting reply</button></div></div>
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh1')"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh1"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
-          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp1')"><div class="profile-av" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn1-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp1"><div class="dd-header"><div style="font-size:12.5px;font-weight:600;color:var(--text-primary)" id="adp1-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp1-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><button class="dd-item" onclick="nav('a-account');closeDrop()">Account settings</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
+          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp1')"><div class="profile-av" id="adpav1" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn1-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp1"><div class="dd-header"><div style="font-size:12.5px;font-weight:600;color:var(--text-primary)" id="adp1-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp1-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><button class="dd-item" onclick="nav('a-account');closeDrop()">Account settings</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn primary" onclick="nav('a-licenses')">+ Add licenses</button>
         </div>
       </div>
@@ -1617,13 +1625,13 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <div class="metric blue" style="cursor:pointer" onclick="nav('a-licenses')">
             <div class="metric-label">Total licenses</div>
             <div class="metric-val" id="a-dash-total-lic">48</div>
-            <div class="metric-sub" id="a-dash-seats-sub">7 unassigned</div>
+            <div class="metric-sub" id="a-dash-seats-sub">34 unassigned</div>
           </div>
           <!-- 2. Active seats -->
           <div class="metric green">
             <div class="metric-label">Active seats</div>
-            <div class="metric-val" id="a-dash-active-seats">41</div>
-            <div class="metric-sub">of 48 total</div>
+            <div class="metric-val" id="a-dash-active-seats">14</div>
+            <div class="metric-sub" id="a-dash-active-seats-sub">of 48 total</div>
           </div>
           <!-- 3. My license -->
           <div class="metric" style="background:linear-gradient(135deg,#ddeaf8 0%,#eaf3fd 100%);border-color:#aacaee;position:relative;cursor:pointer" onclick="nav('u-products')">
@@ -1643,9 +1651,9 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
             <div style="position:absolute;bottom:10px;right:12px;font-size:10px;color:var(--avenza-blue);font-weight:500">View &#8594;</div>
           </div>
           <!-- 4. Next renewal -->
-          <div class="metric amber">
+          <div class="metric amber" style="cursor:pointer" onclick="nav('a-billing');setTimeout(()=>{const el=document.getElementById('bill-renewals-list');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},80)" title="View upcoming renewals on the Billing page">
             <div class="metric-label">Next renewal</div>
-            <div class="metric-val" style="font-size:18px;margin-top:3px" id="a-dash-renewal">Jun 14, 2025</div>
+            <div class="metric-val" style="font-size:18px;margin-top:3px" id="a-dash-renewal">Jun 14, 2027</div>
             <div class="metric-sub"><span class="warn" id="a-dash-renewal-days">69 days away</span></div>
           </div>
           <!-- 5. Open tickets -->
@@ -1709,7 +1717,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn2')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn2" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600;color:var(--text-primary)">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring in 69 days</button></div></div>
-          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp2')"><div class="profile-av" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn2-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp2"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp2-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp2-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
+          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp2')"><div class="profile-av" id="adpav2" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn2-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp2"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp2-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp2-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="openRemoveUser()">Remove user</button>
           <button class="btn primary" onclick="openInvite()">+ Invite user</button>
         </div>
@@ -1786,7 +1794,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn3')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn3" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
-          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp3')"><div class="profile-av" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn3-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp3"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp3-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp3-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
+          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp3')"><div class="profile-av" id="adpav3" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn3-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp3"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp3-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp3-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="openRemoveLicense()">Remove seats</button>
           <button class="btn primary" onclick="openAddSeats()">+ Add seats</button>
         </div>
@@ -1822,15 +1830,15 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn4')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn4" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
-          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp4')"><div class="profile-av" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn4-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp4"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp4-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp4-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
+          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp4')"><div class="profile-av" id="adpav4" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn4-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp4"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp4-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp4-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="toast('Opening billing settings…')">Update billing</button>
         </div>
       </div>
       <div class="page-body">
         <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
-          <div class="metric blue"><div class="metric-label">Annual spend</div><div class="metric-val">$4,320</div><div class="metric-sub">3 active products</div></div>
-          <div class="metric green"><div class="metric-label">Last payment</div><div class="metric-val" style="font-size:20px;margin-top:4px">$360.00</div><div class="metric-sub"><span class="up">Succeeded</span> · Mar 1, 2025</div></div>
-          <div class="metric gray"><div class="metric-label">Payment method</div><div class="metric-val" style="font-size:17px;margin-top:4px">Visa ···· 4242</div><div class="metric-sub">Expires 09 / 26</div></div>
+          <div class="metric blue"><div class="metric-label">Annual spend</div><div class="metric-val" id="bill-annual-spend">$77,752</div><div class="metric-sub" id="bill-annual-sub">3 active products</div></div>
+          <div class="metric green"><div class="metric-label">Last payment</div><div class="metric-val" style="font-size:20px;margin-top:4px" id="bill-last-amt">$54,975.00</div><div class="metric-sub"><span class="up">Succeeded</span> · <span id="bill-last-date">Jun 14, 2026</span></div></div>
+          <div class="metric gray"><div class="metric-label">Payment method</div><div class="metric-val" style="font-size:17px;margin-top:4px">Visa ···· 4242</div><div class="metric-sub">Expires 09 / 28</div></div>
         </div>
         <!-- ── Upcoming renewals widget ── -->
         <div class="card" style="margin-bottom:14px">
@@ -1850,9 +1858,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
             <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;width:68px;text-align:center">Status</span>
             <span style="width:52px"></span>
           </div>
-          <div class="invoice-row"><span style="font-weight:600;color:var(--avenza-blue);width:68px;font-family:'DM Mono',monospace;font-size:12px">#1044</span><span style="flex:1;color:var(--text-secondary)">Global Mapper Essentials – Monthly</span><span style="width:90px;color:var(--text-muted)">Apr 1, 2025</span><span style="width:80px;text-align:right;font-weight:500">$120.00</span><span style="width:68px;text-align:center"><span class="pill active">Paid</span></span><span style="width:52px;text-align:right;font-size:11.5px;color:var(--avenza-blue);cursor:pointer" onclick="toast('Downloading PDF…')">↓ PDF</span></div>
-          <div class="invoice-row"><span style="font-weight:600;color:var(--avenza-blue);width:68px;font-family:'DM Mono',monospace;font-size:12px">#1043</span><span style="flex:1;color:var(--text-secondary)">Global Mapper Essentials – Monthly</span><span style="width:90px;color:var(--text-muted)">Mar 1, 2025</span><span style="width:80px;text-align:right;font-weight:500">$120.00</span><span style="width:68px;text-align:center"><span class="pill active">Paid</span></span><span style="width:52px;text-align:right;font-size:11.5px;color:var(--avenza-blue);cursor:pointer" onclick="toast('Downloading PDF…')">↓ PDF</span></div>
-          <div class="invoice-row"><span style="font-weight:600;color:var(--avenza-blue);width:68px;font-family:'DM Mono',monospace;font-size:12px">#1042</span><span style="flex:1;color:var(--text-secondary)">Global Mapper Professional + Advanced – Annual</span><span style="width:90px;color:var(--text-muted)">Jun 14, 2024</span><span style="width:80px;text-align:right;font-weight:500">$4,320</span><span style="width:68px;text-align:center"><span class="pill active">Paid</span></span><span style="width:52px;text-align:right;font-size:11.5px;color:var(--avenza-blue);cursor:pointer" onclick="toast('Downloading PDF…')">↓ PDF</span></div>
+          <div id="bill-invoice-list"></div>
         </div>
       </div>
     </div>
@@ -1930,7 +1936,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Account settings</span></div>
         </div>
         <div class="topbar-actions">
-          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp6')"><div class="profile-av" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn5-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp6"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp6-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp6-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
+          <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp6')"><div class="profile-av" id="adpav5" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn5-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp6"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp6-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp6-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn primary" onclick="saveAccount()">Save changes</button>
         </div>
       </div>
@@ -2088,6 +2094,10 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
             <div class="field">
               <label class="field-label">Job title</label>
               <input class="field-input" id="pf-jobtitle" value="" placeholder="e.g. GIS Manager"/>
+            </div>
+            <div class="field">
+              <label class="field-label">Department</label>
+              <input class="field-input" id="pf-department" value="" placeholder="e.g. Engineering"/>
             </div>
           </div>
         </div>
@@ -2401,14 +2411,12 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     <div class="modal-sub">Increase the seat count on one of your subscriptions.</div>
     <div class="modal-label">Subscription</div>
     <select class="modal-select" id="add-seats-product">
-      <option value="Platform Pro">Global Mapper Professional (Annual) — currently 25 seats</option>
-      <option value="Analytics">Analytics Add-on (Annual) — currently 15 seats</option>
-      <option value="API Access">API Access (Monthly) — currently 8 seats</option>
+      <!-- Populated dynamically by openAddSeats() from ORG_DATA[currentOrg].products -->
     </select>
     <div class="modal-label">Seats to add</div>
     <input class="modal-input" id="add-seats-count" type="number" min="1" max="100" value="5"/>
-    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 13px;font-size:12px;color:var(--text-secondary)">
-      <strong>Estimated cost:</strong> $25.00 / month per seat. Pro-rated to current billing period.
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 13px;font-size:12px;color:var(--text-secondary)" id="add-seats-cost">
+      <strong>Estimated cost:</strong> calculated at checkout. Pro-rated to current billing period.
     </div>
     <div class="modal-row">
       <button class="btn primary" style="flex:1" onclick="confirmAddSeats()">Confirm & add seats</button>
@@ -2424,8 +2432,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     <div class="modal-sub">Reduce seat count on a subscription. Seats must be unassigned first.</div>
     <div class="modal-label">Subscription</div>
     <select class="modal-select" id="remove-seats-product">
-      <option value="Platform Pro">Global Mapper Professional (Annual) — 8 unassigned</option>
-      <option value="Analytics">Analytics Add-on — 4 unassigned</option>
+      <!-- Populated dynamically by openRemoveLicense() -->
     </select>
     <div class="modal-label">Seats to remove</div>
     <input class="modal-input" id="remove-seats-count" type="number" min="1" max="8" value="2"/>
@@ -2455,6 +2462,27 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     </div>
     <div class="modal-row">
       <button class="btn danger" style="flex:1" onclick="confirmRemoveUser()">Remove user</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE ROLE -->
+<div class="modal-bg" id="modal-change-role">
+  <div class="modal">
+    <div class="modal-title">Change user role</div>
+    <div class="modal-sub" id="change-role-sub">Update the role for this user.</div>
+    <div class="modal-label">New role</div>
+    <select class="modal-select" id="change-role-sel">
+      <option value="Admin">Admin — full access to billing, users, and licenses</option>
+      <option value="Member">Member — can use assigned seats only</option>
+    </select>
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;font-size:12px;color:var(--text-secondary);margin-top:4px" id="change-role-note">
+      <strong>Admins</strong> can invite/remove users, assign seats, manage billing, and contact support on behalf of others.<br>
+      <strong>Members</strong> can use any seats assigned to them and submit their own support tickets.
+    </div>
+    <div class="modal-row">
+      <button class="btn primary" style="flex:1" onclick="confirmChangeRole()">Save role</button>
       <button class="btn" onclick="closeModal()">Cancel</button>
     </div>
   </div>
@@ -2492,7 +2520,113 @@ const UCOLORS=[
   {bg:'#e6f7f7',fg:'#0ea5a0'},{bg:'#f5f7fa',fg:'#4a5568'}
 ];
 
-let users=[
+/* ═══════════════════════════════════════════════════════════
+   PROTOTYPE PERSISTENCE LAYER  (added v40.1, fingerprinted v40.2)
+   ───────────────────────────────────────────────────────────
+   Saves per-persona prototype data to localStorage so changes
+   (invites, removals, new tickets, ticket replies) persist
+   across page reloads. Each persona has its own sandbox.
+   - Storage key format:  bmh:<persona>:<dataKey>
+   - persona = currentRole ('admin' | 'user' | 'penny' | etc.)
+   - Reset button in proto toolbar clears the active persona.
+
+   Seed-drift detection:
+   Each saved value is paired with a fingerprint of the SEED it
+   was derived from (the file's DEFAULT_USERS at save time, not
+   the tester's edits). On load, if the current seed fingerprint
+   doesn't match the stored one, the saved snapshot is discarded
+   and the fresh fallback is returned. This means when the file
+   is updated with new seed data, testers automatically see the
+   latest version on next load — at the cost of losing in-session
+   prototype edits (which is the right tradeoff for prototyping).
+═══════════════════════════════════════════════════════════ */
+const PERSIST_PREFIX = 'bmh';
+const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount'];
+
+function _personaKey(){
+  // currentRole is defined a few lines below; fall back to 'admin' on first call.
+  return (typeof currentRole !== 'undefined' && currentRole) ? currentRole : 'admin';
+}
+function _storageKey(dataKey){
+  return `${PERSIST_PREFIX}:${_personaKey()}:${dataKey}`;
+}
+function _fpKey(dataKey){
+  return `${PERSIST_PREFIX}:${_personaKey()}:${dataKey}:__fp`;
+}
+
+// Cheap, deterministic string hash (DJB2). Used only for change detection,
+// not for security — we just need stable equality checks.
+function _hash(s){
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return h.toString(36);
+}
+
+// Fingerprint the *seed* for each data key. Reflects what's in the file —
+// not what the tester has changed. If the file changes, the fingerprint
+// changes, and stale snapshots are discarded on next load.
+function _seedFingerprint(dataKey){
+  try{
+    if(dataKey === 'users'){
+      // Only includes things that change when the FILE is edited (emails + org),
+      // not things that change when a TESTER edits via the UI (seat, status, etc.).
+      // Filter to the current persona's org so each persona's fingerprint reflects
+      // only the seed users that should appear for that persona.
+      const persona = _personaKey();
+      const orgFor = {admin:'acme', user:'acme', penny:'poppins', gary:null, alan:'snape'};
+      const myOrg = orgFor[persona];
+      const seed = DEFAULT_USERS
+        .filter(u => !myOrg || u.org === myOrg)
+        .map(u => u.email + '|' + (u.org || '') + '|' + (u.seat || (u.seats||[]).join(',')) + '|' + (u.status||''))
+        .sort()
+        .join(';');
+      return _hash(seed);
+    }
+    if(dataKey === 'ticketCount')   return _hash('start:6001');
+    if(dataKey === 'extraTickets')  return _hash('empty');
+    if(dataKey === 'threadReplies') return _hash('empty');
+    if(dataKey === 'extraInvoices') return _hash('empty');
+    if(dataKey === 'invoiceCount')  return _hash('start:1045');
+  }catch(e){}
+  return '0';
+}
+
+function loadPersisted(dataKey, fallback){
+  try{
+    const raw = localStorage.getItem(_storageKey(dataKey));
+    if(raw === null) return fallback;
+    // Check seed fingerprint. If the file's seed has changed since this snapshot
+    // was saved, discard the snapshot and use the fresh fallback.
+    const savedFp = localStorage.getItem(_fpKey(dataKey));
+    const currentFp = _seedFingerprint(dataKey);
+    if(savedFp !== currentFp){
+      // Snapshot is stale — clear both halves and return the fresh seed.
+      localStorage.removeItem(_storageKey(dataKey));
+      localStorage.removeItem(_fpKey(dataKey));
+      return fallback;
+    }
+    return JSON.parse(raw);
+  }catch(e){ return fallback; }
+}
+function savePersisted(dataKey, value){
+  try{
+    localStorage.setItem(_storageKey(dataKey), JSON.stringify(value));
+    localStorage.setItem(_fpKey(dataKey), _seedFingerprint(dataKey));
+  }catch(e){}
+}
+function resetPrototypeData(){
+  if(!confirm("Reset this persona's prototype data back to the original demo state? This affects only the currently selected persona in this browser.")) return;
+  PERSIST_KEYS.forEach(k => {
+    try{
+      localStorage.removeItem(_storageKey(k));
+      localStorage.removeItem(_fpKey(k));
+    }catch(e){}
+  });
+  location.reload();
+}
+
+// Default seed for the users table — kept as a separate constant so we can restore it.
+const DEFAULT_USERS = [
   {name:'Jane Doe',   email:'jane@acme.com',  initials:'JD',role:'Admin', seat:'Global Mapper Professional',createdOn:'Dec 20, 2024',assignedOn:'Jan 12, 2025', status:'active',color:0,lastLogin:'Today, 9:14 AM'},
   {name:'Mary Beth',  email:'mary@acme.com',  initials:'MB',role:'Member',seat:'Global Mapper Professional',createdOn:'Mar 18, 2025',assignedOn:'Apr 1, 2025',  status:'active',color:1,lastLogin:'Today, 8:32 AM'},
   {name:'Mark Smith', email:'mark@acme.com',  initials:'MS',role:'Member',seat:'Global Mapper Professional',createdOn:'Jan 2, 2025', assignedOn:'Jan 15, 2025', status:'active',color:2,lastLogin:'Yesterday, 4:55 PM'},
@@ -2529,10 +2663,10 @@ let users=[
   {name:'Aaron Flores',email:'aaron.flores@acme.com',initials:'AF',role:'Member',seat:null,createdOn:'',invitedOn:'Jan 26, 2025',status:'invited',color:1,lastLogin:''},
   {name:'Beatrice Yamamoto',email:'beatrice.yamamoto@acme.com',initials:'BY',role:'Member',seat:null,createdOn:'',invitedOn:'Feb 27, 2025',status:'invited',color:2,lastLogin:''},
   {name:'Callum OBrien',email:'callum.obrien@acme.com',initials:'CO',role:'Member',seat:null,createdOn:'',invitedOn:'Mar 28, 2025',status:'invited',color:3,lastLogin:''},
-  {name:'Delia Santos',email:'delia.santos@acme.com',initials:'DS',role:'Member',seat:null,createdOn:'May 9, 2025',invitedOn:'Apr 1, 2025',status:'invited',color:4,lastLogin:'May 4, 2025'},
-  {name:'Emeka Eze',email:'emeka.eze@acme.com',initials:'EE',role:'Member',seat:null,createdOn:'May 10, 2025',invitedOn:'May 2, 2025',status:'invited',color:5,lastLogin:'May 3, 2025'},
-  {name:'Freya Andersen',email:'freya.andersen@acme.com',initials:'FA',role:'Member',seat:null,createdOn:'May 10, 2025',invitedOn:'Jan 3, 2025',status:'invited',color:6,lastLogin:'May 2, 2025'},
-  {name:'Grant Nakamura',email:'grant.nakamura@acme.com',initials:'GN',role:'Member',seat:null,createdOn:'May 11, 2025',invitedOn:'Feb 4, 2025',status:'invited',color:7,lastLogin:'May 2, 2025'},
+  {name:'Delia Santos',email:'delia.santos@acme.com',initials:'DS',role:'Member',seat:'Global Mapper Professional',createdOn:'May 9, 2025',assignedOn:'May 14, 2025',status:'active',color:4,lastLogin:'May 4, 2025'},
+  {name:'Emeka Eze',email:'emeka.eze@acme.com',initials:'EE',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 14, 2025',status:'active',color:5,lastLogin:'May 3, 2025'},
+  {name:'Freya Andersen',email:'freya.andersen@acme.com',initials:'FA',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 15, 2025',status:'active',color:6,lastLogin:'May 2, 2025'},
+  {name:'Grant Nakamura',email:'grant.nakamura@acme.com',initials:'GN',role:'Member',seat:'Global Mapper Essentials',createdOn:'May 11, 2025',assignedOn:'May 15, 2025',status:'active',color:7,lastLogin:'May 2, 2025'},
   {name:'Holly Davies',email:'holly.davies@acme.com',initials:'HD',role:'Member',seat:null,createdOn:'May 11, 2025',invitedOn:'Mar 5, 2025',status:'invited',color:0,lastLogin:'May 1, 2025'},
   {name:'Ivan Sousa',email:'ivan.sousa@acme.com',initials:'IS',role:'Member',seat:null,createdOn:'May 12, 2025',invitedOn:'Apr 6, 2025',status:'invited',color:1,lastLogin:'May 1, 2025'},
   {name:'Jade Mbeki',email:'jade.mbeki@acme.com',initials:'JM',role:'Member',seat:null,createdOn:'May 12, 2025',invitedOn:'May 7, 2025',status:'invited',color:2,lastLogin:'Apr 30, 2025'},
@@ -2552,12 +2686,76 @@ let users=[
   {name:'Yasmin Ibrahim',email:'yasmin.ibrahim@acme.com',initials:'YI',role:'Member',seat:null,createdOn:'May 6, 2025',invitedOn:'Apr 21, 2025',status:'invited',color:0,lastLogin:'Apr 23, 2025'},
   {name:'Zara Nguyen',email:'zara.nguyen@acme.com',initials:'ZN',role:'Member',seat:null,createdOn:'May 6, 2025',invitedOn:'May 22, 2025',status:'invited',color:1,lastLogin:'Apr 22, 2025'}
 ];
+// All seed users above are Acme members — tag them with the org they belong to
+// (kept separate from the array literal to keep it readable).
+DEFAULT_USERS.forEach(u => { if(!u.org) u.org='acme'; });
 
+// Normalization: a "pending" user (invite sent but not yet accepted) should not have a
+// createdOn date or a lastLogin — their account doesn't exist yet. Clean up any seed
+// drift so the table renders consistently.
+DEFAULT_USERS.forEach(u => {
+  if(u.status==='pending'){
+    u.createdOn = '';
+    u.lastLogin = '';
+  }
+});
+
+// Poppins org members — Penny is Admin, with two other assigned members, a few unassigned/pending,
+// plus 19 additional "Invite accepted" (status:'invited') members who do not yet hold a seat.
+// Total of 13 seats on Global Mapper Advanced; 3 used (matches ORG_DATA.poppins seats:13, used:3).
+const DEFAULT_USERS_POPPINS = [
+  {org:'poppins',name:'Penny Purchaser',email:'penny@poppins.com',initials:'PP',role:'Admin', seat:null,createdOn:'Jan 10, 2026',invitedOn:'Jan 10, 2026',status:'invited',color:5,lastLogin:'Today, 10:02 AM'},
+  {org:'poppins',name:'Pat Ledger',     email:'pat@poppins.com',  initials:'PL',role:'Member',seat:'Global Mapper Advanced',createdOn:'Feb 14, 2026',assignedOn:'Feb 14, 2026',status:'active',color:1,lastLogin:'Yesterday, 3:18 PM'},
+  {org:'poppins',name:'Rita Books',     email:'rita@poppins.com', initials:'RB',role:'Member',seat:'Global Mapper Advanced',createdOn:'Mar 2, 2026',assignedOn:'Mar 2, 2026',status:'active',color:3,lastLogin:'May 18, 2026'},
+  {org:'poppins',name:'Sal Vendor',     email:'sal@poppins.com',  initials:'SV',role:'Member',seat:null,createdOn:'',invitedOn:'May 12, 2026',status:'pending',color:2,lastLogin:''},
+  {org:'poppins',name:'Tina Quill',     email:'tina@poppins.com', initials:'TQ',role:'Member',seat:null,createdOn:'',invitedOn:'May 14, 2026',status:'pending',color:4,lastLogin:''},
+  {org:'poppins',name:'Umberto Page',   email:'umberto@poppins.com',initials:'UP',role:'Member',seat:null,createdOn:'',invitedOn:'May 16, 2026',status:'invited',color:7,lastLogin:''},
+  // ── 19 additional Poppins members: Invite accepted, no seat yet ──────────────
+  {org:'poppins',name:'Adrian Boyd',    email:'adrian.boyd@poppins.com',    initials:'AB',role:'Member',seat:null,createdOn:'May 6, 2026', invitedOn:'May 1, 2026', status:'invited',color:0,lastLogin:'May 14, 2026'},
+  {org:'poppins',name:'Beth Cromwell',  email:'beth.cromwell@poppins.com',  initials:'BC',role:'Member',seat:null,createdOn:'May 7, 2026', invitedOn:'May 1, 2026', status:'invited',color:1,lastLogin:'May 14, 2026'},
+  {org:'poppins',name:'Carl Day',       email:'carl.day@poppins.com',       initials:'CD',role:'Member',seat:null,createdOn:'May 7, 2026', invitedOn:'May 2, 2026', status:'invited',color:2,lastLogin:'May 13, 2026'},
+  {org:'poppins',name:'Dana Ellis',     email:'dana.ellis@poppins.com',     initials:'DE',role:'Member',seat:null,createdOn:'May 8, 2026', invitedOn:'May 2, 2026', status:'invited',color:3,lastLogin:'May 13, 2026'},
+  {org:'poppins',name:'Evan Fowler',    email:'evan.fowler@poppins.com',    initials:'EF',role:'Member',seat:null,createdOn:'May 8, 2026', invitedOn:'May 3, 2026', status:'invited',color:4,lastLogin:'May 12, 2026'},
+  {org:'poppins',name:'Fiona Gentry',   email:'fiona.gentry@poppins.com',   initials:'FG',role:'Member',seat:null,createdOn:'May 9, 2026', invitedOn:'May 3, 2026', status:'invited',color:5,lastLogin:'May 12, 2026'},
+  {org:'poppins',name:'Gabe Hollis',    email:'gabe.hollis@poppins.com',    initials:'GH',role:'Member',seat:null,createdOn:'May 9, 2026', invitedOn:'May 4, 2026', status:'invited',color:6,lastLogin:'May 11, 2026'},
+  {org:'poppins',name:'Hana Ito',       email:'hana.ito@poppins.com',       initials:'HI',role:'Member',seat:null,createdOn:'May 10, 2026',invitedOn:'May 4, 2026', status:'invited',color:7,lastLogin:'May 11, 2026'},
+  {org:'poppins',name:'Ivor Jameson',   email:'ivor.jameson@poppins.com',   initials:'IJ',role:'Member',seat:null,createdOn:'May 10, 2026',invitedOn:'May 5, 2026', status:'invited',color:0,lastLogin:'May 10, 2026'},
+  {org:'poppins',name:'Joy Kemp',       email:'joy.kemp@poppins.com',       initials:'JK',role:'Member',seat:null,createdOn:'May 11, 2026',invitedOn:'May 5, 2026', status:'invited',color:1,lastLogin:'May 10, 2026'},
+  {org:'poppins',name:'Kira Lowe',      email:'kira.lowe@poppins.com',      initials:'KL',role:'Member',seat:null,createdOn:'May 11, 2026',invitedOn:'May 6, 2026', status:'invited',color:2,lastLogin:'May 9, 2026'},
+  {org:'poppins',name:'Leo Mason',      email:'leo.mason@poppins.com',      initials:'LM',role:'Member',seat:null,createdOn:'May 12, 2026',invitedOn:'May 6, 2026', status:'invited',color:3,lastLogin:'May 9, 2026'},
+  {org:'poppins',name:'Maya Nott',      email:'maya.nott@poppins.com',      initials:'MN',role:'Member',seat:null,createdOn:'May 12, 2026',invitedOn:'May 7, 2026', status:'invited',color:4,lastLogin:'May 8, 2026'},
+  {org:'poppins',name:'Niko Ortiz',     email:'niko.ortiz@poppins.com',     initials:'NO',role:'Member',seat:'Global Mapper Advanced',createdOn:'May 13, 2026',assignedOn:'May 13, 2026', status:'active',color:5,lastLogin:'Today, 9:14 AM'},
+  {org:'poppins',name:'Owen Pryce',     email:'owen.pryce@poppins.com',     initials:'OP',role:'Member',seat:null,createdOn:'May 13, 2026',invitedOn:'May 8, 2026', status:'invited',color:6,lastLogin:'May 7, 2026'},
+  {org:'poppins',name:'Petra Quintero', email:'petra.quintero@poppins.com', initials:'PQ',role:'Member',seat:null,createdOn:'May 14, 2026',invitedOn:'May 8, 2026', status:'invited',color:7,lastLogin:'May 7, 2026'},
+  {org:'poppins',name:'Quinn Reeves',   email:'quinn.reeves@poppins.com',   initials:'QR',role:'Member',seat:null,createdOn:'May 14, 2026',invitedOn:'May 9, 2026', status:'invited',color:0,lastLogin:'May 6, 2026'},
+  {org:'poppins',name:'Rosa Singh',     email:'rosa.singh@poppins.com',     initials:'RS',role:'Member',seat:null,createdOn:'May 15, 2026',invitedOn:'May 9, 2026', status:'invited',color:1,lastLogin:'May 6, 2026'},
+  {org:'poppins',name:'Theo Vance',     email:'theo.vance@poppins.com',     initials:'TV',role:'Member',seat:null,createdOn:'May 15, 2026',invitedOn:'May 10, 2026',status:'invited',color:2,lastLogin:'May 5, 2026'},
+];
+// Append Poppins users to the master DEFAULT_USERS list
+DEFAULT_USERS.push(...DEFAULT_USERS_POPPINS);
+
+
+// State vars first — persistence helpers below depend on currentRole.
 let currentRole='admin';
 let currentOrg='acme';       // active org key
 let assignTargetIdx=null;
-let ticketCount=6001;
 let currentThreadId='';
+
+// Hydrate persona-scoped data. Deep-clone the default users so we never mutate the seed.
+let users = loadPersisted('users', JSON.parse(JSON.stringify(DEFAULT_USERS)));
+let ticketCount = loadPersisted('ticketCount', 6001);
+// extraTickets: tickets created during this prototype session (newest first), saved per persona.
+//   { id, subject, product, priority, behalf, createdLabel }
+let extraTickets = loadPersisted('extraTickets', []);
+// threadReplies: replies the user has sent in any ticket thread, keyed by ticket id.
+//   { [ticketId]: [ { from, initials, avatarBg, time, msg }, ... ] }
+let threadReplies = loadPersisted('threadReplies', {});
+// extraInvoices: invoice line items created during this session (e.g. when the admin
+// adds seats). Each: { id, desc, date, amount, status }
+let extraInvoices = loadPersisted('extraInvoices', []);
+// invoiceCount: monotonically incrementing invoice number for newly created invoices.
+let invoiceCount = loadPersisted('invoiceCount', 1045);
+
 
 /* ───────────────────────────────────────
    ORG DATA — defines orgs and membership
@@ -2567,6 +2765,31 @@ let currentThreadId='';
    Mary Beth belongs to both acme (Member) and
    davis (Member with Avenza Essentials seat).
 ─────────────────────────────────────────── */
+/* ─────────────────────────────────────────
+   PRICING — per-seat annual cost for each product
+─────────────────────────────────────────── */
+const PRICING = {
+  'Global Mapper Essentials':    599,
+  'Global Mapper Advanced':     1199,
+  'Global Mapper Professional': 2199,
+};
+function _formatMoney(n){
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+}
+// Per-product annual amount: seats × per-seat price.
+function productAmount(p){
+  const price = PRICING[p.name];
+  if(!price) return p.amount || '—';
+  return _formatMoney((p.seats||0) * price);
+}
+// Org-level annual spend: sum of every product's amount.
+function orgAnnualSpend(orgKey){
+  const org = ORG_DATA[orgKey];
+  if(!org || !org.products) return '$0';
+  const total = org.products.reduce((s,p) => s + ((p.seats||0) * (PRICING[p.name]||0)), 0);
+  return _formatMoney(total);
+}
+
 const ORG_DATA={
   acme:{
     key:'acme',
@@ -2577,13 +2800,15 @@ const ORG_DATA={
     domain:'acme.com',
     plan:'Global Mapper Professional (Annual)',
     accountId:'ZEN-00421-ACME',
-    created:'June 14, 2023',
-    nextRenewal:'Jun 14, 2025',
-    annualSpend:'$4,320',
+    created:'June 14, 2026',
+    nextRenewal:'Jun 14, 2027',
+    annualSpend:'$77,752',
+    // amount is computed live from seats × PRICING via productAmount() — the inline
+    // value here is just a fallback / initial display.
     products:[
-      {key:'pp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',   type:'Annual',seats:25,used:8, renewal:'Jun 14, 2025',status:'expiring',autoRenew:true,amount:'$2,200'},
-      {key:'an', icon:'ADV',iconBg:'#e8f7ef',iconFg:'#1ba461',name:'Global Mapper Advanced',type:'Annual',seats:15,used:3, renewal:'Jun 14, 2025',status:'active',autoRenew:false,amount:'$1,500'},
-      {key:'api',icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials',     type:'Monthly',seats:8,used:3, renewal:'May 1, 2025', status:'active',autoRenew:true,amount:'$120'},
+      {key:'pp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional', type:'Annual',seats:25,used:8, renewal:'Jun 14, 2027',status:'active',autoRenew:true, amount:'$54,975', purchasedOn:'Jun 14, 2026'},
+      {key:'an', icon:'ADV',iconBg:'#e8f7ef',iconFg:'#1ba461',name:'Global Mapper Advanced',     type:'Annual',seats:15,used:3, renewal:'Jun 14, 2027',status:'active',autoRenew:false,amount:'$17,985', purchasedOn:'Jun 14, 2026'},
+      {key:'api',icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials',   type:'Annual',seats:8, used:3, renewal:'May 1, 2027', status:'active',autoRenew:true, amount:'$4,792',  purchasedOn:'May 1, 2026'},
     ],
   },
   poppins:{
@@ -2595,11 +2820,11 @@ const ORG_DATA={
     domain:'poppins.com',
     plan:'Global Mapper Advanced (Annual)',
     accountId:'ZEN-00528-POPP',
-    created:'January 10, 2024',
-    nextRenewal:'Jul 20, 2025',
-    annualSpend:'$2,160',
+    created:'January 10, 2026',
+    nextRenewal:'Jan 10, 2027',
+    annualSpend:'$15,587',
     products:[
-      {key:'gma',icon:'ADV',iconBg:'#fce7f3',iconFg:'#9d174d',name:'Global Mapper Advanced',type:'Annual',seats:13,used:3,renewal:'Jul 20, 2025',nextRenewal:'Jul 20, 2025',status:'active',autoRenew:true,amount:'$2,160'},
+      {key:'gma',icon:'ADV',iconBg:'#fce7f3',iconFg:'#9d174d',name:'Global Mapper Advanced',type:'Annual',seats:13,used:3,renewal:'Jan 10, 2027',nextRenewal:'Jan 10, 2027',status:'active',autoRenew:true,amount:'$15,587',purchasedOn:'Jan 10, 2026'},
     ],
   },
   snape:{
@@ -2625,11 +2850,11 @@ const ORG_DATA={
     domain:'davislane.com',
     plan:'Global Mapper Essentials (Annual)',
     accountId:'ZEN-00714-DAVIS',
-    created:'March 3, 2024',
-    nextRenewal:'Mar 3, 2026',
-    annualSpend:'$1,080',
+    created:'March 3, 2026',
+    nextRenewal:'Mar 3, 2027',
+    annualSpend:'$5,990',
     products:[
-      {key:'ae', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual',seats:10,used:7,renewal:'Mar 3, 2026',status:'active',autoRenew:true,amount:'$1,080'},
+      {key:'ae', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual',seats:10,used:7,renewal:'Mar 3, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Mar 3, 2026'},
     ],
   }
 };
@@ -2651,8 +2876,8 @@ const USER_ORG={
       acme:{
         role:'admin',roleLabel:'Primary admin',
         seats:[
-          {icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',   type:'Annual plan',assignedBy:'Self (Admin)',since:'Jan 12, 2025',renewal:'Jun 14, 2025',status:'warn'},
-          {icon:'ADV',iconBg:'#e8f7ef',iconFg:'#1ba461',name:'Global Mapper Advanced',type:'Annual plan',assignedBy:'Self (Admin)',since:'Jan 12, 2025',renewal:'Jun 14, 2025',status:'active'},
+          {icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',   type:'Annual plan',assignedBy:'Self (Admin)',since:'Jun 14, 2026',renewal:'Jun 14, 2027',status:'active'},
+          {icon:'ADV',iconBg:'#e8f7ef',iconFg:'#1ba461',name:'Global Mapper Advanced',type:'Annual plan',assignedBy:'Self (Admin)',since:'Jun 14, 2026',renewal:'Jun 14, 2027',status:'active'},
         ],
         unassigned:[{icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials'}],
       }
@@ -2667,7 +2892,7 @@ const USER_ORG={
       acme:{
         role:'member',roleLabel:'Member',
         seats:[
-          {icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',type:'Annual plan',assignedBy:'Jane Doe (Admin)',since:'Apr 1, 2025',renewal:'Jun 14, 2025',status:'active'},
+          {icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',type:'Annual plan',assignedBy:'Jane Doe (Admin)',since:'Jul 1, 2026',renewal:'Jun 14, 2027',status:'active'},
         ],
         unassigned:[
           {icon:'ADV',iconBg:'#f5f7fa',iconFg:'#8896ab',name:'Global Mapper Advanced'},
@@ -2677,21 +2902,22 @@ const USER_ORG={
       davis:{
         role:'member',roleLabel:'Member',
         seats:[
-          {icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual plan',assignedBy:'Johny Whoknows',since:'Mar 3, 2024',renewal:'Mar 3, 2026',status:'active'},
+          {icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual plan',assignedBy:'Johny Whoknows',since:'Mar 3, 2026',renewal:'Mar 3, 2027',status:'active'},
         ],
         unassigned:[],
       }
     }
   },
-  // Penny — Admin of Poppins, no personal seat
+  // Penny — Admin of Poppins, no personal seat (she's the account manager,
+  // purchasing licenses and assigning them to other Poppins members).
   penny:{
     orgs:['poppins'],
     defaultOrg:'poppins',
     initials:'PP',avatarBg:'#be185d',name:'Penny Purchaser',email:'penny@poppins.com',
-    roleLabel:'Admin',
+    roleLabel:'Primary admin',
     byOrg:{
       poppins:{
-        role:'admin',roleLabel:'Admin',
+        role:'admin',roleLabel:'Primary admin',
         seats:[],
         unassigned:[],
       }
@@ -2874,15 +3100,117 @@ function applyAccountField(){
   if(lock)  lock.style.display='none';
 }
 
+/* ═══════════════════════════════════════════════════════════
+   LIVE COUNTS — recompute seat usage from the users array
+   ───────────────────────────────────────────────────────────
+   Each ORG_DATA[org].products[i].used is a seed value that
+   doesn't change as admins assign/revoke seats. This helper
+   walks the live users array and overwrites those .used
+   counts so the dashboard cards (Total licenses, Active seats,
+   License assignment slider) reflect the real state.
+═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   BILLING — seed invoices, render history, append on action
+═══════════════════════════════════════════════════════════ */
+// Initial purchase invoice for each org's seeded products (read at render time).
+function seedInvoicesFor(orgKey){
+  const org = ORG_DATA[orgKey];
+  if(!org || !org.products) return [];
+  // Issue invoice numbers in stable order: 1041, 1042, 1043 ... based on the product order.
+  return org.products.map((p,i) => ({
+    id: 1041 + i,
+    desc: p.name + ' \u2013 Annual (' + p.seats + ' seats)',
+    date: p.purchasedOn || org.created || 'Today',
+    amount: productAmount(p),
+    status: 'Paid',
+    seed: true,
+  }));
+}
+
+// Combine seed invoices + persona-added invoices for the current org, newest first.
+function allInvoicesFor(orgKey){
+  const seed = seedInvoicesFor(orgKey);
+  // Persona-added invoices are stored as a flat list; filter by org.
+  const extra = extraInvoices.filter(inv => !inv.org || inv.org === orgKey);
+  // Newest first: extras (most recently added) on top, then seeds in reverse-time order.
+  // Simple ordering: sort by parsed date desc, then by id desc as tiebreaker.
+  const all = [...extra, ...seed];
+  return all.sort((a,b) => {
+    const da = _parseDateish(a.date), db = _parseDateish(b.date);
+    if(db !== da) return db - da;
+    return (b.id||0) - (a.id||0);
+  });
+}
+
+function renderInvoiceHistory(){
+  const list = document.getElementById('bill-invoice-list');
+  if(!list) return;
+  const invoices = allInvoicesFor(currentOrg);
+  list.innerHTML = invoices.map(inv => {
+    return '<div class="invoice-row">'
+      + '<span style="font-weight:600;color:var(--avenza-blue);width:68px;font-family:\'DM Mono\',monospace;font-size:12px">#' + inv.id + '</span>'
+      + '<span style="flex:1;color:var(--text-secondary)">' + inv.desc + '</span>'
+      + '<span style="width:90px;color:var(--text-muted)">' + inv.date + '</span>'
+      + '<span style="width:80px;text-align:right;font-weight:500">' + inv.amount + '</span>'
+      + '<span style="width:68px;text-align:center"><span class="pill active">' + (inv.status||'Paid') + '</span></span>'
+      + '<span style="width:52px;text-align:right;font-size:11.5px;color:var(--avenza-blue);cursor:pointer" onclick="toast(\'Downloading PDF\u2026\')">\u2193 PDF</span>'
+      + '</div>';
+  }).join('');
+
+  // Update the billing-page metric cards based on the actual data.
+  const annual = document.getElementById('bill-annual-spend');
+  if(annual) annual.textContent = orgAnnualSpend(currentOrg);
+  const sub = document.getElementById('bill-annual-sub');
+  if(sub) sub.textContent = (ORG_DATA[currentOrg]?.products?.length || 0) + ' active products';
+  // "Last payment" = the most recent invoice
+  const last = invoices[0];
+  const lastAmt = document.getElementById('bill-last-amt');
+  const lastDate = document.getElementById('bill-last-date');
+  if(last){
+    if(lastAmt) lastAmt.textContent = (last.amount||'') + (last.amount && !last.amount.includes('.') ? '.00' : '');
+    if(lastDate) lastDate.textContent = last.date || '';
+  } else {
+    if(lastAmt) lastAmt.textContent = '$0.00';
+    if(lastDate) lastDate.textContent = '—';
+  }
+}
+
+function recomputeOrgCounts(orgKey){
+  if(!orgKey || !ORG_DATA[orgKey]) return null;
+  const org = ORG_DATA[orgKey];
+  const orgUsers = users.filter(u => (!u.org || u.org===orgKey));
+  // Reset & recount per-product seat usage
+  const byProduct = {};
+  org.products.forEach(p => { byProduct[p.name] = 0; });
+  orgUsers.forEach(u => {
+    getSeats(u).forEach(s => {
+      if(byProduct[s] !== undefined) byProduct[s]++;
+    });
+  });
+  org.products.forEach(p => { p.used = byProduct[p.name] || 0; });
+  // Return aggregate totals so callers can update the metric cards
+  const totalSeats = org.products.reduce((s,p) => s + (p.seats||0), 0);
+  const usedSeats  = org.products.reduce((s,p) => s + (p.used||0), 0);
+  return { total: totalSeats, seats: usedSeats, unassigned: totalSeats - usedSeats };
+}
+
 function updateDashOrgBanners(){
   const org=ORG_DATA[currentOrg];
   const u=currentUData();
-  const ORG_DASH={'acme':{total:48,seats:41,unassigned:7,renewal:'Jun 14, 2025',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jul 20, 2025',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2026',days:'293 days away',tickets:0,awaiting:0}};
+  const ORG_DASH={'acme':{total:48,seats:14,unassigned:34,renewal:'Jun 14, 2027',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jan 10, 2027',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2027',days:'293 days away',tickets:0,awaiting:0}};
   const USER_SEATS={'admin':{'acme':['Global Mapper Professional','Global Mapper Advanced']},'user':{'acme':['Global Mapper Professional'],'davis':['Global Mapper Essentials']},'penny':{'poppins':[]},'gary':{},'alan':{'snape':[]}};
   const dash=currentOrg?ORG_DASH[currentOrg]:null;
+  // Overwrite the seeded dash totals/seats/unassigned with live counts derived from the
+  // current users array. The seed remains as fallback for renewal/tickets metadata.
+  const live = recomputeOrgCounts(currentOrg);
+  if(dash && live){
+    dash.total      = live.total;
+    dash.seats      = live.seats;
+    dash.unassigned = live.unassigned;
+  }
   const ICONS={'Global Mapper Professional':{code:'PRO',bg:'var(--avenza-blue-lt)',fg:'var(--avenza-blue)'},'Global Mapper Advanced':{code:'ADV',bg:'var(--green-lt)',fg:'var(--green)'},'Global Mapper Essentials':{code:'ESS',bg:'#eff6ff',fg:'#2563eb'}};
   // Purchaser info per org/product
-  const PURCHASED={'acme':{'Global Mapper Professional':'Jane Doe / Jun 14, 2023','Global Mapper Advanced':'Jane Doe / Jun 14, 2023','Global Mapper Essentials':'Jane Doe / May 1, 2024'},'poppins':{'Global Mapper Advanced':'Penny Purchaser / Jan 10, 2024'},'davis':{'Global Mapper Essentials':'Davis Admin / Mar 3, 2024'}};
+  const PURCHASED={'acme':{'Global Mapper Professional':'Jane Doe / Jun 14, 2026','Global Mapper Advanced':'Jane Doe / Jun 14, 2026','Global Mapper Essentials':'Jane Doe / May 1, 2026'},'poppins':{'Global Mapper Advanced':'Penny Purchaser / Jan 10, 2026'},'davis':{'Global Mapper Essentials':'Davis Admin / Mar 3, 2026'}};
 
   // ── Admin greeting ──
   const grEl=document.getElementById('a-dash-greeting');
@@ -2896,9 +3224,26 @@ function updateDashOrgBanners(){
   if(dash){
     const t=document.getElementById('a-dash-total-lic');   if(t)t.textContent=dash.total;
     const s=document.getElementById('a-dash-active-seats');if(s)s.textContent=dash.seats;
+    const sSub=document.getElementById('a-dash-active-seats-sub');if(sSub)sSub.textContent='of '+dash.total+' total';
     const ss=document.getElementById('a-dash-seats-sub');  if(ss)ss.textContent=dash.unassigned+' unassigned';
     const r=document.getElementById('a-dash-renewal');     if(r)r.textContent=dash.renewal;
-    const rd=document.getElementById('a-dash-renewal-days');if(rd)rd.textContent=dash.days;
+    const rd=document.getElementById('a-dash-renewal-days');
+    if(rd){
+      // Compute days-until from the real current date, not a hardcoded label.
+      const today=new Date(); today.setHours(0,0,0,0);
+      const renewDate=new Date(dash.renewal);
+      let label;
+      if(isNaN(renewDate)){
+        label=dash.days; // fallback to seed label
+      } else {
+        const days=Math.round((renewDate-today)/(1000*60*60*24));
+        if(days < 0)        label=(-days)+' days ago';
+        else if(days === 0) label='today';
+        else if(days === 1) label='tomorrow';
+        else                label=days+' days away';
+      }
+      rd.textContent=label;
+    }
     const ot=document.getElementById('a-dash-open-tickets');if(ot)ot.textContent=dash.tickets;
     const aw=document.getElementById('a-dash-awaiting-sub');if(aw)aw.textContent=dash.awaiting+' awaiting reply';
   }
@@ -2994,8 +3339,8 @@ function updateDashOrgBanners(){
   const renewList=document.getElementById('bill-renewals-list');
   const renewCount=document.getElementById('bill-renewals-count');
   if(renewList&&org){
-    // Sort products by renewal date
-    const today=new Date('2025-05-15');
+    // Use real "today" so days-away counts stay accurate as time passes.
+    const today=new Date(); today.setHours(0,0,0,0);
     const products=org.products.slice().map(p=>{
       const d=new Date(p.renewal);
       const days=Math.round((d-today)/(1000*60*60*24));
@@ -3027,9 +3372,14 @@ function updateDashOrgBanners(){
             +'<span style="'+daysColor+'">'+daysText+'</span>'
           +'</div>'
         +'</div>'
-        +'<div style="text-align:right;flex-shrink:0">'
-          +'<div style="font-size:16px;font-weight:700;color:var(--text-primary)">'+(p.amount||'\u2014')+'</div>'
-          +'<div style="font-size:11px;color:var(--text-muted)">'+(auto?'will be charged':'requires renewal')+'</div>'
+        +'<div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
+          +'<div style="display:flex;align-items:center;gap:10px">'
+            +'<div>'
+              +'<div style="font-size:16px;font-weight:700;color:var(--text-primary);text-align:right">'+productAmount(p)+'</div>'
+              +'<div style="font-size:11px;color:var(--text-muted);text-align:right">'+(auto?'will be charged':'requires renewal')+'</div>'
+            +'</div>'
+            +'<button class="btn primary sm" onclick="payNow(\''+p.name.replace(/\'/g,"\\\'")+'\',\''+productAmount(p)+'\')">Pay now</button>'
+          +'</div>'
         +'</div>'
       +'</div>';
     }).join('');
@@ -3103,6 +3453,14 @@ function switchUser(role){
   currentRole=role;
   currentOrg=USER_ORG[role].defaultOrg; // null for Gary
 
+  // Reload persona-scoped persisted data (so Jane's invites don't leak into Mary's view)
+  users = loadPersisted('users', JSON.parse(JSON.stringify(DEFAULT_USERS)));
+  ticketCount = loadPersisted('ticketCount', 6001);
+  extraTickets = loadPersisted('extraTickets', []);
+  threadReplies = loadPersisted('threadReplies', {});
+  extraInvoices = loadPersisted('extraInvoices', []);
+  invoiceCount = loadPersisted('invoiceCount', 1045);
+
   const u=USER_ORG[role];
   const ud=currentUData();
   const org=currentOrg?ORG_DATA[currentOrg]:null;
@@ -3140,6 +3498,11 @@ function switchUser(role){
   // Update admin page profile button names
   ['adpbtn1-name','adpbtn2-name','adpbtn3-name','adpbtn4-name','adpbtn5-name','acc-owner-name'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent=u.name;
+  });
+  // Update admin page profile button avatars (initials + background color match persona)
+  ['adpav1','adpav2','adpav3','adpav4','adpav5'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.textContent=u.initials; el.style.background=u.avatarBg; }
   });
   ['pf','prod','supp'].forEach(p=>{
     const av=document.getElementById(p+'-av');const nm=document.getElementById(p+'-name');
@@ -3313,7 +3676,11 @@ function nav(p){
   });
   document.getElementById('si-dashboard').classList.toggle('active',p==='a-dashboard'||p==='u-dashboard');
   if(p==='u-profile') updateAuthBlock();
-  if(p==='a-users') renderUsers();}
+  if(p==='a-users') renderUsers();
+  if(p==='u-support') hydrateSavedTickets();
+  if(p==='a-dashboard'||p==='u-dashboard') updateDashOrgBanners();
+  if(p==='a-billing') renderInvoiceHistory();
+}
 
 function navDash(){
   const uo=currentUserOrg();
@@ -3354,7 +3721,23 @@ function av(u){const c=UCOLORS[u.color];return`<div class="user-av" style="backg
 
 
 /* ── Sort state ───────────────────────────────────────── */
-let sortKey='',sortDir=1; // dir: 1=asc, -1=desc
+// Default sort: newest "Assigned on" first. Users without an assignedOn date sort to the
+// bottom of the assigned tab, which is the expected behavior for a recently-changed list.
+let sortKey='assignedOn',sortDir=-1; // dir: 1=asc, -1=desc
+
+// Robust date parser for the human-formatted dates in the seed (e.g. "May 14, 2025",
+// "Today", "Yesterday, 3:18 PM"). Returns a timestamp so localeCompare ordering bugs
+// (e.g. "Jan 12, 2025" sorting before "Mar 5, 2024") are avoided.
+function _parseDateish(s){
+  if(!s) return 0;
+  if(/^today/i.test(s))     return Date.now();
+  if(/^yesterday/i.test(s)) return Date.now() - 86400000;
+  // Strip a trailing time component if present (e.g. "Yesterday, 3:18 PM" handled above;
+  // here we handle "May 14, 2025 10:02 AM" style)
+  const cleaned = s.replace(/,\s*\d{1,2}:\d{2}.*$/,'');
+  const t = Date.parse(cleaned);
+  return isNaN(t) ? 0 : t;
+}
 const LAZY_PAGE=50;        // records per chunk
 
 function sortUsers(key){
@@ -3369,6 +3752,7 @@ function sortUsers(key){
 
 function sortedUsers(arr){
   if(!sortKey) return arr;
+  const isDateCol = (sortKey==='assignedOn'||sortKey==='createdOn'||sortKey==='lastLogin');
   return [...arr].sort((a,b)=>{
     let va='',vb='';
     if(sortKey==='name')       {va=a.name;vb=b.name;}
@@ -3378,6 +3762,14 @@ function sortedUsers(arr){
     else if(sortKey==='assignedOn'){va=getAssignedOn(a)[0]||'';vb=getAssignedOn(b)[0]||'';}
     else if(sortKey==='createdOn') {va=a.createdOn||'';vb=b.createdOn||'';}
     else if(sortKey==='lastLogin') {va=a.lastLogin||'';vb=b.lastLogin||'';}
+    if(isDateCol){
+      // Empty dates always sort to the bottom regardless of sortDir.
+      const ea = !va, eb = !vb;
+      if(ea && eb) return 0;
+      if(ea) return 1;
+      if(eb) return -1;
+      return (_parseDateish(va) - _parseDateish(vb)) * sortDir;
+    }
     return va.localeCompare(vb)*sortDir;
   });
 }
@@ -3420,10 +3812,95 @@ function statusLabel(u){
   return {lbl:u.status,cls:'neutral'};
 }
 
+// The original purchasers / account owners for each org. These appear in the Users
+// table with a highlighted row and a "Primary" badge so testers can see at a glance
+// who set up the account. Primary admins can promote additional admins, but cannot
+// themselves be demoted via the role-change workflow.
+const PRIMARY_ADMINS = new Set([
+  'jane@acme.com',        // Jane Doe — Acme primary admin
+  'penny@poppins.com',    // Penny Purchaser — Poppins primary admin
+]);
+function isPrimaryAdmin(u){
+  return u && u.email && PRIMARY_ADMINS.has(u.email.toLowerCase());
+}
+
+// Renders the Role cell as a clickable pill that opens the change-role modal.
+// Self (current logged-in user) is shown as a non-clickable pill — admins can't
+// demote themselves in this prototype (would leave them locked out).
+// Primary admins (original account purchaser, e.g. Jane, Penny) get a "Primary"
+// badge and are never demotable since they own the account.
+function roleCell(u, ri){
+  const cls = u.role==='Admin' ? 'info' : 'neutral';
+  const me = currentUData();
+  const isSelf = me && (me.email === u.email);
+  const primary = isPrimaryAdmin(u);
+  const primaryBadge = primary
+    ? `<span class="pill warn" style="margin-left:6px;font-size:9.5px;padding:1px 6px" title="Original account owner">Primary</span>`
+    : '';
+  if(isSelf || primary){
+    const tooltip = primary ? "Primary admin (account owner) — role cannot be changed" : "You can't change your own role";
+    return `<span class="pill ${cls}" title="${tooltip}">${u.role}</span>${primaryBadge}`;
+  }
+  return `<span class="pill ${cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="Click to change role" onclick="openChangeRole(${ri})">${u.role}</span>`;
+}
+
+// Open the change-role modal scoped to a specific user index.
+let changeRoleIdx = null;
+function openChangeRole(idx){
+  changeRoleIdx = idx;
+  const u = users[idx];
+  if(!u) return;
+  document.getElementById('change-role-sub').textContent =
+    `Update the role for ${u.name} (${u.email}). Currently: ${u.role}.`;
+  // Pre-select the opposite of the current role since that's the likely intent.
+  const sel = document.getElementById('change-role-sel');
+  sel.value = (u.role === 'Admin') ? 'Member' : 'Admin';
+  document.getElementById('modal-change-role').classList.add('open');
+}
+
+function confirmChangeRole(){
+  if(changeRoleIdx === null) return;
+  const u = users[changeRoleIdx];
+  const newRole = document.getElementById('change-role-sel').value;
+  // Primary admins cannot have their role changed — they own the account.
+  if(isPrimaryAdmin(u)){
+    closeModal();
+    toast('⚠ ' + u.name + ' is the primary account admin and cannot be changed');
+    return;
+  }
+  if(u.role === newRole){
+    closeModal();
+    toast(u.name + ' is already ' + newRole);
+    return;
+  }
+  // Guard: don't allow demoting the last admin in an org — would leave it admin-less.
+  if(u.role === 'Admin' && newRole === 'Member'){
+    const orgAdmins = users.filter(x => (x.org||currentOrg)===currentOrg && x.role==='Admin');
+    if(orgAdmins.length <= 1){
+      closeModal();
+      toast('⚠ Can\'t demote the last admin. Promote another user to Admin first.');
+      return;
+    }
+  }
+  const oldRole = u.role;
+  u.role = newRole;
+  savePersisted('users', users);
+  closeModal();
+  renderUsers();
+  toast(`✓ ${u.name} changed from ${oldRole} to ${newRole}`);
+}
+
 function renderUsers(filter=''){
-  const assigned=users.filter(hasSeat);
-  const unassigned=users.filter(u=>!hasSeat(u));
-  const total=25,free=total-assigned.length;
+  // Scope the visible users to the active org. Each user's org field is set in the
+  // DEFAULT_USERS seed; new invites inherit currentOrg in confirmInvite().
+  const orgUsers=users.filter(u=>!u.org||u.org===currentOrg);
+  const assigned=orgUsers.filter(hasSeat);
+  const unassigned=orgUsers.filter(u=>!hasSeat(u));
+  // Total seats come from the org's product list (sum of seats across products).
+  const org=ORG_DATA[currentOrg];
+  const totalFromOrg=(org&&org.products)?org.products.reduce((s,p)=>s+(p.seats||0),0):0;
+  const total=totalFromOrg||orgUsers.length||25;
+  const free=Math.max(0,total-assigned.length);
   document.getElementById('pc-assigned').textContent=assigned.length;
   document.getElementById('pc-free').textContent=free;
   document.getElementById('pool-assigned').textContent=assigned.length;
@@ -3432,7 +3909,7 @@ function renderUsers(filter=''){
   document.getElementById('badge-a').textContent=assigned.length;
   document.getElementById('badge-u').textContent=unassigned.length;
   const badgeAll=document.getElementById('badge-all');
-  if(badgeAll) badgeAll.textContent=users.length;
+  if(badgeAll) badgeAll.textContent=orgUsers.length;
   const q=filter.toLowerCase();
   const filt=u=>!q||u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q);
 
@@ -3458,21 +3935,22 @@ function renderUsers(filter=''){
   }
 
   // ── All users (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Action)
-  const allRows=sortedUsers(users.filter(filt)).map(u=>{
+  const allRows=sortedUsers(orgUsers.filter(filt)).map(u=>{
     const ri=users.indexOf(u);const fc=free;const isAss=hasSeat(u);
     const st=statusLabel(u);
     // For invited (accepted) users show createdOn and lastLogin even without a seat
     const showDates=isAss||(u.status==='invited');
-    return`<tr>
+    const rowStyle = isPrimaryAdmin(u) ? ' style="background:var(--avenza-blue-lt)"' : '';
+    return`<tr${rowStyle}>
       <td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>
       <td style="${PM}">${u.email}</td>
-      <td style="${P}"><span class="pill ${u.role==='Admin'?'info':'neutral'}">${u.role}</span></td>
+      <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${P};font-size:12.5px">${seatCell(u)}</td>
       <td style="${PS}">${assignedOnCell(u)}</td>
       <td style="${PS}">${showDates?(u.createdOn||'\u2014'):'\u2014'}</td>
       <td style="${PS}">${showDates?(u.lastLogin||'\u2014'):'\u2014'}</td>
       <td style="${P}">${u.status==='reinvite'?`<span class="pill ${st.cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="reinviteUser(${ri})" title="Click to re-send invite">${st.lbl}</span>`:`<span class="pill ${st.cls}">${st.lbl}</span>`}</td>
-      <td style="${P};text-align:right">${isAss?revokeBtn(u,ri,true):fc>0?`<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`:`<span style="font-size:12px;color:var(--text-muted)">No seats</span>`}</td>
+      <td style="${P};text-align:right">${isAss?revokeBtn(u,ri,true):u.status==='pending'?`<span style="font-size:12px;color:var(--text-muted)" title="User must accept their invite before a seat can be assigned">Invite pending</span>`:fc>0?`<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`:`<span style="font-size:12px;color:var(--text-muted)">No seats</span>`}</td>
     </tr>`;
   });
   renderChunk(allRows,'tbl-all','spinner-all',9);
@@ -3480,10 +3958,11 @@ function renderUsers(filter=''){
   // ── Assigned seats (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Revoke)
   const assRows=sortedUsers(assigned.filter(filt)).map(u=>{
     const ri=users.indexOf(u);
-    return`<tr>
+    const rowStyle = isPrimaryAdmin(u) ? ' style="background:var(--avenza-blue-lt)"' : '';
+    return`<tr${rowStyle}>
       <td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>
       <td style="${PM}">${u.email}</td>
-      <td style="${P}"><span class="pill ${u.role==='Admin'?'info':'neutral'}">${u.role}</span></td>
+      <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${P};font-size:12.5px">${seatCell(u)}</td>
       <td style="${PS}">${assignedOnCell(u)}</td>
       <td style="${PS}">${u.createdOn||'\u2014'}</td>
@@ -3500,14 +3979,15 @@ function renderUsers(filter=''){
     const st=statusLabel(u);
     // Last login: show for invited users only (they've logged in)
     const loginDisplay=(u.status==='invited'&&u.lastLogin)?u.lastLogin:'\u2014';
-    return`<tr>
+    const rowStyle = isPrimaryAdmin(u) ? ' style="background:var(--avenza-blue-lt)"' : '';
+    return`<tr${rowStyle}>
       <td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>
       <td style="${PM}">${u.email}</td>
-      <td style="${P}"><span class="pill ${u.role==='Admin'?'info':'neutral'}">${u.role}</span></td>
+      <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${PS}">${u.createdOn||'\u2014'}</td>
       <td style="${PS}">${loginDisplay}</td>
       <td style="${P}">${u.status==='reinvite'?`<span class="pill ${st.cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="reinviteUser(${ri})" title="Click to re-send invite">${st.lbl}</span>`:`<span class="pill ${st.cls}">${st.lbl}</span>`}</td>
-      <td style="${P}">${fc>0?`<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`:`<span style="font-size:12px;color:var(--text-muted)">No seats available</span>`}</td>
+      <td style="${P}">${u.status==='pending'?`<span style="font-size:12px;color:var(--text-muted)" title="User must accept their invite before a seat can be assigned">Invite pending</span>`:fc>0?`<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`:`<span style="font-size:12px;color:var(--text-muted)">No seats available</span>`}</td>
     </tr>`;
   });
   renderChunk(unaRows,'tbl-unassigned','spinner-unassigned',7);
@@ -3517,7 +3997,7 @@ function renderUsers(filter=''){
    ASSIGN / REVOKE
 ═══════════════════════════════════════ */
 function openAssign(idx){assignTargetIdx=idx;const u=users[idx];document.getElementById('modal-assign-sub').textContent=`Assigning a seat to ${u.name} (${u.email}).`;document.getElementById('modal-assign').classList.add('open');}
-function confirmAssign(){const u=users[assignTargetIdx];u.seat=document.getElementById('modal-product-sel').value;u.since='Today';u.status='active';closeModal();renderUsers();toast(`✓ Seat assigned to ${u.name} — ${u.seat}`);}
+function confirmAssign(){const u=users[assignTargetIdx];u.seat=document.getElementById('modal-product-sel').value;u.assignedOn='Today';u.since='Today';u.status='active';savePersisted('users', users);recomputeOrgCounts(currentOrg);closeModal();renderUsers();updateDashOrgBanners();toast(`✓ Seat assigned to ${u.name} — ${u.seat}`);}
 let revokeTargetIdx=null;
 function revokeConfirm(idx,product){
   const u=users[idx];
@@ -3528,11 +4008,11 @@ function revokeConfirm(idx,product){
   if(u.seats){
     const si=u.seats.indexOf(target);
     if(si>-1){u.seats.splice(si,1);if(Array.isArray(u.assignedOn))u.assignedOn.splice(si,1);}
-    if(u.seats.length===0){u.seats=null;u.assignedOn=null;u.status='pending';}
+    if(u.seats.length===0){u.seats=null;u.assignedOn=null;u.status='invited';}
   } else {
-    u.seat=null;u.assignedOn=null;u.status='pending';
+    u.seat=null;u.assignedOn=null;u.status='invited';
   }
-  renderUsers();toast('✓ '+target+' seat revoked from '+u.name);
+  renderUsers();savePersisted('users', users);recomputeOrgCounts(currentOrg);updateDashOrgBanners();toast('✓ '+target+' seat revoked from '+u.name);
 }
 function openRevokeMulti(idx){
   revokeTargetIdx=idx;
@@ -3580,29 +4060,99 @@ function confirmInvite(){
   if(existing){
     existing.status='pending';
     existing.invitedOn='Today';
+    savePersisted('users', users);
     closeModal();renderUsers();
     toast('✓ Re-invite sent to '+email);
     return;
   }
   const name=email.split('@')[0].replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase());
   const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  users.push({name,email,initials,role:document.getElementById('invite-role').value,seat:null,createdOn:'',invitedOn:'Today',status:'pending',color:Math.floor(Math.random()*UCOLORS.length),lastLogin:''});
+  users.push({org:currentOrg,name,email,initials,role:document.getElementById('invite-role').value,seat:null,createdOn:'',invitedOn:'Today',status:'pending',color:Math.floor(Math.random()*UCOLORS.length),lastLogin:''});
+  savePersisted('users', users);
   closeModal();renderUsers();toast('✓ Invite sent to '+email);
 }
 
 /* ═══════════════════════════════════════
    ADD / REMOVE SEATS
 ═══════════════════════════════════════ */
-function openAddSeats(){document.getElementById('modal-add-seats').classList.add('open');}
-function confirmAddSeats(){const p=document.getElementById('add-seats-product').value;const n=document.getElementById('add-seats-count').value;closeModal();toast(`✓ ${n} seats added to ${p}`);}
-function openRemoveLicense(){document.getElementById('modal-remove-license').classList.add('open');}
+function openAddSeats(){
+  // Build the subscription dropdown from the current org's products so it always
+  // reflects the right products & seat counts for whichever persona is active.
+  const sel=document.getElementById('add-seats-product');
+  const org=ORG_DATA[currentOrg];
+  if(sel && org && org.products){
+    sel.innerHTML=org.products.map(p=>{
+      // All subscriptions are annual — show the per-product current seat count
+      return `<option value="${p.name}">${p.name} (Annual) — currently ${p.seats} seats</option>`;
+    }).join('');
+  }
+  document.getElementById('modal-add-seats').classList.add('open');
+}
+function confirmAddSeats(){
+  const productName = document.getElementById('add-seats-product').value;
+  const count = parseInt(document.getElementById('add-seats-count').value, 10);
+  if(!count || count < 1){ toast('Enter a valid number of seats'); return; }
+
+  // Find the product in the current org and increment its seat count.
+  const org = ORG_DATA[currentOrg];
+  const product = org && org.products && org.products.find(p => p.name === productName);
+  if(!product){ toast('Product not found'); return; }
+
+  product.seats = (product.seats || 0) + count;
+  // Refresh the cached amount on the product object too.
+  product.amount = productAmount(product);
+
+  // Add a new invoice line item for the incremental purchase.
+  const lineAmount = (PRICING[productName] || 0) * count;
+  invoiceCount += 1;
+  const today = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const todayLabel = months[today.getMonth()] + ' ' + today.getDate() + ', ' + today.getFullYear();
+  extraInvoices.unshift({
+    id: invoiceCount,
+    org: currentOrg,
+    desc: productName + ' \u2013 ' + count + ' additional seat' + (count!==1?'s':'') + ' (Annual)',
+    date: todayLabel,
+    amount: _formatMoney(lineAmount),
+    status: 'Paid',
+  });
+
+  savePersisted('extraInvoices', extraInvoices);
+  savePersisted('invoiceCount', invoiceCount);
+
+  closeModal();
+  // Refresh the affected views so the change is visible no matter where the user is.
+  renderUsers();              // recomputes seat-pool totals on the users page
+  updateDashOrgBanners();     // updates Active seats / Total licenses / License-assignment slider on dashboard
+  renderInvoiceHistory();     // refreshes the billing page invoice list and metrics
+
+  toast('\u2713 ' + count + ' seats added to ' + productName + ' \u00b7 ' + _formatMoney(lineAmount) + ' charged');
+}
+function openRemoveLicense(){
+  const sel=document.getElementById('remove-seats-product');
+  const org=ORG_DATA[currentOrg];
+  if(sel && org && org.products){
+    sel.innerHTML=org.products.map(p=>{
+      const unassigned=Math.max(0,(p.seats||0)-(p.used||0));
+      return `<option value="${p.name}">${p.name} (Annual) — ${unassigned} unassigned</option>`;
+    }).join('');
+  }
+  document.getElementById('modal-remove-license').classList.add('open');
+}
+function payNow(productName, amount){
+  // Two-step: confirm, then show success toast. This is a prototype action so no real
+  // payment flow runs — but it gives testers a sense of the early-renewal workflow.
+  const amt = amount || 'the renewal amount';
+  if(!confirm('Pay '+amt+' now for '+productName+' to renew early?\n\nYour payment method on file (Visa ···· 4242) will be charged.')) return;
+  toast('✓ Payment of '+amt+' processed for '+productName);
+}
 function confirmRemoveSeats(){const p=document.getElementById('remove-seats-product').value;const n=document.getElementById('remove-seats-count').value;closeModal();toast(`${n} seats will be removed from ${p} at next billing cycle`);}
 
 /* ═══════════════════════════════════════
    REMOVE USER
 ═══════════════════════════════════════ */
 function openRemoveUser(){document.getElementById('modal-remove-user').classList.add('open');}
-function confirmRemoveUser(){const name=document.getElementById('remove-user-sel').value;const idx=users.findIndex(u=>u.name===name);if(idx>=0){users.splice(idx,1);}closeModal();renderUsers();toast(`${name} has been removed from the account`);}
+function confirmRemoveUser(){const name=document.getElementById('remove-user-sel').value;const idx=users.findIndex(u=>u.name===name);if(idx>=0){users.splice(idx,1);}savePersisted('users', users);closeModal();renderUsers();toast(`${name} has been removed from the account`);}
 
 /* ═══════════════════════════════════════
    UNIFIED TICKET FUNCTIONS
@@ -3619,21 +4169,50 @@ function submitTicket(){
   const prod=document.getElementById('ticket-product').value;
   const pri=document.getElementById('ticket-priority').value;
   ticketCount++;
-  let behalfBadge='';
+  let behalf='self';
   if(currentRole==='admin'){
-    const bv=document.getElementById('ticket-behalf').value;
-    if(bv!=='self') behalfBadge=' <span class="pill info" style="margin-left:6px;font-size:10px">On behalf of '+bv+'</span>';
+    behalf=document.getElementById('ticket-behalf').value;
   }
-  const card=document.createElement('div');
-  card.className='ticket-card';
-  card.innerHTML='<div class="ticket-card-head"><span class="ticket-id">#'+ticketCount+'</span><span class="pill info">Open</span>'+behalfBadge+'</div>'
-    +'<div class="ticket-title">'+subj+'</div>'
-    +'<div class="ticket-meta">Product: '+prod+' \u00b7 Priority: '+pri+' \u00b7 Just submitted \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+ticketCount+'\',\''+subj.replace(/'/g,"\\'")+'\')">'+'View thread \u2192</span></div>';
+  // Persist
+  const ticket={id:ticketCount,subject:subj,product:prod,priority:pri,behalf:behalf,createdLabel:'Just submitted'};
+  extraTickets.unshift(ticket);
+  savePersisted('ticketCount', ticketCount);
+  savePersisted('extraTickets', extraTickets);
+  // Render
+  const card=buildTicketCard(ticket);
   document.getElementById('tickets-list').prepend(card);
   const oc=document.getElementById('u-stat-open');
   if(oc) oc.textContent=parseInt(oc.textContent)+1;
   closeNewTicket();
   toast('\u2713 Case #'+ticketCount+' submitted');
+}
+
+// Builds a DOM card for a persisted ticket, used both at submit-time and at page-load hydration.
+function buildTicketCard(t){
+  const behalfBadge = (t.behalf && t.behalf!=='self')
+    ? ' <span class="pill info" style="margin-left:6px;font-size:10px">On behalf of '+t.behalf+'</span>'
+    : '';
+  const safeSubj = String(t.subject).replace(/'/g,"\\'");
+  const card=document.createElement('div');
+  card.className='ticket-card';
+  card.innerHTML='<div class="ticket-card-head"><span class="ticket-id">#'+t.id+'</span><span class="pill info">Open</span>'+behalfBadge+'</div>'
+    +'<div class="ticket-title">'+t.subject+'</div>'
+    +'<div class="ticket-meta">Product: '+t.product+' \u00b7 Priority: '+t.priority+' \u00b7 '+(t.createdLabel||'Submitted')+' \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+t.id+'\',\''+safeSubj+'\')">View thread \u2192</span></div>';
+  return card;
+}
+
+// Re-hydrate any saved tickets into the support page list. Called when the support page is shown.
+function hydrateSavedTickets(){
+  const list=document.getElementById('tickets-list');
+  if(!list) return;
+  // Remove any previously hydrated cards (idempotent re-render).
+  list.querySelectorAll('[data-hydrated="1"]').forEach(n=>n.remove());
+  // Prepend in original-submission order so newest ends up on top.
+  extraTickets.slice().reverse().forEach(t=>{
+    const card=buildTicketCard({...t, createdLabel: t.createdLabel==='Just submitted' ? 'Submitted earlier' : t.createdLabel});
+    card.setAttribute('data-hydrated','1');
+    list.prepend(card);
+  });
 }
 
 /* ═══════════════════════════════════════
@@ -3655,6 +4234,14 @@ function openTicketThread(id,title){
         <div style="background:${m.user?'#e8f1fe':'var(--surface-2)'};border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 13px;font-size:13px;color:var(--text-secondary)">${m.msg}</div>
       </div>
     </div>`).join('');
+  // Append any persisted replies for this ticket
+  const saved=(threadReplies && threadReplies[id])||[];
+  if(saved.length){
+    const msgsEl=document.getElementById('thread-messages');
+    saved.forEach(r=>{
+      msgsEl.innerHTML+=`<div style="display:flex;gap:10px;flex-direction:row-reverse"><div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:${r.avatarBg}22;color:${r.avatarBg}">${r.initials}</div><div style="max-width:80%"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-align:right">${r.from} \u00b7 ${r.time}</div><div style="background:#e8f1fe;border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 13px;font-size:13px;color:var(--text-secondary)">${r.msg}</div></div></div>`;
+    });
+  }
   document.getElementById('thread-reply').value='';
   document.getElementById('modal-ticket-thread').classList.add('open');
 }
@@ -3662,7 +4249,12 @@ function sendThreadReply(){
   const txt=document.getElementById('thread-reply').value.trim();if(!txt)return;
   const msgs=document.getElementById('thread-messages');
   const u=currentUData();
+  const reply={from:u.name,initials:u.initials,avatarBg:u.avatarBg,time:'Just now',msg:txt};
   msgs.innerHTML+=`<div style="display:flex;gap:10px;flex-direction:row-reverse"><div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:${u.avatarBg}22;color:${u.avatarBg}">${u.initials}</div><div style="max-width:80%"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-align:right">${u.name} \u00b7 Just now</div><div style="background:#e8f1fe;border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 13px;font-size:13px;color:var(--text-secondary)">${txt}</div></div></div>`;
+  // Persist
+  if(!threadReplies[currentThreadId]) threadReplies[currentThreadId]=[];
+  threadReplies[currentThreadId].push(reply);
+  savePersisted('threadReplies', threadReplies);
   document.getElementById('thread-reply').value='';toast('Reply sent');
 }
 function resolveTicket(){closeModal();toast(`✓ Ticket #${currentThreadId} marked as resolved`);}
@@ -4194,6 +4786,10 @@ function openRegister(){
   const st =document.getElementById('reg-state');  if(st)st.value='';
   toggleStateField();
   document.getElementById('pwd-match-msg').textContent='';
+  const emailMsg=document.getElementById('reg-email-msg');
+  if(emailMsg){ emailMsg.textContent=''; emailMsg.classList.remove('error'); emailMsg.style.color=''; }
+  const emailInput=document.getElementById('reg-email');
+  if(emailInput) emailInput.classList.remove('error');
   ['pwd-rule-lower','pwd-rule-upper','pwd-rule-number','pwd-rule-length']
     .forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('met');});
 }
@@ -4243,7 +4839,116 @@ function checkPwdMatch(){
   if(p1!==p2){msg.textContent='Passwords do not match';msg.classList.add('error');}
   else {msg.textContent='✓ Passwords match';msg.classList.remove('error');msg.style.color='var(--green)';}
 }
+/* ═══════════════════════════════════════════════════════════
+   REGISTRATION EMAIL VALIDATION
+   ───────────────────────────────────────────────────────────
+   Real-time checks on the email field as the user types:
+   1. Empty       → clear any message
+   2. Bad format  → "Please enter a valid email address"
+   3. Bad chars   → "Email contains invalid characters"
+   4. Duplicate   → "Already registered — sign in instead →"
+   5. Looks good  → green check confirmation
+
+   Called from oninput (every keystroke) and onblur. Also called
+   from submitRegister() to block submission when invalid.
+   Returns true if the email is valid AND not a duplicate.
+═══════════════════════════════════════════════════════════ */
+function _regEmailExists(email){
+  if(!email) return false;
+  const e = email.toLowerCase().trim();
+  // Check against seeded users across ALL orgs — registration is org-agnostic.
+  return DEFAULT_USERS.some(u => u.email && u.email.toLowerCase() === e);
+}
+function _regEmailFormatIssues(email){
+  // Returns null if the format is fine, or a string describing the first issue found.
+  if(!email) return null;
+  if(/\s/.test(email))            return 'Email cannot contain spaces';
+  // Only the standard local-part characters: letters, digits, dot, underscore, plus, hyphen.
+  // Domain part allows letters, digits, dot, hyphen.
+  if(/[^A-Za-z0-9._+\-@]/.test(email)) return 'Email contains invalid characters';
+  const at = email.split('@');
+  if(at.length !== 2)             return 'Email must contain exactly one "@"';
+  const [local, domain] = at;
+  if(!local)                      return 'Missing the part before "@"';
+  if(!domain)                     return 'Missing the part after "@"';
+  if(local.startsWith('.') || local.endsWith('.')) return 'Cannot start or end with a dot';
+  if(/\.\./.test(email))          return 'Email cannot contain consecutive dots';
+  if(!domain.includes('.'))       return 'Domain must include a dot (e.g. .com)';
+  if(domain.startsWith('.') || domain.endsWith('.') || domain.startsWith('-') || domain.endsWith('-'))
+                                  return 'Domain has invalid start/end character';
+  // Final strict shape check
+  if(!/^[A-Za-z0-9._+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)+$/.test(email))
+                                  return 'Please enter a valid email address';
+  return null;
+}
+function checkRegEmail(onBlur){
+  const input = document.getElementById('reg-email');
+  const msg   = document.getElementById('reg-email-msg');
+  if(!input || !msg) return true;
+  const val = input.value.trim();
+
+  // Empty: clear messages (unless this is a blur and the field is required, but
+  // we leave that to submitRegister so we don't nag the user mid-typing).
+  if(!val){
+    msg.textContent = '';
+    msg.classList.remove('error');
+    msg.style.color = '';
+    input.classList.remove('error');
+    return false;
+  }
+
+  // Format check
+  const issue = _regEmailFormatIssues(val);
+  if(issue){
+    msg.innerHTML = issue;
+    msg.classList.add('error');
+    msg.style.color = '';
+    input.classList.add('error');
+    return false;
+  }
+
+  // Duplicate check (only after format passes)
+  if(_regEmailExists(val)){
+    // Show actionable error with a sign-in link that prefills the email.
+    msg.innerHTML = 'This email is already registered. <a href="#" onclick="signInWithRegEmail();return false;" style="color:var(--avenza-blue);font-weight:600;text-decoration:underline">Sign in instead \u2192</a>';
+    msg.classList.add('error');
+    msg.style.color = '';
+    input.classList.add('error');
+    return false;
+  }
+
+  // Looks good
+  msg.textContent = '\u2713 Email looks good';
+  msg.classList.remove('error');
+  msg.style.color = 'var(--green)';
+  input.classList.remove('error');
+  return true;
+}
+
+// Click handler for the "Sign in instead" link in the duplicate-email message.
+// Carries the typed email over to the login screen so the user doesn't retype it.
+function signInWithRegEmail(){
+  const email = document.getElementById('reg-email').value.trim();
+  closeRegister();
+  const loginField = document.getElementById('login-email');
+  if(loginField){
+    loginField.value = email;
+    // Focus the password field if it exists; otherwise focus the email field.
+    const pwd = document.getElementById('login-password');
+    if(pwd){ pwd.focus(); } else { loginField.focus(); }
+  }
+}
+
 function submitRegister(){
+  // Email validation runs FIRST so users get caught early on the most common
+  // problem (typo, duplicate). The inline checkRegEmail() already shows the
+  // message and red-borders the field; here we just block the submit.
+  if(!checkRegEmail(true)){
+    const e = document.getElementById('reg-email');
+    if(e){ e.scrollIntoView({behavior:'smooth',block:'center'}); e.focus(); }
+    toast('Please fix the email address');
+    return;
+  }
   // Validate required fields
   const required=['reg-email','reg-password','reg-password-confirm','reg-firstname','reg-lastname',
                   'reg-jobtitle','reg-company','reg-industry','reg-address','reg-city',
@@ -4281,15 +4986,8 @@ function submitRegister(){
     document.getElementById('reg-password-confirm').classList.add('error');
     return;
   }
-  // Email
-  const email=document.getElementById('reg-email').value;
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    toast('Please enter a valid email');
-    document.getElementById('reg-email').classList.add('error');
-    return;
-  }
   // Success
-  toast('✓ Account created! Check your email to activate.');
+  toast('\u2713 Account created! Check your email to activate.');
   setTimeout(closeRegister,1500);
 }
 
