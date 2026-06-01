@@ -1085,6 +1085,104 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   .register-shell{padding:24px 18px}
 }
 
+/* ─────────────────────────────────────────────
+   FULL RESPONSIVE — phones, tablets, desktop
+   Layered on top of the existing media queries above.
+   Targets the layout patterns the app relies on:
+   topbars, tables, modals, cards, login/register,
+   profile, dashboard widgets, and the prototype toolbar.
+───────────────────────────────────────────── */
+
+/* TABLET — up to 1024px */
+@media (max-width:1024px){
+  /* Modals: snug padding, edge breathing room */
+  .modal{padding:22px;width:calc(100vw - 32px);max-width:520px}
+  /* Bring down content-area padding so cards don't feel cramped */
+  .page-body{padding:20px}
+  /* Two-column page-body grids (e.g. profile sections side-by-side) → single column */
+  .card-grid-2{grid-template-columns:1fr}
+  /* Make all tables horizontally scrollable inside their card wrapper.
+     The card wrappers use inline overflow:hidden so we use :has() to bump
+     specificity, and !important to override the inline style. */
+  .card .table{min-width:760px}
+  .card:has(> .table){overflow-x:auto !important}
+}
+
+/* PHONE — 768px and below */
+@media (max-width:768px){
+  /* Reduce topbar density */
+  .topbar{padding:0 12px;gap:6px;height:48px}
+  .topbar-actions{gap:4px}
+  .topbar-actions .btn{padding:6px 10px;font-size:11.5px}
+  .topbar-actions .btn:not(.primary){display:none}
+  .icon-btn{width:32px;height:32px}
+  /* Breadcrumb gets ellipsis when squeezed; keep last segment visible */
+  .breadcrumb{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    max-width:calc(100vw - 250px);font-size:12.5px
+  }
+  /* Page body padding shrinks further */
+  .page-body{padding:14px}
+  /* Cards a bit tighter */
+  .card{padding:14px 14px}
+  /* Login & registration scale down */
+  .login-card{padding:28px 22px;width:calc(100vw - 28px)}
+  .register-shell{padding:20px 16px;max-width:none;border-radius:0}
+  /* Profile name header — avatar + name stack */
+  .pf-page-av{width:48px;height:48px;font-size:18px}
+  /* Modal full-width with a small inset */
+  .modal{padding:18px;width:calc(100vw - 24px);max-width:none;border-radius:12px}
+  .modal-row{flex-direction:column-reverse}
+  .modal-row .btn{width:100%}
+  /* Tabs in the Users page wrap onto multiple rows */
+  .utbl-tabs,.tab-bar{flex-wrap:wrap;gap:4px}
+  /* Force narrower-min for tables; user can still pan */
+  .card .table{min-width:680px}
+  /* My products cards: stack stats vertically */
+  .my-prod-detail{grid-template-columns:1fr}
+  /* Activity ticks: tighter */
+  .tick{padding:10px 6px}
+  /* Dropdowns: pin to top-right of viewport, scoot from edge */
+  .dropdown{right:6px;max-width:calc(100vw - 24px)}
+  /* Prototype toolbar wraps on small screens so it doesn't push out of view */
+  .proto-bar{flex-wrap:wrap;gap:6px;padding:6px 10px;height:auto;min-height:42px}
+  .proto-hint{display:none}
+  .proto-sep{display:none}
+}
+
+/* SMALL PHONE — 480px and below */
+@media (max-width:480px){
+  /* Hide profile name text on tiny screens — avatar still identifies persona */
+  .profile-btn .profile-name{display:none}
+  .profile-btn{padding:4px;gap:0}
+  .profile-btn svg{display:none}
+  /* Even tighter padding */
+  .page-body{padding:10px}
+  /* Hide breadcrumb prefix; show only current page name */
+  .breadcrumb{max-width:calc(100vw - 180px);font-size:12px}
+  /* Login title scale */
+  .login-product{font-size:18px}
+  .login-header{font-size:13px}
+  /* Workflow stepper steps stack tighter */
+  .stepper-step{flex:1 1 100%}
+  /* Modal text scales */
+  .modal-title{font-size:15px}
+  .modal-input,.modal-select{font-size:14px;padding:9px 11px}
+  /* Larger touch targets on icon buttons */
+  .icon-btn{width:36px;height:36px}
+  .dd-item{padding:11px 12px;font-size:13px}
+  /* Avatar in user rows smaller */
+  .av{width:24px;height:24px;font-size:10px}
+}
+
+/* PRINT — leave layout alone, just suppress prototype-only chrome */
+@media print{
+  .proto-bar,.sidebar,.topbar-hamburger{display:none !important}
+  .app{height:auto}
+  .page-body{overflow:visible;padding:0}
+  .card{break-inside:avoid;box-shadow:none}
+}
+
 </style>
 </head>
 <body>
@@ -1720,6 +1818,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn2')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn2" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600;color:var(--text-primary)">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring in 69 days</button></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh2')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh2"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp2')"><div class="profile-av" id="adpav2" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn2-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp2"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp2-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp2-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="openRemoveUser()">Remove user</button>
           <button class="btn primary" onclick="openInvite()">+ Invite user</button>
@@ -1797,6 +1896,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn3')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn3" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh3')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh3"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp3')"><div class="profile-av" id="adpav3" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn3-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp3"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp3-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp3-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="openRemoveLicense()">Remove seats</button>
           <button class="btn primary" onclick="openAddSeats()">+ Add seats</button>
@@ -1833,6 +1933,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn4')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn4" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh4')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh4"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp4')"><div class="profile-av" id="adpav4" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn4-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp4"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp4-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp4-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="toast('Opening billing settings…')">Update billing</button>
         </div>
@@ -1877,6 +1978,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('udn3')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div id="supp-notif-dot" class="icon-btn-dot" style="display:none"></div></button><div class="dropdown" id="udn3" style="min-width:200px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div id="supp-notif-body"><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No new notifications</div></div></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh6')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh6"><button class="dd-item">📄 Documentation</button><button class="dd-item">💬 New ticket</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('udp3')"><div class="profile-av" id="supp-av" style="background:#1ba461">MB</div><span class="profile-name" id="supp-name">Mary Beth</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="udp3"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="supp-hd-name">Mary Beth</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="supp-hd-email">mary@acme.com · Member</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="toast('Opening documentation…')">Documentation</button>
           <button class="btn primary" onclick="openNewTicket()">+ New ticket</button>
@@ -1939,6 +2041,8 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Account settings</span></div>
         </div>
         <div class="topbar-actions">
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn5')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn5" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh5')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh5"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp6')"><div class="profile-av" id="adpav5" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn5-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp6"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp6-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp6-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn primary" onclick="saveAccount()">Save changes</button>
         </div>
@@ -1995,6 +2099,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('udn1')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg></button><div class="dropdown" id="udn1" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No new notifications</div></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh7')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh7"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('u-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('udp1')"><div class="profile-av" id="u-dash-av" style="background:#1ba461">MB</div><span class="profile-name" id="u-dash-name">Mary Beth</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="udp1"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="udp1-name">Mary Beth</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="udp1-email">mary@acme.com · Member</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
         </div>
       </div>
@@ -2037,6 +2142,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('udn2')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div id="prod-notif-dot" class="icon-btn-dot" style="display:none"></div></button><div class="dropdown" id="udn2" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div id="prod-notif-body"><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No new notifications</div></div></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh8')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh8"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('u-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('udp2')"><div class="profile-av" id="prod-av" style="background:#1ba461">MB</div><span class="profile-name" id="prod-name">Mary Beth</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="udp2"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="udp2-name">Mary Beth</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="udp2-email">mary@acme.com · Member</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
         </div>
       </div>
@@ -2054,6 +2160,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('pfn1')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div id="pf-notif-dot" class="icon-btn-dot"></div></button><div class="dropdown" id="pfn1" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div id="pf-notif-body"><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No notifications</div></div></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh9')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh9"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('u-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('pfdp1')"><div class="profile-av" id="pf-av" style="background:#0d6efd">JD</div><span class="profile-name" id="pf-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="pfdp1"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="pf-hd-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="pf-hd-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn primary" onclick="saveProfile()">Save changes</button>
         </div>
