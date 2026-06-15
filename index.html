@@ -1086,6 +1086,31 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
 }
 
 /* ─────────────────────────────────────────────
+   TOGGLE SWITCH — small iOS-style toggle used
+   in the renewals widget to flip auto-renew on/off.
+───────────────────────────────────────────── */
+.toggle-switch{
+  position:relative;display:inline-block;width:34px;height:18px;
+  vertical-align:middle;cursor:pointer
+}
+.toggle-switch input{opacity:0;width:0;height:0;pointer-events:none}
+.toggle-switch .slider{
+  position:absolute;inset:0;background:#cbd5e1;
+  border-radius:9px;transition:background .15s
+}
+.toggle-switch .slider::before{
+  content:'';position:absolute;height:14px;width:14px;left:2px;top:2px;
+  background:#fff;border-radius:50%;transition:transform .15s;
+  box-shadow:0 1px 2px rgba(0,0,0,.15)
+}
+.toggle-switch input:checked + .slider{background:var(--green)}
+.toggle-switch input:checked + .slider::before{transform:translateX(16px)}
+.toggle-switch:hover .slider{opacity:.9}
+
+/* Error state for modal text inputs (used by inline duplicate-email check). */
+.modal-input.error{border-color:var(--red);background:var(--red-lt)}
+
+/* ─────────────────────────────────────────────
    FULL RESPONSIVE — phones, tablets, desktop
    Layered on top of the existing media queries above.
    Targets the layout patterns the app relies on:
@@ -1844,13 +1869,15 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
   <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
   <th class="sortable" data-key="lastLogin" onclick="sortUsers('lastLogin')">Last login <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="modifiedOn" onclick="sortUsers('modifiedOn')">Last modified on / by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="status" onclick="sortUsers('status')">Status <span class="sort-icon"></span></th>
   <th></th>
 </tr></thead>
 <tbody id="tbl-all"></tbody>
-<tbody><tr><td colspan="9"><div class="lazy-spinner" id="spinner-all"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
+<tbody><tr><td colspan="11"><div class="lazy-spinner" id="spinner-all"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-assigned" style="display:none">
           <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" placeholder="Search assigned users…" oninput="renderUsers(this.value)"></div>
@@ -1860,13 +1887,15 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
   <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
   <th class="sortable" data-key="lastLogin" onclick="sortUsers('lastLogin')">Last login <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="modifiedOn" onclick="sortUsers('modifiedOn')">Last modified on / by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="status" onclick="sortUsers('status')">Status <span class="sort-icon"></span></th>
   <th></th>
 </tr></thead>
 <tbody id="tbl-assigned"></tbody>
-<tbody><tr><td colspan="9"><div class="lazy-spinner" id="spinner-assigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
+<tbody><tr><td colspan="11"><div class="lazy-spinner" id="spinner-assigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-unassigned" style="display:none">
           <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" placeholder="Search unassigned / pending users…" oninput="renderUsers(this.value)"></div>
@@ -2504,11 +2533,28 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     <div class="modal-title">Invite a user</div>
     <div class="modal-sub">They'll receive an email and appear as unassigned until you give them a seat.</div>
     <div class="modal-label">Email address</div>
-    <input class="modal-input" id="invite-email" placeholder="colleague@acme.com"/>
-    <div class="modal-label">Role</div>
+    <input class="modal-input" id="invite-email" placeholder="colleague@acme.com" oninput="checkInviteEmail()"/>
+    <div id="invite-email-msg" style="font-size:12px;color:var(--red);margin-top:6px;line-height:1.4;min-height:16px"></div>
+    <!-- Optional First / Last name. These are placeholders used until the user accepts
+         the invite and fills out their own profile; at that point their typed-in name
+         replaces these. Empty → fall back to deriving the name from the email local-part. -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+      <div>
+        <div class="modal-label">First name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);font-size:10.5px">(optional)</span></div>
+        <input class="modal-input" id="invite-firstname" placeholder="e.g. Liz" autocomplete="given-name"/>
+      </div>
+      <div>
+        <div class="modal-label">Last name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);font-size:10.5px">(optional)</span></div>
+        <input class="modal-input" id="invite-lastname" placeholder="e.g. Smith" autocomplete="family-name"/>
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;line-height:1.4">
+      Provide a temporary name to display in the users table. Once the user accepts the invite and fills out their profile, their entered name will replace this.
+    </div>
+    <div class="modal-label" style="margin-top:14px">Role</div>
     <select class="modal-select" id="invite-role"><option>Member</option><option>Admin</option></select>
     <div class="modal-row">
-      <button class="btn primary" style="flex:1" onclick="confirmInvite()">Send invite</button>
+      <button class="btn primary" style="flex:1" id="invite-send-btn" onclick="confirmInvite()">Send invite</button>
       <button class="btn" onclick="closeModal()">Cancel</button>
     </div>
   </div>
@@ -2651,7 +2697,7 @@ const UCOLORS=[
    prototype edits (which is the right tradeoff for prototyping).
 ═══════════════════════════════════════════════════════════ */
 const PERSIST_PREFIX = 'bmh';
-const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount'];
+const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides'];
 
 function _personaKey(){
   // currentRole is defined a few lines below; fall back to 'admin' on first call.
@@ -2687,7 +2733,7 @@ function _seedFingerprint(dataKey){
       const myOrg = orgFor[persona];
       const seed = DEFAULT_USERS
         .filter(u => !myOrg || u.org === myOrg)
-        .map(u => u.email + '|' + (u.org || '') + '|' + (u.seat || (u.seats||[]).join(',')) + '|' + (u.status||''))
+        .map(u => u.email + '|' + (u.org || '') + '|' + (u.seat || (u.seats||[]).join(',')) + '|' + (u.status||'') + '|' + (u.role||'') + '|' + (u.invitedBy||'') + '|' + (Array.isArray(u.assignedBy)?u.assignedBy.join(','):(u.assignedBy||'')))
         .sort()
         .join(';');
       return _hash(seed);
@@ -2697,6 +2743,7 @@ function _seedFingerprint(dataKey){
     if(dataKey === 'threadReplies') return _hash('empty');
     if(dataKey === 'extraInvoices') return _hash('empty');
     if(dataKey === 'invoiceCount')  return _hash('start:1045');
+    if(dataKey === 'autoRenewOverrides') return _hash('empty');
   }catch(e){}
   return '0';
 }
@@ -2737,14 +2784,14 @@ function resetPrototypeData(){
 
 // Default seed for the users table — kept as a separate constant so we can restore it.
 const DEFAULT_USERS = [
-  {name:'Jane Doe',   email:'jane@acme.com',  initials:'JD',role:'Admin', seat:'Global Mapper Professional',createdOn:'Dec 20, 2024',assignedOn:'Jan 12, 2025', status:'active',color:0,lastLogin:'Today, 9:14 AM'},
-  {name:'Mary Beth',  email:'mary@acme.com',  initials:'MB',role:'Member',seat:'Global Mapper Professional',createdOn:'Mar 18, 2025',assignedOn:'Apr 1, 2025',  status:'active',color:1,lastLogin:'Today, 8:32 AM'},
-  {name:'Mark Smith', email:'mark@acme.com',  initials:'MS',role:'Member',seat:'Global Mapper Professional',createdOn:'Jan 2, 2025', assignedOn:'Jan 15, 2025', status:'active',color:2,lastLogin:'Yesterday, 4:55 PM'},
-  {name:'Amy Lee',    email:'amy@acme.com',   initials:'AL',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],    createdOn:'Jan 20, 2025',assignedOn:['Feb 2, 2025','Mar 15, 2025'],status:'active',color:3,lastLogin:'May 12, 2025'},
-  {name:'Tom Rees',   email:'tom@acme.com',   initials:'TR',role:'Member',seat:'Global Mapper Professional',createdOn:'Feb 5, 2025', assignedOn:'Feb 18, 2025', status:'active',color:4,lastLogin:'May 11, 2025'},
-  {name:'Priya Nair', email:'priya@acme.com', initials:'PN',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],  createdOn:'Feb 15, 2025',assignedOn:['Mar 1, 2025','Apr 10, 2025'],status:'active',color:5,lastLogin:'May 10, 2025'},
-  {name:'Sam Kim',    email:'sam@acme.com',   initials:'SK',role:'Member',seat:'Global Mapper Advanced',    createdOn:'Feb 20, 2025',assignedOn:'Mar 5, 2025',  status:'active',color:6,lastLogin:'May 9, 2025'},
-  {name:'Lena Hart',  email:'lena@acme.com',  initials:'LH',role:'Member',seat:'Global Mapper Professional',createdOn:'Feb 25, 2025',assignedOn:'Mar 10, 2025', status:'active',color:7,lastLogin:'May 8, 2025'},
+  {name:'Jane Doe',   email:'jane@acme.com',  initials:'JD',role:'Admin', seat:'Global Mapper Professional',createdOn:'Dec 20, 2024',assignedOn:'Jan 12, 2025',assignedBy:'Self (Admin)', status:'active',color:0,lastLogin:'Today, 9:14 AM'},
+  {name:'Mary Beth',  email:'mary@acme.com',  initials:'MB',role:'Member',seat:'Global Mapper Professional',createdOn:'Mar 18, 2025',assignedOn:'Apr 1, 2025',assignedBy:'Jane Doe',  status:'active',color:1,lastLogin:'Today, 8:32 AM'},
+  {name:'Mark Smith', email:'mark@acme.com',  initials:'MS',role:'Admin', seat:'Global Mapper Professional',createdOn:'Jan 2, 2025', assignedOn:'Jan 15, 2025',assignedBy:'Jane Doe', status:'active',color:2,lastLogin:'Yesterday, 4:55 PM'},
+  {name:'Amy Lee',    email:'amy@acme.com',   initials:'AL',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],    createdOn:'Jan 20, 2025',assignedOn:['Feb 2, 2025','Mar 15, 2025'],assignedBy:['Jane Doe','Mark Smith'],status:'active',color:3,lastLogin:'May 12, 2025'},
+  {name:'Tom Rees',   email:'tom@acme.com',   initials:'TR',role:'Admin', seat:'Global Mapper Professional',createdOn:'Feb 5, 2025', assignedOn:'Feb 18, 2025',assignedBy:'Jane Doe', status:'active',color:4,lastLogin:'May 11, 2025'},
+  {name:'Priya Nair', email:'priya@acme.com', initials:'PN',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],  createdOn:'Feb 15, 2025',assignedOn:['Mar 1, 2025','Apr 10, 2025'],assignedBy:['Jane Doe','Tom Rees'],status:'active',color:5,lastLogin:'May 10, 2025'},
+  {name:'Sam Kim',    email:'sam@acme.com',   initials:'SK',role:'Admin', seat:'Global Mapper Advanced',    createdOn:'Feb 20, 2025',assignedOn:'Mar 5, 2025',assignedBy:'Jane Doe',  status:'active',color:6,lastLogin:'May 9, 2025'},
+  {name:'Lena Hart',  email:'lena@acme.com',  initials:'LH',role:'Member',seat:'Global Mapper Professional',createdOn:'Feb 25, 2025',assignedOn:'Mar 10, 2025',assignedBy:'Mark Smith', status:'active',color:7,lastLogin:'May 8, 2025'},
   {name:'Alice Morgan',email:'alice.morgan@acme.com',initials:'AM',role:'Member',seat:null,createdOn:'',invitedOn:'Jan 1, 2025',status:'reinvite',color:0,lastLogin:''},
   {name:'Carlos Rivera',email:'carlos.rivera@acme.com',initials:'CR',role:'Member',seat:null,createdOn:'',invitedOn:'Feb 2, 2025',status:'reinvite',color:1,lastLogin:''},
   {name:'Diana Patel',email:'diana.patel@acme.com',initials:'DP',role:'Member',seat:null,createdOn:'',invitedOn:'Mar 3, 2025',status:'pending',color:2,lastLogin:''},
@@ -2773,10 +2820,10 @@ const DEFAULT_USERS = [
   {name:'Aaron Flores',email:'aaron.flores@acme.com',initials:'AF',role:'Member',seat:null,createdOn:'',invitedOn:'Jan 26, 2025',status:'invited',color:1,lastLogin:''},
   {name:'Beatrice Yamamoto',email:'beatrice.yamamoto@acme.com',initials:'BY',role:'Member',seat:null,createdOn:'',invitedOn:'Feb 27, 2025',status:'invited',color:2,lastLogin:''},
   {name:'Callum OBrien',email:'callum.obrien@acme.com',initials:'CO',role:'Member',seat:null,createdOn:'',invitedOn:'Mar 28, 2025',status:'invited',color:3,lastLogin:''},
-  {name:'Delia Santos',email:'delia.santos@acme.com',initials:'DS',role:'Member',seat:'Global Mapper Professional',createdOn:'May 9, 2025',assignedOn:'May 14, 2025',status:'active',color:4,lastLogin:'May 4, 2025'},
-  {name:'Emeka Eze',email:'emeka.eze@acme.com',initials:'EE',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 14, 2025',status:'active',color:5,lastLogin:'May 3, 2025'},
-  {name:'Freya Andersen',email:'freya.andersen@acme.com',initials:'FA',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 15, 2025',status:'active',color:6,lastLogin:'May 2, 2025'},
-  {name:'Grant Nakamura',email:'grant.nakamura@acme.com',initials:'GN',role:'Member',seat:'Global Mapper Essentials',createdOn:'May 11, 2025',assignedOn:'May 15, 2025',status:'active',color:7,lastLogin:'May 2, 2025'},
+  {name:'Delia Santos',email:'delia.santos@acme.com',initials:'DS',role:'Member',seat:'Global Mapper Professional',createdOn:'May 9, 2025',assignedOn:'May 14, 2025',assignedBy:'Mark Smith',status:'active',color:4,lastLogin:'May 4, 2025'},
+  {name:'Emeka Eze',email:'emeka.eze@acme.com',initials:'EE',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 14, 2025',assignedBy:'Tom Rees',status:'active',color:5,lastLogin:'May 3, 2025'},
+  {name:'Freya Andersen',email:'freya.andersen@acme.com',initials:'FA',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 15, 2025',assignedBy:'Sam Kim',status:'active',color:6,lastLogin:'May 2, 2025'},
+  {name:'Grant Nakamura',email:'grant.nakamura@acme.com',initials:'GN',role:'Member',seat:'Global Mapper Essentials',createdOn:'May 11, 2025',assignedOn:'May 15, 2025',assignedBy:'Jane Doe',status:'active',color:7,lastLogin:'May 2, 2025'},
   {name:'Holly Davies',email:'holly.davies@acme.com',initials:'HD',role:'Member',seat:null,createdOn:'May 11, 2025',invitedOn:'Mar 5, 2025',status:'invited',color:0,lastLogin:'May 1, 2025'},
   {name:'Ivan Sousa',email:'ivan.sousa@acme.com',initials:'IS',role:'Member',seat:null,createdOn:'May 12, 2025',invitedOn:'Apr 6, 2025',status:'invited',color:1,lastLogin:'May 1, 2025'},
   {name:'Jade Mbeki',email:'jade.mbeki@acme.com',initials:'JM',role:'Member',seat:null,createdOn:'May 12, 2025',invitedOn:'May 7, 2025',status:'invited',color:2,lastLogin:'Apr 30, 2025'},
@@ -2815,8 +2862,8 @@ DEFAULT_USERS.forEach(u => {
 // Total of 13 seats on Global Mapper Advanced; 3 used (matches ORG_DATA.poppins seats:13, used:3).
 const DEFAULT_USERS_POPPINS = [
   {org:'poppins',name:'Penny Purchaser',email:'penny@poppins.com',initials:'PP',role:'Admin', seat:null,createdOn:'Jan 10, 2026',invitedOn:'Jan 10, 2026',status:'invited',color:5,lastLogin:'Today, 10:02 AM'},
-  {org:'poppins',name:'Pat Ledger',     email:'pat@poppins.com',  initials:'PL',role:'Member',seat:'Global Mapper Advanced',createdOn:'Feb 14, 2026',assignedOn:'Feb 14, 2026',status:'active',color:1,lastLogin:'Yesterday, 3:18 PM'},
-  {org:'poppins',name:'Rita Books',     email:'rita@poppins.com', initials:'RB',role:'Member',seat:'Global Mapper Advanced',createdOn:'Mar 2, 2026',assignedOn:'Mar 2, 2026',status:'active',color:3,lastLogin:'May 18, 2026'},
+  {org:'poppins',name:'Pat Ledger',     email:'pat@poppins.com',  initials:'PL',role:'Member',seat:'Global Mapper Advanced',createdOn:'Feb 14, 2026',assignedOn:'Feb 14, 2026',assignedBy:'Penny Purchaser',status:'active',color:1,lastLogin:'Yesterday, 3:18 PM'},
+  {org:'poppins',name:'Rita Books',     email:'rita@poppins.com', initials:'RB',role:'Member',seat:'Global Mapper Advanced',createdOn:'Mar 2, 2026',assignedOn:'Mar 2, 2026',assignedBy:'Penny Purchaser',status:'active',color:3,lastLogin:'May 18, 2026'},
   {org:'poppins',name:'Sal Vendor',     email:'sal@poppins.com',  initials:'SV',role:'Member',seat:null,createdOn:'',invitedOn:'May 12, 2026',status:'pending',color:2,lastLogin:''},
   {org:'poppins',name:'Tina Quill',     email:'tina@poppins.com', initials:'TQ',role:'Member',seat:null,createdOn:'',invitedOn:'May 14, 2026',status:'pending',color:4,lastLogin:''},
   {org:'poppins',name:'Umberto Page',   email:'umberto@poppins.com',initials:'UP',role:'Member',seat:null,createdOn:'',invitedOn:'May 16, 2026',status:'invited',color:7,lastLogin:''},
@@ -2834,7 +2881,7 @@ const DEFAULT_USERS_POPPINS = [
   {org:'poppins',name:'Kira Lowe',      email:'kira.lowe@poppins.com',      initials:'KL',role:'Member',seat:null,createdOn:'May 11, 2026',invitedOn:'May 6, 2026', status:'invited',color:2,lastLogin:'May 9, 2026'},
   {org:'poppins',name:'Leo Mason',      email:'leo.mason@poppins.com',      initials:'LM',role:'Member',seat:null,createdOn:'May 12, 2026',invitedOn:'May 6, 2026', status:'invited',color:3,lastLogin:'May 9, 2026'},
   {org:'poppins',name:'Maya Nott',      email:'maya.nott@poppins.com',      initials:'MN',role:'Member',seat:null,createdOn:'May 12, 2026',invitedOn:'May 7, 2026', status:'invited',color:4,lastLogin:'May 8, 2026'},
-  {org:'poppins',name:'Niko Ortiz',     email:'niko.ortiz@poppins.com',     initials:'NO',role:'Member',seat:'Global Mapper Advanced',createdOn:'May 13, 2026',assignedOn:'May 13, 2026', status:'active',color:5,lastLogin:'Today, 9:14 AM'},
+  {org:'poppins',name:'Niko Ortiz',     email:'niko.ortiz@poppins.com',     initials:'NO',role:'Member',seat:'Global Mapper Advanced',createdOn:'May 13, 2026',assignedOn:'May 13, 2026',assignedBy:'Penny Purchaser', status:'active',color:5,lastLogin:'Today, 9:14 AM'},
   {org:'poppins',name:'Owen Pryce',     email:'owen.pryce@poppins.com',     initials:'OP',role:'Member',seat:null,createdOn:'May 13, 2026',invitedOn:'May 8, 2026', status:'invited',color:6,lastLogin:'May 7, 2026'},
   {org:'poppins',name:'Petra Quintero', email:'petra.quintero@poppins.com', initials:'PQ',role:'Member',seat:null,createdOn:'May 14, 2026',invitedOn:'May 8, 2026', status:'invited',color:7,lastLogin:'May 7, 2026'},
   {org:'poppins',name:'Quinn Reeves',   email:'quinn.reeves@poppins.com',   initials:'QR',role:'Member',seat:null,createdOn:'May 14, 2026',invitedOn:'May 9, 2026', status:'invited',color:0,lastLogin:'May 6, 2026'},
@@ -2843,6 +2890,41 @@ const DEFAULT_USERS_POPPINS = [
 ];
 // Append Poppins users to the master DEFAULT_USERS list
 DEFAULT_USERS.push(...DEFAULT_USERS_POPPINS);
+
+// Normalization: stamp invitedBy on any pending/invited user that doesn't already
+// have it set. Acme is distributed across the 4 admins by date (Jane handled all
+// invites until April 2025, then Mark / Tom / Sam joined the rotation as they were
+// promoted). Poppins is always Penny (the sole admin).
+(function _stampInvitedBy(){
+  // Stable hash → deterministic distribution per email (so the same user always
+  // attributes to the same admin across reloads, no random reshuffling).
+  function _emailHash(email){
+    let h = 0;
+    for(let i=0;i<email.length;i++) h = (h*31 + email.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  // Pick an Acme admin for invites in May 2025 onwards (rotates by email hash).
+  const acmeRecentAdmins = ['Mark Smith', 'Tom Rees', 'Sam Kim', 'Jane Doe'];
+  DEFAULT_USERS.forEach(u => {
+    if(u.invitedBy) return; // explicit value wins
+    if(!u.invitedOn && !u.invitedBy && u.status!=='pending' && u.status!=='invited' && u.status!=='reinvite') return;
+    if(u.org === 'poppins'){
+      u.invitedBy = 'Penny Purchaser';
+      return;
+    }
+    if(u.org === 'acme'){
+      // Anything invited before May 2025 → Jane (she was the only admin).
+      // From May 2025 onwards, rotate across the four admins by email hash.
+      const ts = _parseDateish(u.invitedOn || '');
+      const may2025 = Date.parse('May 1, 2025');
+      if(!ts || ts < may2025){
+        u.invitedBy = 'Jane Doe';
+      } else {
+        u.invitedBy = acmeRecentAdmins[_emailHash(u.email||'') % acmeRecentAdmins.length];
+      }
+    }
+  });
+})();
 
 
 // State vars first — persistence helpers below depend on currentRole.
@@ -2865,6 +2947,9 @@ let threadReplies = loadPersisted('threadReplies', {});
 let extraInvoices = loadPersisted('extraInvoices', []);
 // invoiceCount: monotonically incrementing invoice number for newly created invoices.
 let invoiceCount = loadPersisted('invoiceCount', 1045);
+// autoRenewOverrides: per-product flips of the autoRenew flag from the renewals widget.
+// Shape: { "<orgKey>:<productName>": true|false, ... }
+let autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
 
 
 /* ───────────────────────────────────────
@@ -3289,6 +3374,43 @@ function renderInvoiceHistory(){
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   AUTO-RENEW OVERRIDES — apply persisted toggles to ORG_DATA
+   ───────────────────────────────────────────────────────────
+   ORG_DATA is reset on every page load from the file's seed,
+   so per-product autoRenew flips need to be re-applied after
+   load and after persona switches. The override map is keyed
+   by "<orgKey>:<productName>".
+═══════════════════════════════════════════════════════════ */
+function applyAutoRenewOverrides(){
+  Object.keys(ORG_DATA).forEach(orgKey => {
+    const org = ORG_DATA[orgKey];
+    if(!org.products) return;
+    org.products.forEach(p => {
+      const key = orgKey + ':' + p.name;
+      if(autoRenewOverrides.hasOwnProperty(key)){
+        p.autoRenew = autoRenewOverrides[key];
+      }
+    });
+  });
+}
+
+// Called from the toggle in the renewals widget. Flips the autoRenew flag for the
+// given product in the current org, persists the override, and re-renders.
+function toggleAutoRenew(productName, nowOn){
+  const org = ORG_DATA[currentOrg];
+  if(!org || !org.products) return;
+  const product = org.products.find(p => p.name === productName);
+  if(!product) return;
+  product.autoRenew = !!nowOn;
+  autoRenewOverrides[currentOrg + ':' + productName] = !!nowOn;
+  savePersisted('autoRenewOverrides', autoRenewOverrides);
+  // Re-render the renewals widget. It's part of updateDashOrgBanners,
+  // which also refreshes the dashboard cards — cheap to just call.
+  updateDashOrgBanners();
+  toast('Auto-renew ' + (nowOn ? 'enabled' : 'disabled') + ' for ' + productName);
+}
+
 function recomputeOrgCounts(orgKey){
   if(!orgKey || !ORG_DATA[orgKey]) return null;
   const org = ORG_DATA[orgKey];
@@ -3309,6 +3431,8 @@ function recomputeOrgCounts(orgKey){
 }
 
 function updateDashOrgBanners(){
+  // Re-apply persisted auto-renew flips to ORG_DATA before any widget reads them.
+  applyAutoRenewOverrides();
   const org=ORG_DATA[currentOrg];
   const u=currentUData();
   const ORG_DASH={'acme':{total:48,seats:14,unassigned:34,renewal:'Jun 14, 2027',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jan 10, 2027',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2027',days:'293 days away',tickets:0,awaiting:0}};
@@ -3475,10 +3599,27 @@ function updateDashOrgBanners(){
 
     if(renewCount) renewCount.textContent=products.length+' upcoming renewal'+(products.length!==1?'s':'');
 
+    // Apply persisted auto-renew overrides BEFORE rendering so the toggle state is
+    // accurate after a page reload. (ORG_DATA is reset from the file's seed each load.)
+    applyAutoRenewOverrides();
+    // Re-read products' autoRenew flag from the (now possibly overridden) source.
+    products.forEach(p => {
+      const live = org.products.find(x => x.name === p.name);
+      if(live) p.autoRenew = live.autoRenew;
+    });
+
     renewList.innerHTML=products.map(p=>{
       const auto=p.autoRenew!==false;
       const pillClass=auto?'active':'warn';
       const pillLabel=auto?'Auto-renew':'Manual renewal';
+      // Escape the product name for inline string contexts
+      const safeName=p.name.replace(/'/g,"\\'");
+      // Build the toggle: checkbox + slider, wired to toggleAutoRenew.
+      const toggleHtml=
+        '<label class="toggle-switch" title="' + (auto?'Auto-renew is ON':'Auto-renew is OFF') + '" onclick="event.stopPropagation()">'
+        +'<input type="checkbox" ' + (auto?'checked':'') + ' onchange="toggleAutoRenew(\''+safeName+'\', this.checked)"/>'
+        +'<span class="slider"></span>'
+        +'</label>';
       const daysText=p.daysUntil<0?'Renewed '+(-p.daysUntil)+' days ago'
                    :p.daysUntil===0?'Renews today'
                    :p.daysUntil<=30?p.daysUntil+' days away'
@@ -3489,7 +3630,7 @@ function updateDashOrgBanners(){
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'
             +'<div style="font-size:14px;font-weight:600;color:var(--text-primary)">'+p.name+'</div>'
-            +'<span class="pill '+pillClass+'" style="font-size:10px">'+pillLabel+'</span>'
+            +'<span style="display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;color:'+(auto?'var(--green)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.04em">Auto-renew '+(auto?'on':'off')+' '+toggleHtml+'</span>'
           +'</div>'
           +'<div style="font-size:12px;color:var(--text-muted);display:flex;gap:14px;flex-wrap:wrap">'
             +'<span><strong style="color:var(--text-secondary)">'+p.seats+' seats</strong></span>'
@@ -3587,6 +3728,7 @@ function switchUser(role){
   threadReplies = loadPersisted('threadReplies', {});
   extraInvoices = loadPersisted('extraInvoices', []);
   invoiceCount = loadPersisted('invoiceCount', 1045);
+  autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
 
   const u=USER_ORG[role];
   const ud=currentUData();
@@ -3865,6 +4007,59 @@ function _parseDateish(s){
   const t = Date.parse(cleaned);
   return isNaN(t) ? 0 : t;
 }
+
+// Formats today's date as "Jun 29, 2025" — matches the human-readable date strings
+// used throughout the seed (invitedOn, assignedOn, etc.). Used when stamping new
+// dates from user actions (re-invite, add seats, etc.).
+function _formatTodayLabel(){
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const t = new Date();
+  return months[t.getMonth()] + ' ' + t.getDate() + ', ' + t.getFullYear();
+}
+
+// Formats today's date AND time as "May 29, 2026 7:55 pm" — used by the audit-trail
+// "Last Modified On/By" column when an action mutates a user record at runtime.
+function _formatTodayDateTime(){
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const t = new Date();
+  let h = t.getHours();
+  const m = String(t.getMinutes()).padStart(2,'0');
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12; if(h === 0) h = 12;
+  return months[t.getMonth()] + ' ' + t.getDate() + ', ' + t.getFullYear() + ' ' + h + ':' + m + ' ' + ampm;
+}
+
+// Helper used by audit trail. When a runtime action mutates a user record, stamp the
+// modification date+time and the admin who performed it. Pulls the active admin's
+// name from currentUData(). Falls back to "Admin" if no name available.
+function _stampUserModification(u){
+  if(!u) return;
+  const me = currentUData();
+  u.modifiedOn = _formatTodayDateTime();
+  u.modifiedBy = (me && me.name) ? me.name : 'Admin';
+}
+
+// Returns the "Last Modified On/By" tuple for a user — used by the Users table audit-
+// trail column. Prefers explicit modifiedOn/By when a runtime action has stamped them;
+// otherwise derives from the most recent seeded action (seat assignment > invite >
+// account creation), pairing the date with the responsible admin.
+function getLastModified(u){
+  if(!u) return {when:'', who:''};
+  if(u.modifiedOn) return {when: u.modifiedOn, who: u.modifiedBy || ''};
+  // Derive from most recent seeded action.
+  const seats = getAssignedOn(u);
+  const bys = getAssignedBy(u);
+  if(seats.length){
+    return {when: seats[seats.length-1], who: bys[bys.length-1] || ''};
+  }
+  if(u.reinvitedOn){
+    return {when: u.reinvitedOn, who: u.invitedBy || ''};
+  }
+  if(u.invitedOn){
+    return {when: u.invitedOn, who: u.invitedBy || ''};
+  }
+  return {when: u.createdOn || '', who: ''};
+}
 const LAZY_PAGE=50;        // records per chunk
 
 function sortUsers(key){
@@ -3879,7 +4074,7 @@ function sortUsers(key){
 
 function sortedUsers(arr){
   if(!sortKey) return arr;
-  const isDateCol = (sortKey==='assignedOn'||sortKey==='createdOn'||sortKey==='lastLogin');
+  const isDateCol = (sortKey==='assignedOn'||sortKey==='createdOn'||sortKey==='lastLogin'||sortKey==='modifiedOn');
   return [...arr].sort((a,b)=>{
     let va='',vb='';
     if(sortKey==='name')       {va=a.name;vb=b.name;}
@@ -3887,8 +4082,10 @@ function sortedUsers(arr){
     else if(sortKey==='status'){va=statusLabel(a).lbl;vb=statusLabel(b).lbl;}
     else if(sortKey==='seat')  {va=getSeats(a).join('');vb=getSeats(b).join('');}
     else if(sortKey==='assignedOn'){va=getAssignedOn(a)[0]||'';vb=getAssignedOn(b)[0]||'';}
+    else if(sortKey==='assignedBy'){va=getAssignedBy(a)[0]||'';vb=getAssignedBy(b)[0]||'';}
     else if(sortKey==='createdOn') {va=a.createdOn||'';vb=b.createdOn||'';}
     else if(sortKey==='lastLogin') {va=a.lastLogin||'';vb=b.lastLogin||'';}
+    else if(sortKey==='modifiedOn'){va=getLastModified(a).when;vb=getLastModified(b).when;}
     if(isDateCol){
       // Empty dates always sort to the bottom regardless of sortDir.
       const ea = !va, eb = !vb;
@@ -3929,6 +4126,14 @@ function getAssignedOn(u){
   if(u.assignedOn) return [u.assignedOn];
   return [];
 }
+// Returns the admin name(s) who assigned each of this user's seats. Same shape
+// as getAssignedOn (single string or array, one per seat). Falls back to an
+// empty array when the field is missing on legacy data.
+function getAssignedBy(u){
+  if(Array.isArray(u.assignedBy)) return u.assignedBy;
+  if(u.assignedBy) return [u.assignedBy];
+  return [];
+}
 function hasSeat(u){ return getSeats(u).length>0; }
 
 function statusLabel(u){
@@ -3962,7 +4167,7 @@ function roleCell(u, ri){
   const isSelf = me && (me.email === u.email);
   const primary = isPrimaryAdmin(u);
   const primaryBadge = primary
-    ? `<span class="pill warn" style="margin-left:6px;font-size:9.5px;padding:1px 6px" title="Original account owner">Primary</span>`
+    ? `<span class="pill warn" style="margin-left:6px;font-size:9.5px;padding:1px 6px" title="Original account owner">Primary Owner</span>`
     : '';
   if(isSelf || primary){
     const tooltip = primary ? "Primary admin (account owner) — role cannot be changed" : "You can't change your own role";
@@ -4011,6 +4216,7 @@ function confirmChangeRole(){
   }
   const oldRole = u.role;
   u.role = newRole;
+  _stampUserModification(u);
   savePersisted('users', users);
   closeModal();
   renderUsers();
@@ -4052,6 +4258,22 @@ function renderUsers(filter=''){
     if(!dates.length) return '\u2014';
     return dates.join(' | ');
   }
+  // Renders the "Assigned by" cell. For multi-seat users, lists one admin per seat
+  // separated by " | " to align visually with assignedOnCell. Returns an em-dash
+  // when no assignedBy data is present (legacy rows, or unassigned users).
+  function assignedByCell(u){
+    const names=getAssignedBy(u);
+    if(!names.length) return '\u2014';
+    return names.join(' | ');
+  }
+  // Renders the "Last modified on / by" audit-trail cell. Two stacked lines: the
+  // date+time on top, the responsible admin (or "-" if unknown) below in muted text.
+  function lastModifiedCell(u){
+    const lm = getLastModified(u);
+    if(!lm.when) return '\u2014';
+    const who = lm.who || '\u2014';
+    return `<div>${lm.when}</div><div style="font-size:11px;color:var(--text-muted)">by ${who}</div>`;
+  }
   function revokeBtn(u,ri,fromAll){
     const seats=getSeats(u);
     if(!seats.length) return '';
@@ -4059,6 +4281,49 @@ function renderUsers(filter=''){
       return`<button class="btn xs danger" onclick="openRevokeMulti(${ri})">Revoke seat</button>`;
     }
     return`<button class="btn xs danger" onclick="revokeConfirm(${ri},null)">Revoke seat</button>`;
+  }
+
+  // Renders the Status column pill. Both "Invite pending" and "Re-Invite" statuses
+  // are made clickable — clicking opens the (re-)invite modal prefilled with the
+  // user's email. This unifies the two flows since the admin's intent is the same:
+  // re-send the invite email.
+  function statusPillCell(u, ri){
+    const st = statusLabel(u);
+    if(u.status==='pending' || u.status==='reinvite'){
+      const tip = u.status==='reinvite'
+        ? 'Click to re-send invite (previous one expired)'
+        : 'Click to re-send invite';
+      return `<span class="pill ${st.cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="reinviteUser(${ri})" title="${tip}">${st.lbl}</span>`;
+    }
+    return `<span class="pill ${st.cls}">${st.lbl}</span>`;
+  }
+
+  // Renders the action cell for an unassigned user. Returns a disabled message for
+  // pending or re-invite users (they can't hold a seat until they accept their invite),
+  // or an Assign-seat button otherwise.
+  function assignCell(u, ri, freeCount, noSeatsText){
+    if(u.status==='pending'){
+      // Prefer the most recent invite action: if the admin has re-invited this user,
+      // show "Re-invited on <date>", otherwise show the original "Invite sent on <date>".
+      // Append "by <admin>" so the audit trail is inline with the date.
+      const by = u.invitedBy ? (' by ' + u.invitedBy) : '';
+      let sentLabel;
+      if(u.reinvitedOn){
+        sentLabel = 'Re-invited on ' + u.reinvitedOn + by;
+      } else if(u.invitedOn){
+        sentLabel = 'Invite sent on ' + u.invitedOn + by;
+      } else {
+        sentLabel = 'Invite sent' + by;
+      }
+      return `<span style="font-size:12px;color:var(--text-muted)" title="User must accept their invite before a seat can be assigned">${sentLabel}</span>`;
+    }
+    if(u.status==='reinvite'){
+      return `<span style="font-size:12px;color:var(--text-muted)" title="The user's invite expired. Click the Re-Invite pill to re-send before assigning a seat.">Re-invite required</span>`;
+    }
+    if(freeCount>0){
+      return `<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`;
+    }
+    return `<span style="font-size:12px;color:var(--text-muted)">${noSeatsText||'No seats'}</span>`;
   }
 
   // ── All users (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Action)
@@ -4074,13 +4339,15 @@ function renderUsers(filter=''){
       <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${P};font-size:12.5px">${seatCell(u)}</td>
       <td style="${PS}">${assignedOnCell(u)}</td>
+      <td style="${PS}">${assignedByCell(u)}</td>
       <td style="${PS}">${showDates?(u.createdOn||'\u2014'):'\u2014'}</td>
       <td style="${PS}">${showDates?(u.lastLogin||'\u2014'):'\u2014'}</td>
-      <td style="${P}">${u.status==='reinvite'?`<span class="pill ${st.cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="reinviteUser(${ri})" title="Click to re-send invite">${st.lbl}</span>`:`<span class="pill ${st.cls}">${st.lbl}</span>`}</td>
-      <td style="${P};text-align:right">${isAss?revokeBtn(u,ri,true):u.status==='pending'?`<span style="font-size:12px;color:var(--text-muted)" title="User must accept their invite before a seat can be assigned">Invite pending</span>`:fc>0?`<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`:`<span style="font-size:12px;color:var(--text-muted)">No seats</span>`}</td>
+      <td style="${PS}">${lastModifiedCell(u)}</td>
+      <td style="${P}">${statusPillCell(u, ri)}</td>
+      <td style="${P};text-align:right">${isAss?revokeBtn(u,ri,true):assignCell(u,ri,fc,'No seats')}</td>
     </tr>`;
   });
-  renderChunk(allRows,'tbl-all','spinner-all',9);
+  renderChunk(allRows,'tbl-all','spinner-all',11);
 
   // ── Assigned seats (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Revoke)
   const assRows=sortedUsers(assigned.filter(filt)).map(u=>{
@@ -4092,13 +4359,15 @@ function renderUsers(filter=''){
       <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${P};font-size:12.5px">${seatCell(u)}</td>
       <td style="${PS}">${assignedOnCell(u)}</td>
+      <td style="${PS}">${assignedByCell(u)}</td>
       <td style="${PS}">${u.createdOn||'\u2014'}</td>
       <td style="${PS}">${u.lastLogin||'\u2014'}</td>
+      <td style="${PS}">${lastModifiedCell(u)}</td>
       <td style="${P}"><span class="pill active">Active</span></td>
       <td style="${P};text-align:right">${revokeBtn(u,ri,false)}</td>
     </tr>`;
   });
-  renderChunk(assRows,'tbl-assigned','spinner-assigned',9);
+  renderChunk(assRows,'tbl-assigned','spinner-assigned',11);
 
   // ── Unassigned / pending (cols: User Email Role | CreatedOn LastLogin | Status | Assign)
   const unaRows=sortedUsers(unassigned.filter(filt)).map(u=>{
@@ -4113,8 +4382,8 @@ function renderUsers(filter=''){
       <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${PS}">${u.createdOn||'\u2014'}</td>
       <td style="${PS}">${loginDisplay}</td>
-      <td style="${P}">${u.status==='reinvite'?`<span class="pill ${st.cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="reinviteUser(${ri})" title="Click to re-send invite">${st.lbl}</span>`:`<span class="pill ${st.cls}">${st.lbl}</span>`}</td>
-      <td style="${P}">${u.status==='pending'?`<span style="font-size:12px;color:var(--text-muted)" title="User must accept their invite before a seat can be assigned">Invite pending</span>`:fc>0?`<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`:`<span style="font-size:12px;color:var(--text-muted)">No seats available</span>`}</td>
+      <td style="${P}">${statusPillCell(u, ri)}</td>
+      <td style="${P}">${assignCell(u,ri,fc,'No seats available')}</td>
     </tr>`;
   });
   renderChunk(unaRows,'tbl-unassigned','spinner-unassigned',7);
@@ -4124,21 +4393,44 @@ function renderUsers(filter=''){
    ASSIGN / REVOKE
 ═══════════════════════════════════════ */
 function openAssign(idx){assignTargetIdx=idx;const u=users[idx];document.getElementById('modal-assign-sub').textContent=`Assigning a seat to ${u.name} (${u.email}).`;document.getElementById('modal-assign').classList.add('open');}
-function confirmAssign(){const u=users[assignTargetIdx];u.seat=document.getElementById('modal-product-sel').value;u.assignedOn='Today';u.since='Today';u.status='active';savePersisted('users', users);recomputeOrgCounts(currentOrg);closeModal();renderUsers();updateDashOrgBanners();toast(`✓ Seat assigned to ${u.name} — ${u.seat}`);}
+function confirmAssign(){
+  const u=users[assignTargetIdx];
+  u.seat=document.getElementById('modal-product-sel').value;
+  u.assignedOn='Today';
+  // Record which admin assigned the seat. Pulls the active admin's name from
+  // USER_ORG via currentUData() so the Users page shows who did the action.
+  const me = currentUData();
+  u.assignedBy = (me && me.name) ? me.name : 'Admin';
+  u.since='Today';
+  u.status='active';
+  _stampUserModification(u);
+  savePersisted('users', users);
+  recomputeOrgCounts(currentOrg);
+  closeModal();
+  renderUsers();
+  updateDashOrgBanners();
+  toast(`✓ Seat assigned to ${u.name} — ${u.seat}`);
+}
 let revokeTargetIdx=null;
 function revokeConfirm(idx,product){
   const u=users[idx];
   const seats=getSeats(u);
   const target=product||(seats.length===1?seats[0]:null);
   if(!target){openRevokeMulti(idx);return;}
-  // Remove the specific seat
+  // Remove the specific seat (and keep the parallel assignedOn / assignedBy arrays
+  // in sync if this user holds multiple seats).
   if(u.seats){
     const si=u.seats.indexOf(target);
-    if(si>-1){u.seats.splice(si,1);if(Array.isArray(u.assignedOn))u.assignedOn.splice(si,1);}
-    if(u.seats.length===0){u.seats=null;u.assignedOn=null;u.status='invited';}
+    if(si>-1){
+      u.seats.splice(si,1);
+      if(Array.isArray(u.assignedOn)) u.assignedOn.splice(si,1);
+      if(Array.isArray(u.assignedBy)) u.assignedBy.splice(si,1);
+    }
+    if(u.seats.length===0){u.seats=null;u.assignedOn=null;u.assignedBy=null;u.status='invited';}
   } else {
-    u.seat=null;u.assignedOn=null;u.status='invited';
+    u.seat=null;u.assignedOn=null;u.assignedBy=null;u.status='invited';
   }
+  _stampUserModification(u);
   renderUsers();savePersisted('users', users);recomputeOrgCounts(currentOrg);updateDashOrgBanners();toast('✓ '+target+' seat revoked from '+u.name);
 }
 function openRevokeMulti(idx){
@@ -4159,9 +4451,37 @@ function confirmRevokeMulti(){
 /* ═══════════════════════════════════════
    INVITE
 ═══════════════════════════════════════ */
+// Flag set by openInvite() to indicate the modal is in "re-invite" mode (an existing
+// user being re-invited). In that mode the duplicate-email check is skipped because
+// the duplicate is *expected* — we're re-inviting that exact user.
+let inviteIsReinvite = false;
+
 function openInvite(prefillEmail){
   const emailInput=document.getElementById('invite-email');
   emailInput.value=prefillEmail||'';
+  inviteIsReinvite = !!prefillEmail;
+  // Clear any stale validation message and re-enable the Send button on open.
+  const msg = document.getElementById('invite-email-msg');
+  if(msg) msg.textContent = '';
+  emailInput.classList.remove('error');
+  const btn = document.getElementById('invite-send-btn');
+  if(btn){
+    btn.disabled = false;
+    btn.textContent = prefillEmail ? 'Re-send invite' : 'Send invite';
+  }
+  // Reset the optional first/last name fields. In re-invite mode the user already
+  // has a name on file, so we hide the fields entirely (re-sending doesn't change name).
+  const fn = document.getElementById('invite-firstname');
+  const ln = document.getElementById('invite-lastname');
+  if(fn) fn.value = '';
+  if(ln) ln.value = '';
+  const nameBlock = fn && fn.closest('div').parentElement; // the 2-col grid container
+  const nameHint = nameBlock && nameBlock.nextElementSibling; // the small helper text below
+  if(nameBlock) nameBlock.style.display = prefillEmail ? 'none' : 'grid';
+  if(nameHint && nameHint.classList) {
+    // The hint paragraph is plain text-only; toggle display.
+    nameHint.style.display = prefillEmail ? 'none' : 'block';
+  }
   document.getElementById('modal-invite').classList.add('open');
   // If re-inviting, update the modal sub-text and focus on the input
   const subText=document.querySelector('#modal-invite .modal-sub');
@@ -4180,21 +4500,103 @@ function reinviteUser(idx){
   if(!u) return;
   openInvite(u.email);
 }
-function confirmInvite(){
-  const email=document.getElementById('invite-email').value.trim();if(!email)return;
-  // If user already exists (e.g. reinvite), reset their status to pending and update invite date
-  const existing=users.find(u=>u.email.toLowerCase()===email.toLowerCase());
+// Real-time check on the invite email field. If the email already exists in the
+// current org's user list (any status), show "User already exists in the list"
+// and disable the Send invite button. Returns true if the email is invite-able.
+// Skipped entirely when the modal is in re-invite mode.
+function checkInviteEmail(){
+  const input = document.getElementById('invite-email');
+  const msg   = document.getElementById('invite-email-msg');
+  const btn   = document.getElementById('invite-send-btn');
+  if(!input || !msg) return true;
+  // In re-invite mode, the duplicate is expected — never show the duplicate error.
+  if(inviteIsReinvite){
+    msg.textContent = '';
+    input.classList.remove('error');
+    if(btn) btn.disabled = false;
+    return true;
+  }
+  const val = input.value.trim().toLowerCase();
+  // Empty: clear messages (no nagging mid-typing)
+  if(!val){
+    msg.textContent = '';
+    input.classList.remove('error');
+    if(btn) btn.disabled = false;
+    return false; // not invite-able yet, but no error to show
+  }
+  // Check if a user with this email already exists in the current org's user list.
+  const existing = users.find(u =>
+    (!u.org || u.org === currentOrg) &&
+    u.email && u.email.toLowerCase() === val
+  );
   if(existing){
-    existing.status='pending';
-    existing.invitedOn='Today';
-    savePersisted('users', users);
-    closeModal();renderUsers();
-    toast('✓ Re-invite sent to '+email);
+    msg.textContent = 'User already exists in the list';
+    input.classList.add('error');
+    if(btn) btn.disabled = true;
+    return false;
+  }
+  msg.textContent = '';
+  input.classList.remove('error');
+  if(btn) btn.disabled = false;
+  return true;
+}
+
+function confirmInvite(){
+  const email=document.getElementById('invite-email').value.trim();
+  if(!email) return;
+  // Determine the current admin's name — used for both invitedBy and modifiedBy.
+  const me = currentUData();
+  const adminName = (me && me.name) ? me.name : 'Admin';
+  if(inviteIsReinvite){
+    // Re-invite path: find the existing user and reset their status to pending.
+    // Stamp reinvitedOn with today's real date so the action column can show
+    // "Re-invited on Jun 29, 2025" instead of the original "Invite sent on ..." label.
+    // The original invitedOn is preserved as historical record.
+    const existing=users.find(u=>u.email.toLowerCase()===email.toLowerCase());
+    if(existing){
+      existing.status='pending';
+      existing.reinvitedOn=_formatTodayLabel();
+      existing.invitedBy = adminName; // who re-sent the invite
+      _stampUserModification(existing);
+      savePersisted('users', users);
+      closeModal();renderUsers();
+      toast('✓ Re-invite sent to '+email);
+    }
     return;
   }
-  const name=email.split('@')[0].replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-  const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  users.push({org:currentOrg,name,email,initials,role:document.getElementById('invite-role').value,seat:null,createdOn:'',invitedOn:'Today',status:'pending',color:Math.floor(Math.random()*UCOLORS.length),lastLogin:''});
+  // Normal invite path: block if duplicate.
+  if(!checkInviteEmail()) return;
+  // Use the optional First / Last name from the dialog as the temporary display name.
+  // If both are empty, derive from the email local-part (legacy behavior).
+  const firstName = (document.getElementById('invite-firstname').value || '').trim();
+  const lastName  = (document.getElementById('invite-lastname').value  || '').trim();
+  let name, initials;
+  if(firstName || lastName){
+    name = (firstName + ' ' + lastName).trim();
+    initials = ((firstName[0]||'') + (lastName[0]||'')).toUpperCase();
+    if(!initials) initials = name.slice(0,2).toUpperCase();
+  } else {
+    name = email.split('@')[0].replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  }
+  const newUser = {
+    org:currentOrg,name,email,initials,
+    role:document.getElementById('invite-role').value,
+    seat:null,createdOn:'',
+    invitedOn:_formatTodayLabel(),
+    invitedBy:adminName,
+    // Keep the admin-provided first/last around so they're available if a later
+    // profile-acceptance flow wants to compare typed vs. provided names.
+    invitedFirstName: firstName || null,
+    invitedLastName:  lastName  || null,
+    isProvisionalName: !!(firstName || lastName), // true → name is admin-typed placeholder
+    status:'pending',
+    color:Math.floor(Math.random()*UCOLORS.length),
+    lastLogin:'',
+    modifiedOn:_formatTodayDateTime(),
+    modifiedBy:adminName,
+  };
+  users.push(newUser);
   savePersisted('users', users);
   closeModal();renderUsers();toast('✓ Invite sent to '+email);
 }
