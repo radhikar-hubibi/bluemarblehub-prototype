@@ -1815,7 +1815,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
             <div class="card">
               <div class="card-head"><span class="card-title">Recent support</span><button class="card-link" onclick="nav('a-support')">View all →</button></div>
               <div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">SSO configuration error</div><div class="tick-meta">2 days ago · Awaiting reply</div></div></div>
-              <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Invoice #1042 query</div><div class="tick-meta">5 days ago · Pending</div></div></div>
+              <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Intermittent License Error</div><div class="tick-meta">5 days ago · Pending · On behalf of Mary Beth</div></div></div>
               <div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">User provisioning help</div><div class="tick-meta">Apr 1 · Resolved</div></div></div>
             </div>
           </div>
@@ -2653,9 +2653,11 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     </div>
     <div class="modal-sub" id="thread-id-line">#5081 · Opened Apr 4, 2025</div>
     <div id="thread-messages" style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px"></div>
-    <div class="modal-label">Reply</div>
-    <textarea class="modal-input" id="thread-reply" placeholder="Type your reply…" style="resize:vertical;min-height:70px;margin-bottom:4px"></textarea>
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <div id="thread-reply-area">
+      <div class="modal-label">Reply</div>
+      <textarea class="modal-input" id="thread-reply" placeholder="Type your reply…" style="resize:vertical;min-height:70px;margin-bottom:4px"></textarea>
+    </div>
+    <div id="thread-actions" style="display:flex;gap:8px;margin-top:10px">
       <button class="btn primary" onclick="sendThreadReply()">Send reply</button>
       <button class="btn" onclick="closeModal()">Close</button>
       <button class="btn sm" style="margin-left:auto;color:var(--green)" onclick="resolveTicket()">✓ Mark resolved</button>
@@ -2697,7 +2699,7 @@ const UCOLORS=[
    prototype edits (which is the right tradeoff for prototyping).
 ═══════════════════════════════════════════════════════════ */
 const PERSIST_PREFIX = 'bmh';
-const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides'];
+const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'ticketOverrides'];
 
 function _personaKey(){
   // currentRole is defined a few lines below; fall back to 'admin' on first call.
@@ -2744,6 +2746,7 @@ function _seedFingerprint(dataKey){
     if(dataKey === 'extraInvoices') return _hash('empty');
     if(dataKey === 'invoiceCount')  return _hash('start:1045');
     if(dataKey === 'autoRenewOverrides') return _hash('empty');
+    if(dataKey === 'ticketOverrides') return _hash('empty');
   }catch(e){}
   return '0';
 }
@@ -3240,6 +3243,9 @@ function switchOrg(orgKey){
   const ticketFormSub=document.getElementById('ticket-form-subtitle');
   if(behalfField) behalfField.style.display=isAdmin?'block':'none';
   if(ticketFormSub) ticketFormSub.textContent=isAdmin?'Open on behalf of yourself or a user in your account.':'We\'ll connect you with our support team.';
+  // Populate "On behalf of" dropdown from the current org's seat-holders.
+  // Without this, the static seed shows Acme users to every admin (Penny saw them too).
+  if(isAdmin) _populateBehalfDropdown();
 
   // Re-render products and tickets
   renderMyProducts(currentRole);
@@ -3482,8 +3488,19 @@ function updateDashOrgBanners(){
       }
       rd.textContent=label;
     }
-    const ot=document.getElementById('a-dash-open-tickets');if(ot)ot.textContent=dash.tickets;
-    const aw=document.getElementById('a-dash-awaiting-sub');if(aw)aw.textContent=dash.awaiting+' awaiting reply';
+    const ot=document.getElementById('a-dash-open-tickets');
+    const aw=document.getElementById('a-dash-awaiting-sub');
+    // Derive ticket counts from the same TICKETS data the support page uses, with
+    // persisted resolve/reopen overrides applied. This keeps the dashboard widget
+    // in sync with the user's actual support page even after any runtime changes.
+    let openCount = dash.tickets, awaitingCount = dash.awaiting;
+    if(typeof _ticketsFor === 'function'){
+      const visible = _ticketsFor(currentRole).map(_applyOverrides);
+      openCount     = visible.filter(t => t.status !== 'resolved').length;
+      awaitingCount = visible.filter(t => t.status === 'awaiting').length;
+    }
+    if(ot) ot.textContent = openCount;
+    if(aw) aw.textContent = awaitingCount + ' awaiting reply';
   }
 
   // ── My license card ──
@@ -3729,6 +3746,7 @@ function switchUser(role){
   extraInvoices = loadPersisted('extraInvoices', []);
   invoiceCount = loadPersisted('invoiceCount', 1045);
   autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
+  ticketOverrides = loadPersisted('ticketOverrides', {});
 
   const u=USER_ORG[role];
   const ud=currentUData();
@@ -3906,6 +3924,7 @@ function switchUser(role){
   const ticketFormSub=document.getElementById('ticket-form-subtitle');
   if(behalfField) behalfField.style.display=isAdmin?'block':'none';
   if(ticketFormSub) ticketFormSub.textContent=isAdmin?'Open on behalf of yourself or a user in your account.':'We\'ll connect you with our support team.';
+  if(isAdmin) _populateBehalfDropdown();
   const suppDot=document.getElementById('supp-notif-dot');const suppNb=document.getElementById('supp-notif-body');
   if(suppDot) suppDot.style.display=isAdmin?'block':'none';
   if(suppNb)  suppNb.innerHTML=isAdmin?'<button class="dd-item">\u26a0\ufe0f 2 licenses expiring in 69 days</button>':'<div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No new notifications</div>';
@@ -4686,10 +4705,34 @@ function confirmRemoveUser(){const name=document.getElementById('remove-user-sel
 /* ═══════════════════════════════════════
    UNIFIED TICKET FUNCTIONS
 ═══════════════════════════════════════ */
+// Populates the admin-only "On behalf of" dropdown with users from the current org
+// who hold a seat. Self is always the first option. Sorted alphabetically. This is
+// called both during persona switches and when the new-ticket form is opened, so
+// the dropdown reflects the current org and any seat assignments made this session.
+function _populateBehalfDropdown(){
+  const sel = document.getElementById('ticket-behalf');
+  if(!sel) return;
+  const me = currentUData();
+  const meName = (me && me.name) ? me.name : 'Admin';
+  const meEmail = (me && me.email) || '';
+  // Members of the current org who hold a seat (active status), excluding the admin.
+  const orgMembers = users.filter(u =>
+    (!u.org || u.org === currentOrg) &&
+    u.status === 'active' &&
+    u.email !== meEmail
+  ).slice().sort((a,b) => a.name.localeCompare(b.name));
+  const escape = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  sel.innerHTML = '<option value="self">'+escape(meName)+' (myself)</option>'
+    + orgMembers.map(u => '<option value="'+escape(u.name)+'">'+escape(u.name)+' ('+escape(u.email)+')</option>').join('');
+}
+
 function openNewTicket(){
   document.getElementById('new-ticket-form').classList.add('open');
   document.getElementById('ticket-subject').value='';
   document.getElementById('ticket-desc').value='';
+  // Re-populate the behalf dropdown when the form opens so any seat changes made
+  // since the page loaded are reflected (e.g. a newly-assigned user appearing).
+  _populateBehalfDropdown();
 }
 function closeNewTicket(){document.getElementById('new-ticket-form').classList.remove('open');}
 function submitTicket(){
@@ -4719,12 +4762,15 @@ function submitTicket(){
 // Builds a DOM card for a persisted ticket, used both at submit-time and at page-load hydration.
 function buildTicketCard(t){
   const behalfBadge = (t.behalf && t.behalf!=='self')
-    ? ' <span class="pill info" style="margin-left:6px;font-size:10px">On behalf of '+t.behalf+'</span>'
+    ? '<span class="pill info" style="font-size:10px">On behalf of '+t.behalf+'</span>'
     : '';
   const safeSubj = String(t.subject).replace(/'/g,"\\'");
   const card=document.createElement('div');
   card.className='ticket-card';
-  card.innerHTML='<div class="ticket-card-head"><span class="ticket-id">#'+t.id+'</span><span class="pill info">Open</span>'+behalfBadge+'</div>'
+  // Three-region head matches the seeded ticket layout: ID left, behalf centered, status right.
+  card.innerHTML='<div class="ticket-card-head"><span class="ticket-id">#'+t.id+'</span>'
+    +'<span style="flex:1;text-align:center">'+behalfBadge+'</span>'
+    +'<span class="pill info">Open</span></div>'
     +'<div class="ticket-title">'+t.subject+'</div>'
     +'<div class="ticket-meta">Product: '+t.product+' \u00b7 Priority: '+t.priority+' \u00b7 '+(t.createdLabel||'Submitted')+' \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+t.id+'\',\''+safeSubj+'\')">View thread \u2192</span></div>';
   return card;
@@ -4749,44 +4795,144 @@ function hydrateSavedTickets(){
 ═══════════════════════════════════════ */
 function openTicketThread(id,title){
   currentThreadId=id;
-  document.getElementById('thread-title').textContent=title;
-  document.getElementById('thread-id-line').textContent=`#${id} · Opened Apr 10, 2025 · Product: Platform Pro`;
-  const msgs=[
-    {from:'Mary Beth',time:'Apr 10, 09:24',msg:"I'm unable to access the Platform Pro dashboard. It shows a 403 error when I try to log in.",user:true},
-    {from:'Zenith Support',time:'Apr 11, 10:15',msg:"Thanks for reaching out! We've identified a permissions issue with your account and our team is working on it. Expected resolution: 24 hours.",user:false},
-  ];
-  document.getElementById('thread-messages').innerHTML=msgs.map(m=>`
-    <div style="display:flex;gap:10px;${m.user?'flex-direction:row-reverse':''}">
-      <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:${m.user?'#e8f7ef':'#e8f1fe'};color:${m.user?'#1ba461':'#0d6efd'}">${m.user?'MB':'ZS'}</div>
-      <div style="max-width:80%">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-align:${m.user?'right':'left'}">${m.from} · ${m.time}</div>
-        <div style="background:${m.user?'#e8f1fe':'var(--surface-2)'};border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 13px;font-size:13px;color:var(--text-secondary)">${m.msg}</div>
-      </div>
-    </div>`).join('');
-  // Append any persisted replies for this ticket
-  const saved=(threadReplies && threadReplies[id])||[];
-  if(saved.length){
-    const msgsEl=document.getElementById('thread-messages');
-    saved.forEach(r=>{
-      msgsEl.innerHTML+=`<div style="display:flex;gap:10px;flex-direction:row-reverse"><div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:${r.avatarBg}22;color:${r.avatarBg}">${r.initials}</div><div style="max-width:80%"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-align:right">${r.from} \u00b7 ${r.time}</div><div style="background:#e8f1fe;border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 13px;font-size:13px;color:var(--text-secondary)">${r.msg}</div></div></div>`;
-    });
+  // Locate the ticket. Prefer the central TICKETS table; fall back to a stub if it's
+  // a runtime-created ticket (extraTickets). The fall-back path matches the legacy
+  // hardcoded seed thread so existing flows don't break.
+  let t = TICKETS.find(x => String(x.id) === String(id));
+  if(t){
+    t = _applyOverrides(t);
+  } else {
+    t = { id, subject:title, opened:'Apr 10, 2025', status:'awaiting', product:'Platform Pro',
+          thread:[
+            {from:'Mary Beth',initials:'MB',time:'Apr 10, 09:24',side:'user',
+             msg:"I'm unable to access the Platform Pro dashboard. It shows a 403 error when I try to log in."},
+            {from:'Zenith Support',initials:'ZS',time:'Apr 11, 10:15',side:'agent',
+             msg:"Thanks for reaching out! We've identified a permissions issue with your account and our team is working on it. Expected resolution: 24 hours."},
+          ] };
   }
-  document.getElementById('thread-reply').value='';
+
+  document.getElementById('thread-title').textContent = t.subject || title;
+  const idLine = '#'+t.id+' \u00b7 Opened '+(t.opened||'')+(t.product?(' \u00b7 Product: '+t.product):'');
+  document.getElementById('thread-id-line').textContent = idLine;
+
+  // Status pill in header
+  const pill = _ticketStatusPill(t.status||'awaiting');
+  const headerPill = document.getElementById('thread-status-pill');
+  headerPill.className = 'pill ' + pill.cls;
+  headerPill.textContent = pill.lbl;
+
+  // Render the full thread: seed messages + persisted overrides + persisted user replies.
+  const msgsEl = document.getElementById('thread-messages');
+  let events = (t.thread || []).slice();
+  // Append override events (e.g. system "Re-opened by ..." messages)
+  if(t.threadAppend && t.threadAppend.length){
+    events = events.concat(t.threadAppend);
+  }
+  // Append legacy threadReplies (replies user sent through this prototype)
+  const saved = (threadReplies && threadReplies[id]) || [];
+  saved.forEach(r => events.push({from:r.from,initials:r.initials,time:r.time,side:'user',msg:r.msg,avatarBg:r.avatarBg}));
+
+  msgsEl.innerHTML = events.map(m => _renderThreadEvent(m)).join('');
+
+  // Resolve/Reopen/Close buttons swap based on status
+  _refreshThreadActionButtons(t.status || 'awaiting');
+
+  document.getElementById('thread-reply').value = '';
   document.getElementById('modal-ticket-thread').classList.add('open');
 }
+
+// Renders a single thread event. side: 'user' (right-aligned, blue), 'agent' (left,
+// gray), or 'system' (centered, muted — used for re-open / status events).
+function _renderThreadEvent(m){
+  if(m.side === 'system'){
+    return '<div style="text-align:center;padding:6px 0">'
+      + '<div style="display:inline-block;font-size:11.5px;color:var(--text-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:5px 12px">'
+      + (m.msg || '')
+      + (m.time ? (' \u00b7 '+m.time) : '')
+      + '</div></div>';
+  }
+  const isUser = m.side === 'user';
+  const bg = isUser ? (m.avatarBg||'#1ba461') : '#0d6efd';
+  const avBg = isUser ? '#e8f7ef' : '#e8f1fe';
+  const avFg = isUser ? '#1ba461' : '#0d6efd';
+  return '<div style="display:flex;gap:10px;'+(isUser?'flex-direction:row-reverse':'')+'">'
+    + '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:'+avBg+';color:'+avFg+'">'+(m.initials||'??')+'</div>'
+    + '<div style="max-width:80%">'
+    +   '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-align:'+(isUser?'right':'left')+'">'+(m.from||'')+' \u00b7 '+(m.time||'')+'</div>'
+    +   '<div style="background:'+(isUser?'#e8f1fe':'var(--surface-2)')+';border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 13px;font-size:13px;color:var(--text-secondary)">'+(m.msg||'')+'</div>'
+    + '</div></div>';
+}
+
+// Show the right action buttons + reply input based on ticket status.
+function _refreshThreadActionButtons(status){
+  const actionBar = document.getElementById('thread-actions');
+  const replyArea = document.getElementById('thread-reply-area');
+  if(!actionBar || !replyArea) return;
+  if(status === 'resolved'){
+    // Hide the reply textarea (no replies on resolved tickets)
+    replyArea.style.display = 'none';
+    actionBar.innerHTML =
+        '<button class="btn primary" onclick="reopenTicket()">↺ Re-open ticket</button>'
+      + '<button class="btn" onclick="closeModal()">Close</button>';
+  } else {
+    replyArea.style.display = '';
+    actionBar.innerHTML =
+        '<button class="btn primary" onclick="sendThreadReply()">Send reply</button>'
+      + '<button class="btn" onclick="closeModal()">Close</button>'
+      + '<button class="btn sm" style="margin-left:auto;color:var(--green)" onclick="resolveTicket()">\u2713 Mark resolved</button>';
+  }
+}
+
 function sendThreadReply(){
   const txt=document.getElementById('thread-reply').value.trim();if(!txt)return;
   const msgs=document.getElementById('thread-messages');
   const u=currentUData();
-  const reply={from:u.name,initials:u.initials,avatarBg:u.avatarBg,time:'Just now',msg:txt};
-  msgs.innerHTML+=`<div style="display:flex;gap:10px;flex-direction:row-reverse"><div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:${u.avatarBg}22;color:${u.avatarBg}">${u.initials}</div><div style="max-width:80%"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-align:right">${u.name} \u00b7 Just now</div><div style="background:#e8f1fe;border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 13px;font-size:13px;color:var(--text-secondary)">${txt}</div></div></div>`;
-  // Persist
+  const reply={from:u.name,initials:u.initials,avatarBg:u.avatarBg,time:_formatTodayDateTime(),msg:txt,side:'user'};
+  msgs.innerHTML += _renderThreadEvent(reply);
   if(!threadReplies[currentThreadId]) threadReplies[currentThreadId]=[];
   threadReplies[currentThreadId].push(reply);
   savePersisted('threadReplies', threadReplies);
   document.getElementById('thread-reply').value='';toast('Reply sent');
 }
-function resolveTicket(){closeModal();toast(`✓ Ticket #${currentThreadId} marked as resolved`);}
+
+function resolveTicket(){
+  if(!currentThreadId) return;
+  const me = currentUData();
+  const who = (me && me.name) ? me.name : 'Admin';
+  if(!ticketOverrides[currentThreadId]) ticketOverrides[currentThreadId] = {};
+  const ov = ticketOverrides[currentThreadId];
+  ov.status = 'resolved';
+  ov.resolved = _formatTodayLabel();
+  ov.threadAppend = (ov.threadAppend || []).concat([{
+    side:'system',
+    time:_formatTodayDateTime(),
+    msg:'Resolved by '+who,
+  }]);
+  savePersisted('ticketOverrides', ticketOverrides);
+  toast('\u2713 Ticket #'+currentThreadId+' marked as resolved');
+  closeModal();
+  renderSupportTickets(currentRole);
+}
+
+function reopenTicket(){
+  if(!currentThreadId) return;
+  const me = currentUData();
+  const who = (me && me.name) ? me.name : 'Admin';
+  if(!ticketOverrides[currentThreadId]) ticketOverrides[currentThreadId] = {};
+  const ov = ticketOverrides[currentThreadId];
+  ov.status = 'awaiting';
+  ov.resolved = null;
+  ov.threadAppend = (ov.threadAppend || []).concat([{
+    side:'system',
+    time:_formatTodayDateTime(),
+    msg:'Re-opened by '+who,
+  }]);
+  savePersisted('ticketOverrides', ticketOverrides);
+  toast('\u21bb Ticket #'+currentThreadId+' re-opened');
+  // Refresh the modal in place so the user sees the system message + new actions.
+  openTicketThread(currentThreadId, document.getElementById('thread-title').textContent);
+  renderSupportTickets(currentRole);
+}
 
 /* ═══════════════════════════════════════
    MY PRODUCTS (user page)
@@ -5247,23 +5393,160 @@ function signOut() {
   currentLoginMethod = 'password'; // reset for next login
 }
 
+/* ═══════════════════════════════════════════════════════════
+   SUPPORT TICKETS — central data model
+   ───────────────────────────────────────────────────────────
+   Each ticket lives once here. Visibility per persona is computed
+   from `ownerRole` + optional `sharedWith[]`. Status, resolve/reopen
+   actions, and re-open events are persisted via ticketOverrides so
+   testers' changes survive reloads.
+
+   Each ticket shape:
+   { id, ownerRole, sharedWith?, behalfOf?, subject, product?,
+     priority?, status: 'open'|'awaiting'|'pending'|'resolved',
+     opened, updated?, resolved?, thread: [ {from, initials, time, msg, side: 'user'|'agent'|'system'} ] }
+═══════════════════════════════════════════════════════════ */
+const TICKETS = [
+  // ── Penny's tickets (Poppins admin) ─────────────────────────────────────
+  {
+    id:'4021', ownerRole:'penny', behalfOf:'Niko Ortiz',
+    subject:'Licence activation failed', product:'Global Mapper Advanced', priority:'High',
+    status:'awaiting', opened:'May 8, 2026', updated:'Today',
+    thread:[
+      {from:'Penny Purchaser',initials:'PP',time:'May 8, 2026 9:14 am',side:'user',
+       msg:"Opening this on behalf of Niko Ortiz — his Global Mapper Advanced licence won't activate after assignment. He sees 'Activation failed' on first launch."},
+      {from:'Zenith Support',initials:'ZS',time:'May 9, 2026 11:02 am',side:'agent',
+       msg:"Thanks Penny. We've flagged Niko's seat for re-provisioning. He should retry activation in 4-6 hours. Please confirm if the issue persists."},
+    ],
+  },
+  {id:'4019', ownerRole:'penny', subject:'Bulk user import error', product:'Global Mapper Advanced', priority:'Medium',
+   status:'awaiting', opened:'May 6, 2026', updated:'May 9, 2026',
+   thread:[
+     {from:'Penny Purchaser',initials:'PP',time:'May 6, 2026 2:48 pm',side:'user',
+      msg:"CSV upload to bulk-invite users keeps failing at row 8. No clear error message."},
+     {from:'Zenith Support',initials:'ZS',time:'May 9, 2026 9:30 am',side:'agent',
+      msg:"Could you share the file? It usually means a malformed email column. We'll trace it for you."},
+   ]},
+  {id:'4017', ownerRole:'penny', subject:'Seat reassignment request', priority:'Low',
+   status:'pending', opened:'May 5, 2026', updated:'May 8, 2026',
+   thread:[
+     {from:'Penny Purchaser',initials:'PP',time:'May 5, 2026 10:11 am',side:'user',
+      msg:"Need to move Rita's seat to a new hire next month — what's the recommended flow?"},
+   ]},
+  {id:'4012', ownerRole:'penny', subject:'Platform Essentials onboarding help', priority:'Low',
+   status:'pending', opened:'May 1, 2026', updated:'May 6, 2026',
+   thread:[
+     {from:'Penny Purchaser',initials:'PP',time:'May 1, 2026 3:22 pm',side:'user',
+      msg:"Looking for the recommended onboarding videos to share with new team members."},
+   ]},
+  {id:'4008', ownerRole:'penny', subject:'SSO setup assistance', priority:'Medium',
+   status:'pending', opened:'Apr 28, 2026', updated:'May 5, 2026',
+   thread:[
+     {from:'Penny Purchaser',initials:'PP',time:'Apr 28, 2026 11:00 am',side:'user',
+      msg:"Trying to configure Okta SSO for our org. Looking for the right metadata URL."},
+   ]},
+  {id:'4003', ownerRole:'penny', subject:'Account creation walkthrough',
+   status:'resolved', opened:'Apr 20, 2026', resolved:'Apr 25, 2026',
+   thread:[
+     {from:'Penny Purchaser',initials:'PP',time:'Apr 20, 2026 4:05 pm',side:'user',
+      msg:"Just signed up — wanted a quick walkthrough of how to set up our org."},
+     {from:'Zenith Support',initials:'ZS',time:'Apr 22, 2026 10:15 am',side:'agent',
+      msg:"Welcome aboard! Here's a quick guide: 1) Invite users via the Users page. 2) Assign seats. 3) Review billing setup. Let us know if you have questions."},
+     {from:'Penny Purchaser',initials:'PP',time:'Apr 25, 2026 9:30 am',side:'user',
+      msg:"All set, thanks!"},
+   ]},
+  {id:'3998', ownerRole:'penny', subject:'Billing address update',
+   status:'resolved', opened:'Apr 15, 2026', resolved:'Apr 18, 2026',
+   thread:[
+     {from:'Penny Purchaser',initials:'PP',time:'Apr 15, 2026 11:24 am',side:'user',
+      msg:"Need to update the billing address on file before next invoice."},
+     {from:'Zenith Support',initials:'ZS',time:'Apr 18, 2026 2:30 pm',side:'agent',
+      msg:"Updated. The new address will appear on the next invoice. Thanks!"},
+   ]},
+
+  // ── Jane's tickets (Acme admin) ─────────────────────────────────────────
+  {id:'5081', ownerRole:'admin', subject:'SSO configuration error', product:'Global Mapper Professional', priority:'High',
+   status:'awaiting', opened:'Apr 4, 2026', updated:'Today',
+   thread:[
+     {from:'Jane Doe',initials:'JD',time:'Apr 4, 2026 9:14 am',side:'user',
+      msg:"Our Azure AD SSO config returns an error on first login. Users hit a 500 page."},
+     {from:'Zenith Support',initials:'ZS',time:'Apr 5, 2026 11:42 am',side:'agent',
+      msg:"We see the issue. The metadata URL changed last week. Updated docs are linked here: docs.example.com/sso. Let us know if it works."},
+   ]},
+  // 5079 — Jane created on behalf of Mary; visible to both
+  {id:'5079', ownerRole:'admin', behalfOf:'Mary Beth', sharedWith:['user'],
+   subject:'Intermittent License Error', product:'Global Mapper Professional', priority:'Medium',
+   status:'pending', opened:'Mar 30, 2026', updated:'Apr 2, 2026',
+   thread:[
+     {from:'Jane Doe',initials:'JD',time:'Mar 30, 2026 1:22 pm',side:'user',
+      msg:"Opening this for Mary Beth — she's hitting an intermittent licensing error in Global Mapper Pro. The error appears at startup but goes away after restart. Happening 2-3 times per week."},
+     {from:'Zenith Support',initials:'ZS',time:'Apr 2, 2026 10:08 am',side:'agent',
+      msg:"Thanks Jane. We've seen this pattern before — usually relates to the license daemon timing out at boot. Could Mary share her client logs from one of the failure occurrences?"},
+   ]},
+  {id:'5071', ownerRole:'admin', subject:'User provisioning help',
+   status:'resolved', opened:'Mar 22, 2026', resolved:'Apr 1, 2026',
+   thread:[
+     {from:'Jane Doe',initials:'JD',time:'Mar 22, 2026 9:00 am',side:'user',
+      msg:"Need help bulk-provisioning users from our HRIS export."},
+     {from:'Zenith Support',initials:'ZS',time:'Mar 25, 2026 2:11 pm',side:'agent',
+      msg:"Our CSV import supports your format. Here's a guide: docs.example.com/bulk-import"},
+     {from:'Jane Doe',initials:'JD',time:'Apr 1, 2026 4:30 pm',side:'user',
+      msg:"Worked great — all 25 users imported cleanly."},
+   ]},
+  {id:'5060', ownerRole:'admin', subject:'Bulk user import failing',
+   status:'resolved', opened:'Mar 10, 2026', resolved:'Mar 14, 2026',
+   thread:[
+     {from:'Jane Doe',initials:'JD',time:'Mar 10, 2026 11:18 am',side:'user',
+      msg:"CSV with 56 users fails to import. Error is opaque."},
+     {from:'Zenith Support',initials:'ZS',time:'Mar 14, 2026 10:00 am',side:'agent',
+      msg:"Found it — a stray comma in row 12. Use the validator at docs.example.com/csv-validator next time. Marking resolved."},
+   ]},
+
+  // ── Mary's tickets (Acme member) ────────────────────────────────────────
+  {id:'6001', ownerRole:'user', subject:'Cannot access Platform Pro dashboard',
+   product:'Global Mapper Professional', priority:'High',
+   status:'awaiting', opened:'Apr 10, 2026', updated:'Today',
+   thread:[
+     {from:'Mary Beth',initials:'MB',time:'Apr 10, 2026 9:24 am',side:'user',
+      msg:"I'm unable to access the Platform Pro dashboard. It shows a 403 error when I try to log in."},
+     {from:'Zenith Support',initials:'ZS',time:'Apr 11, 2026 10:15 am',side:'agent',
+      msg:"Thanks for reaching out! We've identified a permissions issue with your account and our team is working on it. Expected resolution: 24 hours."},
+   ]},
+];
+
+// Persistence: track status changes and runtime thread events per ticket
+let ticketOverrides = loadPersisted('ticketOverrides', {});
+// Shape: { '<ticket id>': { status?, resolved?, threadAppend: [event,...] } }
+
+function _ticketsFor(role){
+  return TICKETS.filter(t => t.ownerRole === role || (t.sharedWith && t.sharedWith.includes(role)));
+}
+function _applyOverrides(t){
+  const ov = ticketOverrides[t.id];
+  if(!ov) return t;
+  return Object.assign({}, t, {
+    status: ov.status || t.status,
+    resolved: ov.resolved || t.resolved,
+    threadAppend: ov.threadAppend || [],
+  });
+}
+function _ticketStatusPill(status){
+  // Map status string to (label, css class)
+  if(status==='resolved') return {lbl:'Resolved',  cls:'active'};
+  if(status==='awaiting') return {lbl:'Awaiting reply', cls:'warn'};
+  if(status==='pending')  return {lbl:'Pending support', cls:'info'};
+  if(status==='open')     return {lbl:'Open', cls:'info'};
+  return {lbl:status, cls:'info'};
+}
+
 /* ═══════════════════════════════════════
    RENDER SUPPORT TICKETS (role-aware seed)
 ═══════════════════════════════════════ */
 function renderSupportTickets(role){
   const list=document.getElementById('tickets-list');
   if(!list) return;
-  // Gary — no account, no licence, no support
-  if(role==='penny'){
-    list.innerHTML='<div class=\"ticket-card\"><div class=\"ticket-card-head\"><span class=\"ticket-id\">#4021</span><span class=\"pill warn\">Awaiting reply</span></div><div class=\"ticket-title\">Licence activation failed</div><div class=\"ticket-meta\">Opened May 8 &middot; Updated today</div></div><div class=\"ticket-card\"><div class=\"ticket-card-head\"><span class=\"ticket-id\">#4019</span><span class=\"pill warn\">Awaiting reply</span></div><div class=\"ticket-title\">Bulk user import error</div><div class=\"ticket-meta\">Opened May 6 &middot; Updated May 9</div></div><div class=\"ticket-card\"><div class=\"ticket-card-head\"><span class=\"ticket-id\">#4017</span><span class=\"pill info\">Pending support</span></div><div class=\"ticket-title\">Seat reassignment request</div><div class=\"ticket-meta\">Opened May 5 &middot; Updated May 8</div></div><div class=\"ticket-card\"><div class=\"ticket-card-head\"><span class=\"ticket-id\">#4012</span><span class=\"pill info\">Pending support</span></div><div class=\"ticket-title\">Platform Essentials onboarding help</div><div class=\"ticket-meta\">Opened May 1 &middot; Updated May 6</div></div><div class=\"ticket-card\"><div class=\"ticket-card-head\"><span class=\"ticket-id\">#4008</span><span class=\"pill info\">Pending support</span></div><div class=\"ticket-title\">SSO setup assistance</div><div class=\"ticket-meta\">Opened Apr 28 &middot; Updated May 5</div></div><div class=\"ticket-card\" style=\"background:var(--surface-2)\"><div class=\"ticket-card-head\"><span class=\"ticket-id\">#4003</span><span class=\"pill active\">Resolved</span></div><div class=\"ticket-title\">Account creation walkthrough</div><div class=\"ticket-meta\">Opened Apr 20 &middot; Resolved Apr 25</div></div><div class=\"ticket-card\" style=\"background:var(--surface-2)\"><div class=\"ticket-card-head\"><span class=\"ticket-id\">#3998</span><span class=\"pill active\">Resolved</span></div><div class=\"ticket-title\">Billing address update</div><div class=\"ticket-meta\">Opened Apr 15 &middot; Resolved Apr 18</div></div>';
-    const so=document.getElementById('u-stat-open');
-    const sa=document.getElementById('u-stat-awaiting');
-    const sr=document.getElementById('u-stat-resolved');
-    if(so)so.textContent='8';if(sa)sa.textContent='2';if(sr)sr.textContent='2';
-    const ntBtn=document.querySelector('#pg-u-support .topbar-actions .btn.primary');
-    if(ntBtn)ntBtn.style.display='inline-flex';
-    return;
-  }
+
+  // Gary / Alan — no licence, no support
   if(role==='gary'||role==='alan'){
     list.innerHTML='<div style="text-align:center;padding:36px 20px"><div style="width:48px;height:48px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#7a92ab" stroke-width="1.5"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#7a92ab" stroke-width="1.5" stroke-linecap="round"/></svg></div><div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Support not available</div><div style="font-size:13px;color:var(--text-muted);max-width:340px;margin:0 auto">You need an active product licence to open support cases. Contact your administrator to be assigned to an account and a product.</div></div>';
     const so=document.getElementById('u-stat-open');
@@ -5272,29 +5555,69 @@ function renderSupportTickets(role){
     if(so) so.textContent='0';
     if(sa) sa.textContent='0';
     if(sr) sr.textContent='0';
-    // Hide new ticket button (safety net for direct nav)
     const ntBtn=document.querySelector('#pg-u-support .topbar-actions .btn.primary');
     if(ntBtn) ntBtn.style.display='none';
     const ntForm=document.getElementById('new-ticket-form');
     if(ntForm) ntForm.classList.remove('open');
     return;
   }
-  if(role==='admin'){
-    list.innerHTML=
-      '<div class="ticket-card"><div class="ticket-card-head"><span class="ticket-id">#5081</span><span class="pill warn">Awaiting reply</span></div><div class="ticket-title">SSO configuration error</div><div class="ticket-meta">Opened Apr 4 \u00b7 Updated today \u00b7 <span class="ticket-view" onclick="openTicketThread(\'5081\',\'SSO configuration error\')">View thread \u2192</span></div></div>'
-      +'<div class="ticket-card"><div class="ticket-card-head"><span class="ticket-id">#5079</span><span class="pill info">Pending support</span><span class="pill info" style="margin-left:6px;font-size:10px">On behalf of Mary Beth</span></div><div class="ticket-title">Invoice #1042 query</div><div class="ticket-meta">Opened Mar 30 \u00b7 Updated Apr 2 \u00b7 <span class="ticket-view">View thread \u2192</span></div></div>'
-      +'<div class="ticket-card" style="background:var(--surface-2)"><div class="ticket-card-head"><span class="ticket-id">#5071</span><span class="pill active">Resolved</span></div><div class="ticket-title">User provisioning help</div><div class="ticket-meta">Opened Mar 22 \u00b7 Resolved Apr 1</div></div>'
-      +'<div class="ticket-card" style="background:var(--surface-2)"><div class="ticket-card-head"><span class="ticket-id">#5060</span><span class="pill active">Resolved</span></div><div class="ticket-title">Bulk user import failing</div><div class="ticket-meta">Opened Mar 10 \u00b7 Resolved Mar 14</div></div>';
-    document.getElementById('u-stat-open').textContent='1';
-    document.getElementById('u-stat-awaiting').textContent='1';
-    document.getElementById('u-stat-resolved').textContent='2';
-  } else {
-    list.innerHTML=
-      '<div class="ticket-card" id="tc-6001"><div class="ticket-card-head"><span class="ticket-id">#6001</span><span class="pill warn">Awaiting reply</span></div><div class="ticket-title">Cannot access Platform Pro dashboard</div><div class="ticket-meta">Product: Platform Pro \u00b7 Opened Apr 10, 2025 \u00b7 <span class="ticket-view" onclick="openTicketThread(\'6001\',\'Cannot access Platform Pro dashboard\')">View thread \u2192</span></div></div>';
-    document.getElementById('u-stat-open').textContent='1';
-    document.getElementById('u-stat-awaiting').textContent='1';
-    document.getElementById('u-stat-resolved').textContent='0';
-  }
+
+  // Filter to tickets this persona can see, apply persisted overrides, sort newest first
+  const visible = _ticketsFor(role).map(_applyOverrides);
+  // Stable sort: non-resolved first, then by opened date desc
+  visible.sort((a,b)=>{
+    const ar = a.status==='resolved' ? 1 : 0;
+    const br = b.status==='resolved' ? 1 : 0;
+    if(ar !== br) return ar - br;
+    return _parseDateish(b.opened) - _parseDateish(a.opened);
+  });
+
+  list.innerHTML = visible.map(t => {
+    const pill = _ticketStatusPill(t.status);
+    const isResolved = t.status === 'resolved';
+    const cardStyle = isResolved ? ' style="background:var(--surface-2)"' : '';
+    // Behalf-of badge: when the active persona is the *recipient* (someone created the
+    // ticket on their behalf), call that out explicitly. When the active persona is the
+    // *creator*, show "On behalf of <name>" as before. Both badges use the blue 'info'
+    // color so they read as a single category in the center of the row.
+    let behalfBadge = '';
+    if(t.behalfOf){
+      if(t.ownerRole === role){
+        behalfBadge = '<span class="pill info" style="font-size:10px">On behalf of '+t.behalfOf+'</span>';
+      } else {
+        // Active persona is the recipient — name the admin who opened it for them.
+        const creatorPersona = USER_ORG[t.ownerRole];
+        const creatorName = (creatorPersona && creatorPersona.name) ? creatorPersona.name : 'Admin';
+        behalfBadge = '<span class="pill info" style="font-size:10px" title="An admin opened this ticket for you">Created by '+creatorName+'</span>';
+      }
+    }
+    const safeSubj = String(t.subject).replace(/'/g,"\\'");
+    const metaTail = isResolved
+      ? ('Opened '+t.opened+' \u00b7 Resolved '+(t.resolved||''))
+      : ('Opened '+t.opened+(t.updated?(' \u00b7 Updated '+t.updated):''));
+    // Three-region head: ID on the left, behalf badge centered (empty placeholder
+    // when not applicable so the status pill stays right-anchored), status pill right.
+    return '<div class="ticket-card"'+cardStyle+'>'
+      + '<div class="ticket-card-head"><span class="ticket-id">#'+t.id+'</span>'
+      +   '<span style="flex:1;text-align:center">'+behalfBadge+'</span>'
+      +   '<span class="pill '+pill.cls+'">'+pill.lbl+'</span></div>'
+      + '<div class="ticket-title">'+t.subject+'</div>'
+      + '<div class="ticket-meta">'+metaTail+' \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+t.id+'\',\''+safeSubj+'\')">View thread \u2192</span></div>'
+      + '</div>';
+  }).join('');
+
+  // Update header counts (open = non-resolved, awaiting = awaiting reply, resolved)
+  const open      = visible.filter(t => t.status !== 'resolved').length;
+  const awaiting  = visible.filter(t => t.status === 'awaiting').length;
+  const resolved  = visible.filter(t => t.status === 'resolved').length;
+  const so=document.getElementById('u-stat-open');
+  const sa=document.getElementById('u-stat-awaiting');
+  const sr=document.getElementById('u-stat-resolved');
+  if(so) so.textContent=String(open);
+  if(sa) sa.textContent=String(awaiting);
+  if(sr) sr.textContent=String(resolved);
+  const ntBtn=document.querySelector('#pg-u-support .topbar-actions .btn.primary');
+  if(ntBtn) ntBtn.style.display='inline-flex';
 }
 
 /* ═══════════════════════════════════════
