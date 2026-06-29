@@ -491,6 +491,16 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
 .search input{background:none;border:none;outline:none;font-size:13px;color:var(--text-primary);flex:1;font-family:'DM Sans',sans-serif}
 .search input::placeholder{color:var(--text-muted)}
 .search:focus-within{border-color:var(--avenza-blue)}
+/* × button to clear a search input — sits inside the search container and only
+   shows when the field has text. */
+.search-clear{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--surface-3);color:var(--text-secondary);
+  border:none;cursor:pointer;font-size:13px;line-height:1;
+  font-family:'DM Sans',sans-serif;padding:0;flex-shrink:0
+}
+.search-clear:hover{background:var(--text-muted);color:#fff}
 
 /* ─────────────────────────────────────────────
    MODAL
@@ -578,6 +588,19 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
   border-radius:var(--radius-md);padding:20px;margin-top:16px;display:none
 }
 .ticket-form.open{display:block}
+.ticket-attach-zone{
+  border:1.5px dashed var(--border-2);
+  border-radius:var(--radius-md);
+  background:var(--surface-2);
+  padding:18px 14px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .15s,background .15s;
+  margin-bottom:6px
+}
+.ticket-attach-zone:hover,.ticket-attach-zone.drag{
+  border-color:var(--avenza-blue);background:var(--avenza-blue-lt)
+}
 
 /* ─────────────────────────────────────────────
    MY PRODUCT CARD
@@ -1718,10 +1741,10 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Dashboard</span></div>
+          <div class="breadcrumb"><span>Dashboard</span></div>
         </div>
         <div class="topbar-actions">
-          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn1')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn1" style="min-width:230px"><div class="dd-header" style="font-size:12px;font-weight:600;color:var(--text-primary)">Notifications</div><button class="dd-item" onclick="nav('a-licenses');closeDrop()">⚠️ 2 licenses expiring in 69 days</button><button class="dd-item">💬 Ticket #5081 awaiting reply</button></div></div>
+          <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn1')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn1" style="min-width:230px"><div class="dd-header" style="font-size:12px;font-weight:600;color:var(--text-primary)">Notifications</div><button class="dd-item" onclick="nav('a-licenses');closeDrop()">⚠️ 2 licenses expiring in 69 days</button><button class="dd-item">💬 Ticket ZD-5081 awaiting reply</button></div></div>
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh1')"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh1"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp1')"><div class="profile-av" id="adpav1" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn1-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp1"><div class="dd-header"><div style="font-size:12.5px;font-weight:600;color:var(--text-primary)" id="adp1-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp1-email">jane@acme.com · Admin</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><button class="dd-item" onclick="nav('a-account');closeDrop()">Account settings</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn primary" onclick="nav('a-licenses')">+ Add licenses</button>
@@ -1774,7 +1797,6 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
               </div>
               <div class="metric-sub"><span class="pill active" style="font-size:10px">Active</span></div>
             </div>
-            <div style="position:absolute;bottom:10px;right:12px;font-size:10px;color:var(--avenza-blue);font-weight:500">View &#8594;</div>
           </div>
           <!-- 4. Next renewal -->
           <div class="metric amber" style="cursor:pointer" onclick="nav('a-billing');setTimeout(()=>{const el=document.getElementById('bill-renewals-list');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},80)" title="View upcoming renewals on the Billing page">
@@ -1826,7 +1848,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <div id="a-dash-activity">
             <div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">8 seats assigned across 3 products</div><div class="tick-meta">Last 30 days &middot; 5 new users onboarded</div></div></div>
             <div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Renewal reminder sent</div><div class="tick-meta">May 14, 2025 &middot; Global Mapper Professional &amp; Advanced</div></div></div>
-            <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket #5081 opened</div><div class="tick-meta">May 12, 2025 &middot; Awaiting reply</div></div></div>
+            <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-5081 opened</div><div class="tick-meta">May 12, 2025 &middot; Awaiting reply</div></div></div>
           </div>
         </div>
       </div>
@@ -1839,7 +1861,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Users</span></div>
+          <div class="breadcrumb"><span>Users</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn2')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn2" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600;color:var(--text-primary)">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring in 69 days</button></div></div>
@@ -1862,12 +1884,13 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <button class="tab"    id="tab-unassigned" onclick="switchTab('unassigned')">Unassigned / pending <span id="badge-u" style="background:var(--surface-3);color:var(--text-muted);font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:4px">50</span></button>
         </div>
         <div id="view-all">
-          <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" placeholder="Search all users…" oninput="renderUsers(this.value)"></div>
+          <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-all" placeholder="Search all users…" oninput="setUserSearch('all', this.value)"><button id="users-search-clear-all" class="search-clear" type="button" onclick="clearUserSearch('all')" style="display:none" title="Clear search">×</button></div>
           <div class="card" style="padding:0;overflow:hidden"><table class="table"><thead><tr style="background:var(--surface-2)">
   <th class="sortable" data-key="name" onclick="sortUsers('name')">User <span class="sort-icon"></span></th>
   <th>Email</th>
   <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
   <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Offline <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
@@ -1877,15 +1900,16 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th></th>
 </tr></thead>
 <tbody id="tbl-all"></tbody>
-<tbody><tr><td colspan="11"><div class="lazy-spinner" id="spinner-all"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
+<tbody><tr><td colspan="12"><div class="lazy-spinner" id="spinner-all"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-assigned" style="display:none">
-          <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" placeholder="Search assigned users…" oninput="renderUsers(this.value)"></div>
+          <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-assigned" placeholder="Search assigned users…" oninput="setUserSearch('assigned', this.value)"><button id="users-search-clear-assigned" class="search-clear" type="button" onclick="clearUserSearch('assigned')" style="display:none" title="Clear search">×</button></div>
           <div class="card" style="padding:0;overflow:hidden"><table class="table"><thead><tr style="background:var(--surface-2)">
   <th class="sortable" data-key="name" onclick="sortUsers('name')">User <span class="sort-icon"></span></th>
   <th>Email</th>
   <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
   <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Offline <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
@@ -1895,10 +1919,10 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th></th>
 </tr></thead>
 <tbody id="tbl-assigned"></tbody>
-<tbody><tr><td colspan="11"><div class="lazy-spinner" id="spinner-assigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
+<tbody><tr><td colspan="12"><div class="lazy-spinner" id="spinner-assigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-unassigned" style="display:none">
-          <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" placeholder="Search unassigned / pending users…" oninput="renderUsers(this.value)"></div>
+          <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-unassigned" placeholder="Search unassigned / pending users…" oninput="setUserSearch('unassigned', this.value)"><button id="users-search-clear-unassigned" class="search-clear" type="button" onclick="clearUserSearch('unassigned')" style="display:none" title="Clear search">×</button></div>
           <div class="card" style="padding:0;overflow:hidden"><table class="table"><thead><tr style="background:var(--surface-2)">
   <th class="sortable" data-key="name" onclick="sortUsers('name')">User <span class="sort-icon"></span></th>
   <th>Email</th>
@@ -1921,7 +1945,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Licenses</span></div>
+          <div class="breadcrumb"><span>Licenses</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn3')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn3" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
@@ -1958,7 +1982,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Billing</span></div>
+          <div class="breadcrumb"><span>Billing</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn4')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn4" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
@@ -2003,7 +2027,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Support</span></div>
+          <div class="breadcrumb"><span>Support</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('udn3')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div id="supp-notif-dot" class="icon-btn-dot" style="display:none"></div></button><div class="dropdown" id="udn3" style="min-width:200px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div id="supp-notif-body"><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No new notifications</div></div></div></div>
@@ -2038,15 +2062,24 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
             </select>
           </div>
 
-          <div class="modal-label">Product</div>
+          <div class="modal-label">Product <span style="color:var(--red)">*</span></div>
           <select class="modal-select" id="ticket-product"><option>Global Mapper Professional</option></select>
-          <div class="modal-label">Subject</div>
+          <div class="modal-label">Subject <span style="color:var(--red)">*</span></div>
           <input class="modal-input" id="ticket-subject" placeholder="Brief description of your issue"/>
-          <div class="modal-label">Priority</div>
+          <div class="modal-label">Priority <span style="color:var(--red)">*</span></div>
           <select class="modal-select" id="ticket-priority"><option>Normal</option><option>High</option><option>Critical</option></select>
-          <div class="modal-label">Description</div>
+          <div class="modal-label">Description <span style="color:var(--red)">*</span></div>
           <textarea class="modal-input" id="ticket-desc" placeholder="Describe what you're experiencing in detail…" style="resize:vertical;min-height:80px;margin-bottom:14px"></textarea>
-          <div style="display:flex;gap:8px">
+          <!-- Optional Attachments — UX-only drop-zone for the prototype; no actual upload runs. -->
+          <div class="modal-label">Attachments <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);font-size:10.5px">(optional)</span></div>
+          <div class="ticket-attach-zone" id="ticket-attach-zone" onclick="document.getElementById('ticket-attach-input').click()">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">Drag and drop files here, or click to browse</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Max file size: 10MB. Supported: PNG, JPG, PDF, ZIP</div>
+            <button type="button" class="btn sm" onclick="event.stopPropagation();document.getElementById('ticket-attach-input').click()">Choose files</button>
+            <input type="file" id="ticket-attach-input" multiple accept=".png,.jpg,.jpeg,.pdf,.zip" style="display:none" onchange="onTicketAttachChange(event)"/>
+            <div id="ticket-attach-list" style="margin-top:8px;font-size:12px;color:var(--text-secondary);text-align:left"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
             <button class="btn primary" onclick="submitTicket()">Submit case</button>
             <button class="btn" onclick="closeNewTicket()">Cancel</button>
           </div>
@@ -2067,7 +2100,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Account settings</span></div>
+          <div class="breadcrumb"><span>Account settings</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn5')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn5" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
@@ -2124,7 +2157,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>Dashboard</span></div>
+          <div class="breadcrumb"><span>Dashboard</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('udn1')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg></button><div class="dropdown" id="udn1" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No new notifications</div></div></div>
@@ -2145,15 +2178,15 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         <!-- gary-no-license-banner placeholder (handled via welcome banner) -->
         <div id="gary-no-license-banner" style="display:none"></div>
         <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
-          <div class="metric blue" id="u-metric-lic"><div class="metric-label">My license</div><div class="metric-val" style="font-size:15px;margin-top:4px" id="u-dash-lic">Global Mapper Professional</div><div class="metric-sub" id="u-dash-lic-sub"><span class="up">Active</span> · 1 seat</div></div>
+          <div class="metric blue" id="u-metric-lic" style="cursor:pointer" onclick="nav('u-products')"><div class="metric-label">My license</div><div class="metric-val" style="font-size:15px;margin-top:4px" id="u-dash-lic">Global Mapper Professional</div><div class="metric-sub" id="u-dash-lic-sub"><span class="up">Active</span> · 1 seat</div></div>
           <div class="metric green" id="u-metric-renewal"><div class="metric-label">Renewal</div><div class="metric-val" style="font-size:18px;margin-top:4px" id="u-dash-renewal">Jun 14</div><div class="metric-sub" id="u-dash-renewal-sub">Managed by admin</div></div>
-          <div class="metric gray" id="u-metric-tickets"><div class="metric-label">Open tickets</div><div class="metric-val" id="u-dash-open-tickets">1</div><div class="metric-sub"><a onclick="nav('u-support')">View →</a></div></div>
+          <div class="metric gray" id="u-metric-tickets" style="cursor:pointer" onclick="nav('u-support')"><div class="metric-label">Open tickets</div><div class="metric-val" id="u-dash-open-tickets">1</div><div class="metric-sub" id="u-dash-tickets-sub">1 awaiting reply</div></div>
         </div>
         <div class="card">
           <div class="card-head"><span class="card-title">Recent activity</span></div>
           <div id="u-dash-activity">
             <div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Seat assigned — Global Mapper Professional</div><div class="tick-meta">Apr 1, 2025 · Assigned by Jane Doe (Admin)</div></div></div>
-            <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket #6001 opened</div><div class="tick-meta">Apr 10, 2025 · Awaiting reply</div></div></div>
+            <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-6001 opened</div><div class="tick-meta">Apr 10, 2025 · Awaiting reply</div></div></div>
             <div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Logged in from new device</div><div class="tick-meta">Apr 14, 2025 · Chrome · macOS</div></div></div>
           </div>
         </div>
@@ -2167,7 +2200,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>My products</span></div>
+          <div class="breadcrumb"><span>My products</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('udn2')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div id="prod-notif-dot" class="icon-btn-dot" style="display:none"></div></button><div class="dropdown" id="udn2" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div id="prod-notif-body"><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No new notifications</div></div></div></div>
@@ -2185,7 +2218,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="topbar">
         <div class="topbar-left">
           <button class="topbar-hamburger" onclick="openSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="#4a5568" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-          <div class="breadcrumb">Blue Marble Hub &nbsp;/&nbsp; <span>My profile</span></div>
+          <div class="breadcrumb"><span>My profile</span></div>
         </div>
         <div class="topbar-actions">
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('pfn1')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div id="pf-notif-dot" class="icon-btn-dot"></div></button><div class="dropdown" id="pfn1" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><div id="pf-notif-body"><div style="padding:12px 10px;text-align:center;font-size:12.5px;color:var(--text-muted)">No notifications</div></div></div></div>
@@ -2651,7 +2684,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <div class="modal-title" id="thread-title">Ticket thread</div>
       <span class="pill warn" id="thread-status-pill">Awaiting reply</span>
     </div>
-    <div class="modal-sub" id="thread-id-line">#5081 · Opened Apr 4, 2025</div>
+    <div class="modal-sub" id="thread-id-line">ZD-5081 · Opened Apr 4, 2025</div>
     <div id="thread-messages" style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px"></div>
     <div id="thread-reply-area">
       <div class="modal-label">Reply</div>
@@ -2661,6 +2694,47 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <button class="btn primary" onclick="sendThreadReply()">Send reply</button>
       <button class="btn" onclick="closeModal()">Close</button>
       <button class="btn sm" style="margin-left:auto;color:var(--green)" onclick="resolveTicket()">✓ Mark resolved</button>
+    </div>
+  </div>
+</div>
+
+<!-- INSTALL PRODUCT — language / installer picker triggered from the My Products page -->
+<div class="modal-bg" id="modal-install-product">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title" id="install-product-title">Install Global Mapper</div>
+    <div class="modal-sub">Choose a language and installer type. The download will start when you confirm.</div>
+    <!-- The list is shown until the user confirms; after confirmation we swap to a
+         success view with a Close button. -->
+    <div id="install-product-picker">
+      <div class="modal-label">Installer</div>
+      <select class="modal-select" id="install-installer-sel" size="6" style="height:auto;padding:6px 8px">
+        <option value="English - 64-bit" selected>Global Mapper : English - 64-bit</option>
+        <option value="English - msi">Global Mapper : English - msi</option>
+        <option value="French - 64-bit">Global Mapper : French - 64-bit</option>
+        <option value="Chinese - 64-bit">Global Mapper : Chinese - 64-bit</option>
+        <option value="Japanese - 64-bit">Global Mapper : Japanese - 64-bit</option>
+        <option value="German - 64-bit">Global Mapper : German - 64-bit</option>
+        <option value="Korean - 64-bit">Global Mapper : Korean - 64-bit</option>
+        <option value="Polish - 64-bit">Global Mapper : Polish - 64-bit</option>
+        <option value="Portuguese - 64-bit">Global Mapper : Portuguese - 64-bit</option>
+        <option value="Spanish - 64-bit">Global Mapper : Spanish - 64-bit</option>
+        <option value="Turkish - 64-bit">Global Mapper : Turkish - 64-bit</option>
+      </select>
+      <div class="modal-row">
+        <button class="btn primary" style="flex:1" onclick="confirmInstallDownload()">Download</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+    <!-- Success state shown after the user clicks Download -->
+    <div id="install-product-success" style="display:none">
+      <div style="text-align:center;padding:18px 0 22px 0">
+        <div style="width:54px;height:54px;border-radius:50%;background:var(--green-lt);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px">&#10003;</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Download started</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;max-width:340px;margin:0 auto" id="install-success-detail">Your software download will complete shortly. You can close this dialog.</div>
+      </div>
+      <div class="modal-row">
+        <button class="btn primary" style="flex:1" onclick="closeModal()">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2699,7 +2773,7 @@ const UCOLORS=[
    prototype edits (which is the right tradeoff for prototyping).
 ═══════════════════════════════════════════════════════════ */
 const PERSIST_PREFIX = 'bmh';
-const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'ticketOverrides'];
+const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'ticketOverrides', 'productDownloads'];
 
 function _personaKey(){
   // currentRole is defined a few lines below; fall back to 'admin' on first call.
@@ -2735,7 +2809,7 @@ function _seedFingerprint(dataKey){
       const myOrg = orgFor[persona];
       const seed = DEFAULT_USERS
         .filter(u => !myOrg || u.org === myOrg)
-        .map(u => u.email + '|' + (u.org || '') + '|' + (u.seat || (u.seats||[]).join(',')) + '|' + (u.status||'') + '|' + (u.role||'') + '|' + (u.invitedBy||'') + '|' + (Array.isArray(u.assignedBy)?u.assignedBy.join(','):(u.assignedBy||'')))
+        .map(u => u.email + '|' + (u.org || '') + '|' + (u.seat || (u.seats||[]).join(',')) + '|' + (u.status||'') + '|' + (u.role||'') + '|' + (u.invitedBy||'') + '|' + (Array.isArray(u.assignedBy)?u.assignedBy.join(','):(u.assignedBy||'')) + '|' + (u.offline?'1':'0'))
         .sort()
         .join(';');
       return _hash(seed);
@@ -2747,6 +2821,7 @@ function _seedFingerprint(dataKey){
     if(dataKey === 'invoiceCount')  return _hash('start:1045');
     if(dataKey === 'autoRenewOverrides') return _hash('empty');
     if(dataKey === 'ticketOverrides') return _hash('empty');
+    if(dataKey === 'productDownloads') return _hash('empty');
   }catch(e){}
   return '0';
 }
@@ -2787,14 +2862,14 @@ function resetPrototypeData(){
 
 // Default seed for the users table — kept as a separate constant so we can restore it.
 const DEFAULT_USERS = [
-  {name:'Jane Doe',   email:'jane@acme.com',  initials:'JD',role:'Admin', seat:'Global Mapper Professional',createdOn:'Dec 20, 2024',assignedOn:'Jan 12, 2025',assignedBy:'Self (Admin)', status:'active',color:0,lastLogin:'Today, 9:14 AM'},
+  {name:'Jane Doe',   email:'jane@acme.com',  initials:'JD',role:'Admin', seats:['Global Mapper Professional','Global Mapper Advanced'],createdOn:'Dec 20, 2024',assignedOn:['Jan 12, 2025','Jan 12, 2025'],assignedBy:['Self (Admin)','Self (Admin)'], status:'active',color:0,lastLogin:'Today, 9:14 AM'},
   {name:'Mary Beth',  email:'mary@acme.com',  initials:'MB',role:'Member',seat:'Global Mapper Professional',createdOn:'Mar 18, 2025',assignedOn:'Apr 1, 2025',assignedBy:'Jane Doe',  status:'active',color:1,lastLogin:'Today, 8:32 AM'},
   {name:'Mark Smith', email:'mark@acme.com',  initials:'MS',role:'Admin', seat:'Global Mapper Professional',createdOn:'Jan 2, 2025', assignedOn:'Jan 15, 2025',assignedBy:'Jane Doe', status:'active',color:2,lastLogin:'Yesterday, 4:55 PM'},
-  {name:'Amy Lee',    email:'amy@acme.com',   initials:'AL',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],    createdOn:'Jan 20, 2025',assignedOn:['Feb 2, 2025','Mar 15, 2025'],assignedBy:['Jane Doe','Mark Smith'],status:'active',color:3,lastLogin:'May 12, 2025'},
+  {name:'Amy Lee',    email:'amy@acme.com',   initials:'AL',role:'Member',seat:'Global Mapper Essentials',createdOn:'Jan 20, 2025',assignedOn:'Feb 2, 2025',assignedBy:'Jane Doe',status:'active',offline:true,color:3,lastLogin:'May 12, 2025'},
   {name:'Tom Rees',   email:'tom@acme.com',   initials:'TR',role:'Admin', seat:'Global Mapper Professional',createdOn:'Feb 5, 2025', assignedOn:'Feb 18, 2025',assignedBy:'Jane Doe', status:'active',color:4,lastLogin:'May 11, 2025'},
-  {name:'Priya Nair', email:'priya@acme.com', initials:'PN',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],  createdOn:'Feb 15, 2025',assignedOn:['Mar 1, 2025','Apr 10, 2025'],assignedBy:['Jane Doe','Tom Rees'],status:'active',color:5,lastLogin:'May 10, 2025'},
+  {name:'Priya Nair', email:'priya@acme.com', initials:'PN',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],  createdOn:'Feb 15, 2025',assignedOn:['Mar 1, 2025','Apr 10, 2025'],assignedBy:['Jane Doe','Tom Rees'],status:'active',offline:true,color:5,lastLogin:'May 10, 2025'},
   {name:'Sam Kim',    email:'sam@acme.com',   initials:'SK',role:'Admin', seat:'Global Mapper Advanced',    createdOn:'Feb 20, 2025',assignedOn:'Mar 5, 2025',assignedBy:'Jane Doe',  status:'active',color:6,lastLogin:'May 9, 2025'},
-  {name:'Lena Hart',  email:'lena@acme.com',  initials:'LH',role:'Member',seat:'Global Mapper Professional',createdOn:'Feb 25, 2025',assignedOn:'Mar 10, 2025',assignedBy:'Mark Smith', status:'active',color:7,lastLogin:'May 8, 2025'},
+  {name:'Lena Hart',  email:'lena@acme.com',  initials:'LH',role:'Member',seat:'Global Mapper Professional',createdOn:'Feb 25, 2025',assignedOn:'Mar 10, 2025',assignedBy:'Mark Smith', status:'active',offline:true,color:7,lastLogin:'May 8, 2025'},
   {name:'Alice Morgan',email:'alice.morgan@acme.com',initials:'AM',role:'Member',seat:null,createdOn:'',invitedOn:'Jan 1, 2025',status:'reinvite',color:0,lastLogin:''},
   {name:'Carlos Rivera',email:'carlos.rivera@acme.com',initials:'CR',role:'Member',seat:null,createdOn:'',invitedOn:'Feb 2, 2025',status:'reinvite',color:1,lastLogin:''},
   {name:'Diana Patel',email:'diana.patel@acme.com',initials:'DP',role:'Member',seat:null,createdOn:'',invitedOn:'Mar 3, 2025',status:'pending',color:2,lastLogin:''},
@@ -3261,7 +3336,7 @@ function switchOrg(orgKey){
     } else {
       actDiv.innerHTML=
         '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Seat assigned — Global Mapper Professional</div><div class="tick-meta">Apr 1, 2025 · Assigned by Jane Doe (Admin)</div></div></div>'
-       +'<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket #6001 opened</div><div class="tick-meta">Apr 10, 2025 · Awaiting reply</div></div></div>'
+       +'<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-6001 opened</div><div class="tick-meta">Apr 10, 2025 · Awaiting reply</div></div></div>'
        +'<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Logged in from new device</div><div class="tick-meta">Apr 14, 2025 · Chrome · macOS</div></div></div>';
     }
   }
@@ -3688,12 +3763,12 @@ function updateDashOrgBanners(){
       adminAct.innerHTML=
         '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">3 seats assigned of 13 purchased</div><div class="tick-meta">Global Mapper Advanced · 10 seats available</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Renewal reminder sent</div><div class="tick-meta">May 14, 2025 · Global Mapper Advanced renews Jul 20</div></div></div>'+
-        '<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket #4021 opened</div><div class="tick-meta">May 8, 2025 · Awaiting reply</div></div></div>';
+        '<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-4021 opened</div><div class="tick-meta">May 8, 2025 · Awaiting reply</div></div></div>';
     } else if(currentOrg==='acme'){
       adminAct.innerHTML=
         '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">8 seats assigned across 3 products</div><div class="tick-meta">Last 30 days · 5 new users onboarded</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Renewal reminder sent</div><div class="tick-meta">May 14, 2025 · Global Mapper Professional &amp; Advanced</div></div></div>'+
-        '<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket #5081 opened</div><div class="tick-meta">May 12, 2025 · Awaiting reply</div></div></div>'+
+        '<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-5081 opened</div><div class="tick-meta">May 12, 2025 · Awaiting reply</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--red)"></div><div><div class="tick-title">Global Mapper Trial subscription expired</div><div class="tick-meta">Jun 14, 2026 · Converted to full Professional + Advanced licenses</div></div></div>';
     }
   }
@@ -3747,6 +3822,7 @@ function switchUser(role){
   invoiceCount = loadPersisted('invoiceCount', 1045);
   autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
   ticketOverrides = loadPersisted('ticketOverrides', {});
+  productDownloads = loadPersisted('productDownloads', {});
 
   const u=USER_ORG[role];
   const ud=currentUData();
@@ -3858,9 +3934,24 @@ function switchUser(role){
   if(renewalSub)    renewalSub.textContent=isNoProducts?'No renewal scheduled':'Managed by admin';
   if(renewalMetric) renewalMetric.className='metric '+(isNoProducts?'gray':'green');
 
-  // Open tickets metric
+  // Open tickets metric — derive from the live TICKETS data so it matches the
+  // count shown on the user's support page (including any resolve/reopen overrides).
   const openTicketsEl=document.getElementById('u-dash-open-tickets');
-  if(openTicketsEl) openTicketsEl.textContent=isNoProducts?'0':'1';
+  const ticketsSubEl=document.getElementById('u-dash-tickets-sub');
+  if(openTicketsEl){
+    if(isNoProducts){
+      openTicketsEl.textContent='0';
+      if(ticketsSubEl) ticketsSubEl.textContent='No open tickets';
+    } else if(typeof _ticketsFor === 'function'){
+      const visible = _ticketsFor(currentRole).map(_applyOverrides);
+      const open = visible.filter(t => t.status !== 'resolved').length;
+      const awaiting = visible.filter(t => t.status === 'awaiting').length;
+      openTicketsEl.textContent = String(open);
+      if(ticketsSubEl) ticketsSubEl.textContent = awaiting + ' awaiting reply';
+    } else {
+      openTicketsEl.textContent='1';
+    }
+  }
 
   // Recent activity
   const activityDiv=document.getElementById('u-dash-activity');
@@ -3870,7 +3961,7 @@ function switchUser(role){
     } else {
       activityDiv.innerHTML=
         '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Seat assigned \u2014 Global Mapper Professional</div><div class="tick-meta">Apr 1, 2025 \u00b7 Assigned by Jane Doe (Admin)</div></div></div>'
-       +'<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket #6001 opened</div><div class="tick-meta">Apr 10, 2025 \u00b7 Awaiting reply</div></div></div>'
+       +'<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-6001 opened</div><div class="tick-meta">Apr 10, 2025 \u00b7 Awaiting reply</div></div></div>'
        +'<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Logged in from new device</div><div class="tick-meta">Apr 14, 2025 \u00b7 Chrome \u00b7 macOS</div></div></div>';
     }
   }
@@ -4048,6 +4139,60 @@ function _formatTodayDateTime(){
   return months[t.getMonth()] + ' ' + t.getDate() + ', ' + t.getFullYear() + ' ' + h + ':' + m + ' ' + ampm;
 }
 
+// Best-effort OS detection for the "downloaded to <OS>" line on the My Products
+// cards. Prefers the modern Client Hints API (navigator.userAgentData) when
+// available, falling back to userAgent parsing. Returns a human-friendly label
+// like "Windows 11", "macOS", "Linux", etc. Never throws; returns "your computer"
+// as a last resort so the message still reads naturally.
+function _detectOS(){
+  try {
+    // Modern Client Hints (Chromium-based browsers)
+    const uad = navigator.userAgentData;
+    if(uad && uad.platform){
+      const plat = uad.platform; // 'Windows', 'macOS', 'Linux', 'Android', 'Chrome OS', 'iOS'
+      // Try to extract a version from highEntropyValues if cached on the navigator
+      if(plat === 'Windows'){
+        // Client Hints version when available (set asynchronously elsewhere if needed)
+        const v = uad._cachedWinVer || '';
+        return v ? ('Windows ' + v) : 'Windows';
+      }
+      if(plat === 'macOS') return 'macOS';
+      if(plat === 'Chrome OS') return 'ChromeOS';
+      return plat; // Linux / Android / iOS
+    }
+    // Fallback: parse the legacy userAgent string
+    const ua = (navigator.userAgent || '').toLowerCase();
+    if(ua.includes('windows nt 10.0')){
+      // Both Windows 10 and 11 report NT 10.0. Without Client Hints we can't
+      // disambiguate reliably, so just say "Windows 10/11".
+      return 'Windows 10/11';
+    }
+    if(ua.includes('windows nt 6.3')) return 'Windows 8.1';
+    if(ua.includes('windows nt 6.2')) return 'Windows 8';
+    if(ua.includes('windows nt 6.1')) return 'Windows 7';
+    if(ua.includes('windows'))        return 'Windows';
+    if(ua.includes('mac os x')){
+      const m = ua.match(/mac os x (\d+)[._](\d+)/);
+      if(m){
+        const major = parseInt(m[1],10);
+        const minor = parseInt(m[2],10);
+        // macOS 10.15 (Catalina) and earlier vs macOS 11+ naming
+        if(major >= 11) return 'macOS ' + major;
+        if(major === 10 && minor >= 15) return 'macOS';
+        return 'macOS';
+      }
+      return 'macOS';
+    }
+    if(ua.includes('cros'))    return 'ChromeOS';
+    if(ua.includes('linux'))   return 'Linux';
+    if(ua.includes('android')) return 'Android';
+    if(ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) return 'iOS';
+    return 'your computer';
+  } catch(e){
+    return 'your computer';
+  }
+}
+
 // Helper used by audit trail. When a runtime action mutates a user record, stamp the
 // modification date+time and the admin who performed it. Pulls the active admin's
 // name from currentUData(). Falls back to "Admin" if no name available.
@@ -4105,6 +4250,9 @@ function sortedUsers(arr){
     else if(sortKey==='createdOn') {va=a.createdOn||'';vb=b.createdOn||'';}
     else if(sortKey==='lastLogin') {va=a.lastLogin||'';vb=b.lastLogin||'';}
     else if(sortKey==='modifiedOn'){va=getLastModified(a).when;vb=getLastModified(b).when;}
+    // offline: boolean → sort offline=true users together (Yes/—). Map to strings
+    // so the existing string compare path handles them sensibly.
+    else if(sortKey==='offline')   {va=a.offline?'1':'0';vb=b.offline?'1':'0';}
     if(isDateCol){
       // Empty dates always sort to the bottom regardless of sortDir.
       const ea = !va, eb = !vb;
@@ -4242,7 +4390,33 @@ function confirmChangeRole(){
   toast(`✓ ${u.name} changed from ${oldRole} to ${newRole}`);
 }
 
-function renderUsers(filter=''){
+// Per-tab search state. Each tab's search input writes to its own slot, so typing
+// in one tab doesn't filter the others. Switching tabs preserves each tab's query.
+let userSearch = { all: '', assigned: '', unassigned: '' };
+
+// Update one tab's search query and re-render. Called by the oninput handler on
+// each search input. Also drives visibility of the × clear button.
+function setUserSearch(tab, value){
+  userSearch[tab] = value;
+  // Show/hide the matching × clear button (only when there's text in that input)
+  const x = document.getElementById('users-search-clear-' + tab);
+  if(x) x.style.display = value ? 'inline-flex' : 'none';
+  renderUsers();
+}
+
+// Clear one tab's search (called from the × button). Resets the input + state +
+// re-renders. Does NOT touch the other tabs' queries.
+function clearUserSearch(tab){
+  userSearch[tab] = '';
+  const inp = document.getElementById('users-search-input-' + tab);
+  if(inp) inp.value = '';
+  const x = document.getElementById('users-search-clear-' + tab);
+  if(x) x.style.display = 'none';
+  renderUsers();
+  if(inp) inp.focus();
+}
+
+function renderUsers(){
   // Scope the visible users to the active org. Each user's org field is set in the
   // DEFAULT_USERS seed; new invites inherit currentOrg in confirmInvite().
   const orgUsers=users.filter(u=>!u.org||u.org===currentOrg);
@@ -4262,8 +4436,15 @@ function renderUsers(filter=''){
   document.getElementById('badge-u').textContent=unassigned.length;
   const badgeAll=document.getElementById('badge-all');
   if(badgeAll) badgeAll.textContent=orgUsers.length;
-  const q=filter.toLowerCase();
-  const filt=u=>!q||u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q);
+  // Per-tab filter predicates — each tab uses its own search query so the three
+  // tabs don't pollute each other.
+  function _makeFilter(q){
+    q = (q||'').toLowerCase();
+    return u => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  }
+  const filtAll        = _makeFilter(userSearch.all);
+  const filtAssigned   = _makeFilter(userSearch.assigned);
+  const filtUnassigned = _makeFilter(userSearch.unassigned);
 
   const P='padding:10px 16px';const PM=P+';color:var(--text-muted)';const PS=PM+';font-size:12px';
 
@@ -4296,10 +4477,30 @@ function renderUsers(filter=''){
   function revokeBtn(u,ri,fromAll){
     const seats=getSeats(u);
     if(!seats.length) return '';
+    // Offline users hold a locally-issued license file. Their seats can't be revoked
+    // without first recovering or invalidating that file, so the action is greyed
+    // out with an explanatory tooltip.
+    if(u.offline){
+      return '<button class="btn xs" disabled style="opacity:.5;cursor:not-allowed;color:var(--text-muted);background:var(--surface-2);border-color:var(--surface-3)" title="This user is offline and holds a downloaded license file. Recover the license file before revoking the seat.">Revoke seat</button>';
+    }
     if(seats.length>1&&fromAll){
       return`<button class="btn xs danger" onclick="openRevokeMulti(${ri})">Revoke seat</button>`;
     }
     return`<button class="btn xs danger" onclick="revokeConfirm(${ri},null)">Revoke seat</button>`;
+  }
+  // Renders the "Offline" column cell.
+  //   - Offline user (has seat + offline flag): "Yes" + "Download license" link
+  //   - Online user with a seat:                "No" in muted text
+  //   - Unassigned user (no seat to be offline with): em-dash
+  function offlineCell(u){
+    const hasAnySeat = hasSeat(u);
+    if(!hasAnySeat) return '<span style="color:var(--text-muted)">\u2014</span>';
+    if(u.offline){
+      const safeName = String(u.name||'').replace(/'/g,"\\'");
+      return '<div style="font-weight:600;color:var(--amber)">Yes</div>'
+        + '<div style="font-size:11px;margin-top:2px"><a href="#" style="color:var(--avenza-blue);text-decoration:underline" onclick="downloadOfflineLicense(\''+safeName+'\');return false;">Download license</a></div>';
+    }
+    return '<span style="color:var(--text-muted)">No</span>';
   }
 
   // Renders the Status column pill. Both "Invite pending" and "Re-Invite" statuses
@@ -4346,7 +4547,7 @@ function renderUsers(filter=''){
   }
 
   // ── All users (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Action)
-  const allRows=sortedUsers(orgUsers.filter(filt)).map(u=>{
+  const allRows=sortedUsers(orgUsers.filter(filtAll)).map(u=>{
     const ri=users.indexOf(u);const fc=free;const isAss=hasSeat(u);
     const st=statusLabel(u);
     // For invited (accepted) users show createdOn and lastLogin even without a seat
@@ -4357,6 +4558,7 @@ function renderUsers(filter=''){
       <td style="${PM}">${u.email}</td>
       <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${P};font-size:12.5px">${seatCell(u)}</td>
+      <td style="${PS}">${offlineCell(u)}</td>
       <td style="${PS}">${assignedOnCell(u)}</td>
       <td style="${PS}">${assignedByCell(u)}</td>
       <td style="${PS}">${showDates?(u.createdOn||'\u2014'):'\u2014'}</td>
@@ -4366,10 +4568,10 @@ function renderUsers(filter=''){
       <td style="${P};text-align:right">${isAss?revokeBtn(u,ri,true):assignCell(u,ri,fc,'No seats')}</td>
     </tr>`;
   });
-  renderChunk(allRows,'tbl-all','spinner-all',11);
+  renderChunk(allRows,'tbl-all','spinner-all',12);
 
   // ── Assigned seats (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Revoke)
-  const assRows=sortedUsers(assigned.filter(filt)).map(u=>{
+  const assRows=sortedUsers(assigned.filter(filtAssigned)).map(u=>{
     const ri=users.indexOf(u);
     const rowStyle = isPrimaryAdmin(u) ? ' style="background:var(--avenza-blue-lt)"' : '';
     return`<tr${rowStyle}>
@@ -4377,6 +4579,7 @@ function renderUsers(filter=''){
       <td style="${PM}">${u.email}</td>
       <td style="${P}">${roleCell(u, ri)}</td>
       <td style="${P};font-size:12.5px">${seatCell(u)}</td>
+      <td style="${PS}">${offlineCell(u)}</td>
       <td style="${PS}">${assignedOnCell(u)}</td>
       <td style="${PS}">${assignedByCell(u)}</td>
       <td style="${PS}">${u.createdOn||'\u2014'}</td>
@@ -4386,10 +4589,10 @@ function renderUsers(filter=''){
       <td style="${P};text-align:right">${revokeBtn(u,ri,false)}</td>
     </tr>`;
   });
-  renderChunk(assRows,'tbl-assigned','spinner-assigned',11);
+  renderChunk(assRows,'tbl-assigned','spinner-assigned',12);
 
   // ── Unassigned / pending (cols: User Email Role | CreatedOn LastLogin | Status | Assign)
-  const unaRows=sortedUsers(unassigned.filter(filt)).map(u=>{
+  const unaRows=sortedUsers(unassigned.filter(filtUnassigned)).map(u=>{
     const ri=users.indexOf(u);const fc=free;
     const st=statusLabel(u);
     // Last login: show for invited users only (they've logged in)
@@ -4433,6 +4636,13 @@ function confirmAssign(){
 let revokeTargetIdx=null;
 function revokeConfirm(idx,product){
   const u=users[idx];
+  // Defensive guard: offline users hold a downloaded license file. Revoking would
+  // leave them with a "ghost" license still active on their machine. The Revoke
+  // button is greyed in the UI, but block here too in case of programmatic access.
+  if(u.offline){
+    toast('\u26a0 ' + u.name + ' is offline. Recover the license file before revoking.');
+    return;
+  }
   const seats=getSeats(u);
   const target=product||(seats.length===1?seats[0]:null);
   if(!target){openRevokeMulti(idx);return;}
@@ -4694,6 +4904,62 @@ function payNow(productName, amount){
   if(!confirm('Pay '+amt+' now for '+productName+' to renew early?\n\nYour payment method on file (Visa ···· 4242) will be charged.')) return;
   toast('✓ Payment of '+amt+' processed for '+productName);
 }
+// Admin action for the Offline column. In a real product this would generate a
+// signed license file the admin can hand off to a disconnected user. The prototype
+// simulates the workflow with a confirmation + toast so testers see the intent.
+function downloadOfflineLicense(userName){
+  if(!userName) return;
+  toast('\u2193 Downloading offline license for ' + userName + '\u2026');
+}
+
+// Opens the install picker modal. The modal lets the user choose a language and
+// installer type before downloading. The product name is shown in the title so the
+// user knows which seat they're installing (Pro / Advanced / Essentials all share
+// the same Global Mapper installer in practice — selecting the language is the
+// meaningful choice).
+let _currentInstallProduct = '';
+function openInstallProduct(productName){
+  _currentInstallProduct = productName || 'Global Mapper';
+  const titleEl = document.getElementById('install-product-title');
+  if(titleEl) titleEl.textContent = 'Install ' + _currentInstallProduct;
+  // Reset modal to picker view (in case the success view was visible last time)
+  const picker = document.getElementById('install-product-picker');
+  const success = document.getElementById('install-product-success');
+  if(picker) picker.style.display = '';
+  if(success) success.style.display = 'none';
+  // Default selection back to English 64-bit
+  const sel = document.getElementById('install-installer-sel');
+  if(sel) sel.value = 'English - 64-bit';
+  document.getElementById('modal-install-product').classList.add('open');
+}
+
+// Triggered by the Download button. Records the download in productDownloads,
+// persists it, swaps the modal from the picker view to the success view, and
+// refreshes the My Products page so the new download note appears on the card.
+function confirmInstallDownload(){
+  const sel = document.getElementById('install-installer-sel');
+  if(!sel) return;
+  const choice = sel.value || 'English - 64-bit';
+  // Record the download so the My Products card can show "Downloaded ... on ... to ..."
+  if(_currentInstallProduct){
+    productDownloads[_currentInstallProduct] = {
+      installer: choice,
+      datetime: _formatTodayDateTime(),
+      os: _detectOS(),
+    };
+    savePersisted('productDownloads', productDownloads);
+    // Re-render My Products so the new note appears immediately when the user closes the modal.
+    if(typeof renderMyProducts === 'function') renderMyProducts(currentRole);
+  }
+  const picker = document.getElementById('install-product-picker');
+  const success = document.getElementById('install-product-success');
+  const detail = document.getElementById('install-success-detail');
+  if(detail){
+    detail.innerHTML = 'Your <strong>' + _currentInstallProduct + ' (' + choice + ')</strong> download will complete shortly. You can close this dialog.';
+  }
+  if(picker)  picker.style.display = 'none';
+  if(success) success.style.display = '';
+}
 function confirmRemoveSeats(){const p=document.getElementById('remove-seats-product').value;const n=document.getElementById('remove-seats-count').value;closeModal();toast(`${n} seats will be removed from ${p} at next billing cycle`);}
 
 /* ═══════════════════════════════════════
@@ -4726,27 +4992,95 @@ function _populateBehalfDropdown(){
     + orgMembers.map(u => '<option value="'+escape(u.name)+'">'+escape(u.name)+' ('+escape(u.email)+')</option>').join('');
 }
 
+// Format a ticket ID with the ZD- prefix used by Zenith Desk. Centralized so we can
+// adjust the prefix once if branding changes. Pass null/undefined → returns ''.
+function _ticketDisplayId(id){
+  if(!id && id !== 0) return '';
+  const s = String(id);
+  // Don't double-prefix if the id is already prefixed
+  return s.startsWith('ZD-') ? s : ('ZD-' + s);
+}
+
+// Renders the small priority chip used on ticket cards. Color-coded by level:
+// High/Critical → red, Medium/Normal → amber, Low → blue. Falls back to a muted
+// chip if the priority is missing.
+function _priorityChip(priority){
+  if(!priority) return '';
+  const p = String(priority).toLowerCase();
+  let bg, fg, border;
+  if(p === 'high' || p === 'critical'){
+    bg = 'var(--red-lt)'; fg = 'var(--red)'; border = '#fecaca';
+  } else if(p === 'low'){
+    bg = 'var(--avenza-blue-lt)'; fg = 'var(--avenza-blue)'; border = '#bfdbfe';
+  } else {
+    // Medium / Normal / anything else
+    bg = 'var(--amber-lt)'; fg = 'var(--amber)'; border = '#fde68a';
+  }
+  return '<span style="display:inline-block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;background:'+bg+';color:'+fg+';border:1px solid '+border+';border-radius:9999px;padding:1px 7px">'+priority+'</span>';
+}
+
+// New ticket form attachment list state. We track the files visually so the user
+// sees what they've selected. No upload happens in the prototype.
+let _ticketAttachments = [];
+function onTicketAttachChange(ev){
+  const files = Array.from(ev.target.files || []);
+  if(!files.length) return;
+  _ticketAttachments = _ticketAttachments.concat(files);
+  _renderTicketAttachList();
+}
+function _renderTicketAttachList(){
+  const el = document.getElementById('ticket-attach-list');
+  if(!el) return;
+  if(!_ticketAttachments.length){ el.innerHTML = ''; return; }
+  el.innerHTML = _ticketAttachments.map((f,i) =>
+    '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--surface-3)">'
+    + '<span style="font-size:11px;background:var(--surface-3);color:var(--text-secondary);padding:2px 6px;border-radius:3px;text-transform:uppercase;font-weight:600">'+ (f.name.split('.').pop()||'file') +'</span>'
+    + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ f.name +'</span>'
+    + '<span style="font-size:11px;color:var(--text-muted)">'+ Math.round(f.size/1024) +' KB</span>'
+    + '<button class="btn xs" onclick="_removeTicketAttach('+i+')" style="padding:2px 8px;color:var(--red)">\u2715</button>'
+    + '</div>'
+  ).join('');
+}
+function _removeTicketAttach(idx){
+  _ticketAttachments.splice(idx, 1);
+  _renderTicketAttachList();
+}
+
 function openNewTicket(){
   document.getElementById('new-ticket-form').classList.add('open');
   document.getElementById('ticket-subject').value='';
   document.getElementById('ticket-desc').value='';
+  // Reset attachment state so a previous selection doesn't carry over.
+  _ticketAttachments = [];
+  _renderTicketAttachList();
+  const inp = document.getElementById('ticket-attach-input');
+  if(inp) inp.value = '';
   // Re-populate the behalf dropdown when the form opens so any seat changes made
   // since the page loaded are reflected (e.g. a newly-assigned user appearing).
   _populateBehalfDropdown();
 }
 function closeNewTicket(){document.getElementById('new-ticket-form').classList.remove('open');}
 function submitTicket(){
-  const subj=document.getElementById('ticket-subject').value.trim();
-  if(!subj){toast('Please enter a subject');return;}
+  // Validate the four required fields (Product, Subject, Priority, Description) and
+  // give a specific message for each so the admin knows which one to fix.
   const prod=document.getElementById('ticket-product').value;
+  const subj=document.getElementById('ticket-subject').value.trim();
   const pri=document.getElementById('ticket-priority').value;
+  const desc=document.getElementById('ticket-desc').value.trim();
+  if(!prod){ toast('Please select a product'); return; }
+  if(!subj){ toast('Please enter a subject'); return; }
+  if(!pri){  toast('Please select a priority'); return; }
+  if(!desc){ toast('Please enter a description'); return; }
   ticketCount++;
   let behalf='self';
   if(currentRole==='admin'){
     behalf=document.getElementById('ticket-behalf').value;
   }
-  // Persist
-  const ticket={id:ticketCount,subject:subj,product:prod,priority:pri,behalf:behalf,createdLabel:'Just submitted'};
+  // Capture attachment metadata (names + sizes) so the prototype can show them on
+  // the card. The actual file bytes aren't persisted — that's a backend concern.
+  const attachMeta = _ticketAttachments.map(f => ({name:f.name, size:f.size}));
+  const ticket={id:ticketCount,subject:subj,product:prod,priority:pri,behalf:behalf,createdLabel:'Just submitted',attachments:attachMeta};
+  if(!extraTickets) extraTickets=[];
   extraTickets.unshift(ticket);
   savePersisted('ticketCount', ticketCount);
   savePersisted('extraTickets', extraTickets);
@@ -4756,7 +5090,8 @@ function submitTicket(){
   const oc=document.getElementById('u-stat-open');
   if(oc) oc.textContent=parseInt(oc.textContent)+1;
   closeNewTicket();
-  toast('\u2713 Case #'+ticketCount+' submitted');
+  const attachNote = attachMeta.length ? (' with '+attachMeta.length+' attachment'+(attachMeta.length===1?'':'s')) : '';
+  toast('\u2713 Case '+_ticketDisplayId(ticketCount)+' submitted'+attachNote);
 }
 
 // Builds a DOM card for a persisted ticket, used both at submit-time and at page-load hydration.
@@ -4767,12 +5102,17 @@ function buildTicketCard(t){
   const safeSubj = String(t.subject).replace(/'/g,"\\'");
   const card=document.createElement('div');
   card.className='ticket-card';
+  const displayId = _ticketDisplayId(t.id);
+  const priChip = t.priority ? (_priorityChip(t.priority) + ' \u00b7 ') : '';
+  const attachNote = (t.attachments && t.attachments.length)
+    ? (' \u00b7 \ud83d\udcce '+t.attachments.length+' file'+(t.attachments.length===1?'':'s'))
+    : '';
   // Three-region head matches the seeded ticket layout: ID left, behalf centered, status right.
-  card.innerHTML='<div class="ticket-card-head"><span class="ticket-id">#'+t.id+'</span>'
+  card.innerHTML='<div class="ticket-card-head"><span class="ticket-id">'+displayId+'</span>'
     +'<span style="flex:1;text-align:center">'+behalfBadge+'</span>'
     +'<span class="pill info">Open</span></div>'
     +'<div class="ticket-title">'+t.subject+'</div>'
-    +'<div class="ticket-meta">Product: '+t.product+' \u00b7 Priority: '+t.priority+' \u00b7 '+(t.createdLabel||'Submitted')+' \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+t.id+'\',\''+safeSubj+'\')">View thread \u2192</span></div>';
+    +'<div class="ticket-meta">'+priChip+'Product: '+t.product+' \u00b7 '+(t.createdLabel||'Submitted')+attachNote+' \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+t.id+'\',\''+safeSubj+'\')">View thread \u2192</span></div>';
   return card;
 }
 
@@ -4812,7 +5152,7 @@ function openTicketThread(id,title){
   }
 
   document.getElementById('thread-title').textContent = t.subject || title;
-  const idLine = '#'+t.id+' \u00b7 Opened '+(t.opened||'')+(t.product?(' \u00b7 Product: '+t.product):'');
+  const idLine = _ticketDisplayId(t.id)+' \u00b7 Opened '+(t.opened||'')+(t.product?(' \u00b7 Product: '+t.product):'');
   document.getElementById('thread-id-line').textContent = idLine;
 
   // Status pill in header
@@ -4909,7 +5249,7 @@ function resolveTicket(){
     msg:'Resolved by '+who,
   }]);
   savePersisted('ticketOverrides', ticketOverrides);
-  toast('\u2713 Ticket #'+currentThreadId+' marked as resolved');
+  toast('\u2713 Ticket '+_ticketDisplayId(currentThreadId)+' marked as resolved');
   closeModal();
   renderSupportTickets(currentRole);
 }
@@ -4928,7 +5268,7 @@ function reopenTicket(){
     msg:'Re-opened by '+who,
   }]);
   savePersisted('ticketOverrides', ticketOverrides);
-  toast('\u21bb Ticket #'+currentThreadId+' re-opened');
+  toast('\u21bb Ticket '+_ticketDisplayId(currentThreadId)+' re-opened');
   // Refresh the modal in place so the user sees the system message + new actions.
   openTicketThread(currentThreadId, document.getElementById('thread-title').textContent);
   renderSupportTickets(currentRole);
@@ -4965,13 +5305,27 @@ function renderMyProducts(role){
     const isExpired = s.status==='expired';
     const pillCls = isExpired ? 'danger' : (s.status==='warn' ? 'warn' : 'active');
     const pillLbl = isExpired ? 'Expired' : (s.status==='warn' ? 'Expiring soon' : 'Active');
-    // Launch button is disabled for expired products — a tester clicking it would
-    // expect the product to open, which it can't. Replaced with an Upgrade CTA.
+    // Action buttons: for expired products, the Upgrade CTA links out to the
+    // Global Mapper Pro marketing page in a new tab. For active products, the
+    // Install button opens a language/installer picker modal.
+    const safeName = String(s.name).replace(/'/g,"\\'");
     const actionBtns = isExpired
-      ? `<button class="btn primary" onclick="toast('Upgrade flow \u2014 coming soon')">Upgrade to full license</button>
+      ? `<button class="btn primary" onclick="window.open('https://www.bluemarblegeo.com/global-mapper-pro/','_blank','noopener,noreferrer')">Upgrade to full license</button>
          <button class="btn" onclick="nav('u-support')">Get help</button>`
-      : `<button class="btn" onclick="toast('Opening ${s.name}\u2026')">Launch product \u2192</button>
+      : `<button class="btn primary" onclick="openInstallProduct('${safeName}')">Install product</button>
          <button class="btn" onclick="nav('u-support')">Get help</button>`;
+    // Inline download note (only when there's a recorded download for this product).
+    // Format: "Downloaded Global Mapper : English - 64-bit on Jun 26, 2026 10:20 pm to Windows 11"
+    // The note sits to the right of the action buttons on wide screens and wraps
+    // below them on narrow ones thanks to flex-wrap.
+    let downloadNote = '';
+    const dl = productDownloads[s.name];
+    if(dl && dl.installer){
+      downloadNote = `<div style="margin-left:auto;font-size:11.5px;color:var(--text-muted);line-height:1.45;text-align:right;max-width:280px">
+        Downloaded <strong style="color:var(--text-secondary);font-weight:600">Global Mapper : ${dl.installer}</strong>
+        <br>on ${dl.datetime||''}${dl.os?(' to '+dl.os):''}
+      </div>`;
+    }
     return `
     <div class="my-prod-card"${isExpired ? ' style="opacity:.85"' : ''}>
       <div class="my-prod-head">
@@ -4984,8 +5338,9 @@ function renderMyProducts(role){
         <div><div class="my-prod-stat-lbl">Since</div><div class="my-prod-stat-val">${s.since}</div></div>
         <div><div class="my-prod-stat-lbl">${isExpired ? 'Ended' : 'Renewal'}</div><div class="my-prod-stat-val"${isExpired ? ' style="color:var(--red)"' : ''}>${isExpired ? (s.expiredOn || s.renewal) : s.renewal}</div></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--surface-3)">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--surface-3)">
         ${actionBtns}
+        ${downloadNote}
       </div>
     </div>`;
   }).join('');
@@ -5445,7 +5800,7 @@ const TICKETS = [
      {from:'Penny Purchaser',initials:'PP',time:'Apr 28, 2026 11:00 am',side:'user',
       msg:"Trying to configure Okta SSO for our org. Looking for the right metadata URL."},
    ]},
-  {id:'4003', ownerRole:'penny', subject:'Account creation walkthrough',
+  {id:'4003', ownerRole:'penny', subject:'Account creation walkthrough', priority:'Low',
    status:'resolved', opened:'Apr 20, 2026', resolved:'Apr 25, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'Apr 20, 2026 4:05 pm',side:'user',
@@ -5455,7 +5810,7 @@ const TICKETS = [
      {from:'Penny Purchaser',initials:'PP',time:'Apr 25, 2026 9:30 am',side:'user',
       msg:"All set, thanks!"},
    ]},
-  {id:'3998', ownerRole:'penny', subject:'Billing address update',
+  {id:'3998', ownerRole:'penny', subject:'Billing address update', priority:'Low',
    status:'resolved', opened:'Apr 15, 2026', resolved:'Apr 18, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'Apr 15, 2026 11:24 am',side:'user',
@@ -5483,7 +5838,7 @@ const TICKETS = [
      {from:'Zenith Support',initials:'ZS',time:'Apr 2, 2026 10:08 am',side:'agent',
       msg:"Thanks Jane. We've seen this pattern before — usually relates to the license daemon timing out at boot. Could Mary share her client logs from one of the failure occurrences?"},
    ]},
-  {id:'5071', ownerRole:'admin', subject:'User provisioning help',
+  {id:'5071', ownerRole:'admin', subject:'User provisioning help', priority:'Medium',
    status:'resolved', opened:'Mar 22, 2026', resolved:'Apr 1, 2026',
    thread:[
      {from:'Jane Doe',initials:'JD',time:'Mar 22, 2026 9:00 am',side:'user',
@@ -5493,7 +5848,7 @@ const TICKETS = [
      {from:'Jane Doe',initials:'JD',time:'Apr 1, 2026 4:30 pm',side:'user',
       msg:"Worked great — all 25 users imported cleanly."},
    ]},
-  {id:'5060', ownerRole:'admin', subject:'Bulk user import failing',
+  {id:'5060', ownerRole:'admin', subject:'Bulk user import failing', priority:'Medium',
    status:'resolved', opened:'Mar 10, 2026', resolved:'Mar 14, 2026',
    thread:[
      {from:'Jane Doe',initials:'JD',time:'Mar 10, 2026 11:18 am',side:'user',
@@ -5516,6 +5871,9 @@ const TICKETS = [
 
 // Persistence: track status changes and runtime thread events per ticket
 let ticketOverrides = loadPersisted('ticketOverrides', {});
+// productDownloads: per-persona record of the most recent installer downloaded
+// for each product. Shape: { '<product name>': { installer, datetime, os } }
+let productDownloads = loadPersisted('productDownloads', {});
 // Shape: { '<ticket id>': { status?, resolved?, threadAppend: [event,...] } }
 
 function _ticketsFor(role){
@@ -5592,17 +5950,21 @@ function renderSupportTickets(role){
       }
     }
     const safeSubj = String(t.subject).replace(/'/g,"\\'");
+    const displayId = _ticketDisplayId(t.id);
+    // Lead the meta line with a small priority chip (when set). Skip on resolved
+    // tickets — priority becomes less relevant once the case is closed.
+    const priChip = (t.priority && !isResolved) ? (_priorityChip(t.priority) + ' \u00b7 ') : '';
     const metaTail = isResolved
       ? ('Opened '+t.opened+' \u00b7 Resolved '+(t.resolved||''))
       : ('Opened '+t.opened+(t.updated?(' \u00b7 Updated '+t.updated):''));
     // Three-region head: ID on the left, behalf badge centered (empty placeholder
     // when not applicable so the status pill stays right-anchored), status pill right.
     return '<div class="ticket-card"'+cardStyle+'>'
-      + '<div class="ticket-card-head"><span class="ticket-id">#'+t.id+'</span>'
+      + '<div class="ticket-card-head"><span class="ticket-id">'+displayId+'</span>'
       +   '<span style="flex:1;text-align:center">'+behalfBadge+'</span>'
       +   '<span class="pill '+pill.cls+'">'+pill.lbl+'</span></div>'
       + '<div class="ticket-title">'+t.subject+'</div>'
-      + '<div class="ticket-meta">'+metaTail+' \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+t.id+'\',\''+safeSubj+'\')">View thread \u2192</span></div>'
+      + '<div class="ticket-meta">'+priChip+metaTail+' \u00b7 <span class="ticket-view" onclick="openTicketThread(\''+t.id+'\',\''+safeSubj+'\')">View thread \u2192</span></div>'
       + '</div>';
   }).join('');
 
