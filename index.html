@@ -1329,6 +1329,8 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     <button onclick="quickLogin('admin')" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Jane (Admin)</button>
     <button onclick="quickLogin('user')" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Mary (Member)</button>
     <button onclick="quickLogin('penny')" style="background:rgba(190,24,93,.25);border:1px solid rgba(252,231,243,.3);color:#fbcfe8;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Penny (Admin)</button>
+    <button onclick="quickLogin('bob')" style="background:rgba(124,58,237,.25);border:1px solid rgba(221,214,254,.3);color:#ddd6fe;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Bob (Reseller buyer)</button>
+    <button onclick="quickLogin('freya')" style="background:rgba(8,145,178,.25);border:1px solid rgba(207,250,254,.3);color:#cffafe;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Freya (Hybrid buyer)</button>
     <button onclick="quickLogin('gary')" style="background:rgba(109,40,217,.25);border:1px solid rgba(196,181,253,.3);color:#c4b5fd;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Gary (User)</button>
     <button onclick="quickLogin('alan')" style="background:rgba(15,118,110,.25);border:1px solid rgba(94,234,212,.3);color:#5eead4;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Alan (User)</button>
   </div>
@@ -1596,6 +1598,16 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     Penny Purchaser
     <span class="proto-role role-admin">Admin</span>
   </button>
+  <button class="proto-btn" id="sw-bob" onclick="switchUser('bob')">
+    <div class="proto-av" style="background:#7c3aed;color:#fff">BD</div>
+    Bob DeBuyer
+    <span class="proto-role role-admin">Admin</span>
+  </button>
+  <button class="proto-btn" id="sw-freya" onclick="switchUser('freya')">
+    <div class="proto-av" style="background:#0891b2;color:#fff">FV</div>
+    Freya VanFrugal
+    <span class="proto-role role-admin">Admin</span>
+  </button>
   <button class="proto-btn" id="sw-alan" onclick="switchUser('alan')">
     <div class="proto-av" style="background:#0f766e;color:#fff">AR</div>
     Alan Rickman
@@ -1766,7 +1778,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <button class="btn" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;flex-shrink:0" onclick="nav('a-licenses')">Manage licenses →</button>
         </div>
 
-        <div class="alert warn"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><path d="M8 2L14.5 13H1.5L8 2Z" stroke="#b45309" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.5V9.5" stroke="#b45309" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11" r=".7" fill="#b45309"/></svg><span><strong>2 licenses</strong> expiring in 69 days — Global Mapper Professional &amp; Advanced. <a class="alert-link" onclick="nav('a-licenses')">Review renewals →</a></span></div>
+        <div class="alert warn" id="a-dash-expiring-banner" style="display:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><path d="M8 2L14.5 13H1.5L8 2Z" stroke="#b45309" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.5V9.5" stroke="#b45309" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11" r=".7" fill="#b45309"/></svg><span id="a-dash-expiring-txt"></span></div>
 
         <!-- Metrics: same first-3 order as member dashboard (My license → Renewal → Open tickets), then admin extras -->
         <div class="metrics" style="grid-template-columns:repeat(5,1fr)">
@@ -1799,7 +1811,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
             </div>
           </div>
           <!-- 4. Next renewal -->
-          <div class="metric amber" style="cursor:pointer" onclick="nav('a-billing');setTimeout(()=>{const el=document.getElementById('bill-renewals-list');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},80)" title="View upcoming renewals on the Billing page">
+          <div class="metric amber" id="a-dash-next-renewal-card" style="cursor:pointer" onclick="nav('a-billing');setTimeout(()=>{const el=document.getElementById('bill-renewals-list');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},80)" title="View upcoming renewals on the Billing page">
             <div class="metric-label">Next renewal</div>
             <div class="metric-val" style="font-size:18px;margin-top:3px" id="a-dash-renewal">Jun 14, 2027</div>
             <div class="metric-sub"><span class="warn" id="a-dash-renewal-days">69 days away</span></div>
@@ -1834,11 +1846,13 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
               </div>
             </div>
             <!-- Recent support card -->
-            <div class="card">
+            <div class="card" id="a-dash-recent-support">
               <div class="card-head"><span class="card-title">Recent support</span><button class="card-link" onclick="nav('a-support')">View all →</button></div>
-              <div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">SSO configuration error</div><div class="tick-meta">2 days ago · Awaiting reply</div></div></div>
-              <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Intermittent License Error</div><div class="tick-meta">5 days ago · Pending · On behalf of Mary Beth</div></div></div>
-              <div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">User provisioning help</div><div class="tick-meta">Apr 1 · Resolved</div></div></div>
+              <div id="a-dash-recent-support-list">
+                <div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">SSO configuration error</div><div class="tick-meta">2 days ago · Awaiting reply</div></div></div>
+                <div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Intermittent License Error</div><div class="tick-meta">5 days ago · Pending · On behalf of Mary Beth</div></div></div>
+                <div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">User provisioning help</div><div class="tick-meta">Apr 1 · Resolved</div></div></div>
+              </div>
             </div>
           </div>
         </div>
@@ -2550,11 +2564,11 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
       <option value="Global Mapper Advanced">Global Mapper Advanced — 12 seats available</option>
       <option value="Global Mapper Essentials">Global Mapper Essentials — 5 seats available</option>
     </select>
-    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 13px;font-size:12px;color:var(--text-secondary)">
-      <span style="color:var(--green);font-weight:600">✓</span> This user will hold 1 seat. Normal users hold one seat at a time.
+    <div id="modal-assign-note" style="background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 13px;font-size:12px;color:var(--text-secondary);margin-top:8px">
+      <span style="color:var(--green);font-weight:600">&#x2713;</span> This user will hold 1 seat. Named-user licensing: one seat per product per user.
     </div>
     <div class="modal-row">
-      <button class="btn primary" style="flex:1" onclick="confirmAssign()">Assign seat</button>
+      <button class="btn primary" style="flex:1" id="modal-assign-confirm" onclick="confirmAssign()">Assign seat</button>
       <button class="btn" onclick="closeModal()">Cancel</button>
     </div>
   </div>
@@ -2707,18 +2721,10 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
          success view with a Close button. -->
     <div id="install-product-picker">
       <div class="modal-label">Installer</div>
+      <!-- Options are rebuilt dynamically by openInstallProduct() based on the
+           target product's tier. Only the default remains here as a placeholder. -->
       <select class="modal-select" id="install-installer-sel" size="6" style="height:auto;padding:6px 8px">
         <option value="English - 64-bit" selected>Global Mapper : English - 64-bit</option>
-        <option value="English - msi">Global Mapper : English - msi</option>
-        <option value="French - 64-bit">Global Mapper : French - 64-bit</option>
-        <option value="Chinese - 64-bit">Global Mapper : Chinese - 64-bit</option>
-        <option value="Japanese - 64-bit">Global Mapper : Japanese - 64-bit</option>
-        <option value="German - 64-bit">Global Mapper : German - 64-bit</option>
-        <option value="Korean - 64-bit">Global Mapper : Korean - 64-bit</option>
-        <option value="Polish - 64-bit">Global Mapper : Polish - 64-bit</option>
-        <option value="Portuguese - 64-bit">Global Mapper : Portuguese - 64-bit</option>
-        <option value="Spanish - 64-bit">Global Mapper : Spanish - 64-bit</option>
-        <option value="Turkish - 64-bit">Global Mapper : Turkish - 64-bit</option>
       </select>
       <div class="modal-row">
         <button class="btn primary" style="flex:1" onclick="confirmInstallDownload()">Download</button>
@@ -2773,7 +2779,7 @@ const UCOLORS=[
    prototype edits (which is the right tradeoff for prototyping).
 ═══════════════════════════════════════════════════════════ */
 const PERSIST_PREFIX = 'bmh';
-const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'ticketOverrides', 'productDownloads'];
+const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'ticketOverrides', 'productDownloads', 'downloadHistory'];
 
 function _personaKey(){
   // currentRole is defined a few lines below; fall back to 'admin' on first call.
@@ -2822,6 +2828,7 @@ function _seedFingerprint(dataKey){
     if(dataKey === 'autoRenewOverrides') return _hash('empty');
     if(dataKey === 'ticketOverrides') return _hash('empty');
     if(dataKey === 'productDownloads') return _hash('empty');
+    if(dataKey === 'downloadHistory') return _hash('empty');
   }catch(e){}
   return '0';
 }
@@ -2877,7 +2884,7 @@ const DEFAULT_USERS = [
   {name:'Fiona Walsh',email:'fiona.walsh@acme.com',initials:'FW',role:'Member',seat:null,createdOn:'Apr 15, 2025',invitedOn:'May 5, 2025',status:'pending',color:4,lastLogin:'May 10, 2025'},
   {name:'George Chen',email:'george.chen@acme.com',initials:'GC',role:'Member',seat:null,createdOn:'Apr 18, 2025',invitedOn:'Jan 6, 2025',status:'pending',color:5,lastLogin:'May 8, 2025'},
   {name:'Hannah Scott',email:'hannah.scott@acme.com',initials:'HS',role:'Member',seat:null,createdOn:'Apr 20, 2025',invitedOn:'Feb 7, 2025',status:'pending',color:6,lastLogin:'May 12, 2025'},
-  {name:'Ian Murphy',email:'ian.murphy@acme.com',initials:'IM',role:'Member',seat:null,createdOn:'Apr 22, 2025',invitedOn:'Mar 8, 2025',status:'pending',color:7,lastLogin:'May 11, 2025'},
+  {name:'Ian Murphy',email:'ian.murphy@acme.com',initials:'IM',role:'Member',seat:null,createdOn:'Apr 22, 2025',invitedOn:'Mar 8, 2025',status:'declined',declinedOn:'Jul 13, 2025',declinedBy:'Ian Murphy',color:7,lastLogin:'May 11, 2025'},
   {name:'Julia Tanaka',email:'julia.tanaka@acme.com',initials:'JT',role:'Member',seat:null,createdOn:'Apr 24, 2025',invitedOn:'Apr 9, 2025',status:'pending',color:0,lastLogin:'May 9, 2025'},
   {name:'Kevin Osei',email:'kevin.osei@acme.com',initials:'KO',role:'Member',seat:null,createdOn:'Apr 26, 2025',invitedOn:'May 10, 2025',status:'pending',color:1,lastLogin:'May 7, 2025'},
   {name:'Laura Novak',email:'laura.novak@acme.com',initials:'LN',role:'Member',seat:null,createdOn:'Apr 28, 2025',invitedOn:'Jan 11, 2025',status:'pending',color:2,lastLogin:'May 6, 2025'},
@@ -2969,6 +2976,20 @@ const DEFAULT_USERS_POPPINS = [
 // Append Poppins users to the master DEFAULT_USERS list
 DEFAULT_USERS.push(...DEFAULT_USERS_POPPINS);
 
+// DeBuyer Inc. — Bob is the primary admin. No other users seeded; per the reseller
+// model his org exists purely to hold licenses purchased through Anna and Ginger.
+const DEFAULT_USERS_DEBUYER = [
+  {org:'debuyer',name:'Bob DeBuyer',email:'bob@debuyer.com',initials:'BD',role:'Admin',seat:null,createdOn:'Jun 1, 2026',invitedOn:'Jun 1, 2026',status:'invited',color:4,lastLogin:'Today, 8:04 AM'},
+];
+DEFAULT_USERS.push(...DEFAULT_USERS_DEBUYER);
+
+// VanFrugal LLC — Freya is the primary admin. Hybrid customer: direct-purchased
+// Global Mapper Professional first, then bought Essentials from a reseller.
+const DEFAULT_USERS_VANFRUGAL = [
+  {org:'vanfrugal',name:'Freya VanFrugal',email:'freya@vanfrugal.com',initials:'FV',role:'Admin',seat:null,createdOn:'May 4, 2026',invitedOn:'May 4, 2026',status:'invited',color:6,lastLogin:'Today, 9:22 AM'},
+];
+DEFAULT_USERS.push(...DEFAULT_USERS_VANFRUGAL);
+
 // Normalization: stamp invitedBy on any pending/invited user that doesn't already
 // have it set. Acme is distributed across the 4 admins by date (Jane handled all
 // invites until April 2025, then Mark / Tom / Sam joined the rotation as they were
@@ -3059,8 +3080,24 @@ function productAmount(p){
 function orgAnnualSpend(orgKey){
   const org = ORG_DATA[orgKey];
   if(!org || !org.products) return '$0';
-  const total = org.products.reduce((s,p) => s + ((p.seats||0) * (PRICING[p.name]||0)), 0);
+  // When the org is billed for direct purchases only (hybrid customers whose
+  // reseller items appear on the reseller's invoice, not ours), exclude any
+  // product tagged purchasedVia:'reseller' from the annual total.
+  const bp = billableProductsFor(org);
+  const total = bp.reduce((s,p) => s + ((p.seats||0) * (PRICING[p.name]||0)), 0);
   return _formatMoney(total);
+}
+
+// Returns the products that appear on the in-Hub Billing page for an org. For
+// most orgs this is every product they have. For orgs flagged with
+// billingDirectPurchasesOnly, reseller-purchased items are excluded (they're
+// billed by the reseller partner directly, not on our invoice).
+function billableProductsFor(org){
+  if(!org || !org.products) return [];
+  if(org.billingDirectPurchasesOnly){
+    return org.products.filter(p => p.purchasedVia !== 'reseller');
+  }
+  return org.products;
 }
 
 const ORG_DATA={
@@ -3129,6 +3166,57 @@ const ORG_DATA={
     products:[
       {key:'ae', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual',seats:10,used:7,renewal:'Mar 3, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Mar 3, 2026'},
     ],
+  },
+  debuyer:{
+    key:'debuyer',
+    name:'DeBuyer Inc.',
+    avatar:'DB',
+    avatarBg:'#7c3aed',
+    avatarFg:'#ddd6fe',
+    domain:'debuyer.com',
+    plan:'Managed by Blue Marble reseller partners',
+    accountId:'ZEN-00988-DEBUYER',
+    created:'June 1, 2026',
+    // Earliest of the two subscriptions renews first, so surface that date on the dashboard.
+    nextRenewal:'Jun 1, 2027',
+    annualSpend:'$5,393',
+    // Reseller-managed flags. Consumed by applyOrgContext (sidebar), renderSupportTickets
+    // (support message), and openAddSeats/confirmAddSeats (email-partner flow).
+    hideSupport:true,
+    hideBilling:true,
+    resellerAddSeats:true,
+    products:[
+      // Anna Banana sold Bob the Essentials seats first (Jun 1). Ginger sold him Advanced later (Jul 9).
+      {key:'de', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual',seats:5,used:0,renewal:'Jun 1, 2027',status:'active',autoRenew:true,amount:'$2,995',purchasedOn:'Jun 1, 2026',purchasedVia:'reseller'},
+      {key:'da', icon:'ADV',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Advanced',   type:'Annual',seats:2,used:0,renewal:'Jul 9, 2027',status:'active',autoRenew:true,amount:'$2,398',purchasedOn:'Jul 9, 2026',purchasedVia:'reseller'},
+    ],
+  },
+  vanfrugal:{
+    key:'vanfrugal',
+    name:'VanFrugal LLC',
+    avatar:'VF',
+    avatarBg:'#0891b2',
+    avatarFg:'#cffafe',
+    domain:'vanfrugal.com',
+    plan:'Mixed direct and reseller subscriptions',
+    accountId:'ZEN-01044-VANFRUGAL',
+    created:'May 4, 2026',
+    // Earliest renewal is the Professional purchase from May 4
+    nextRenewal:'May 4, 2027',
+    // Annual spend counts only direct-purchase products — the reseller purchase's
+    // spend goes through the reseller's books, not Blue Marble's.
+    annualSpend:'$2,199',
+    // Hybrid org: keeps Billing (she has a direct purchase to see) and Support
+    // is REMOVED — once any subscription is reseller-managed, all support goes
+    // through the partner. But she still has Billing visibility for her direct
+    // purchase. Add Seats routes through the partner for ALL products.
+    hideSupport:true,
+    resellerAddSeats:true,
+    billingDirectPurchasesOnly:true,
+    products:[
+      {key:'vp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',type:'Annual',seats:1,used:0,renewal:'May 4, 2027',status:'active',autoRenew:false,amount:'$2,199',purchasedOn:'May 4, 2026',purchasedVia:'direct'},
+      {key:'ve', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',   type:'Annual',seats:10,used:0,renewal:'Jun 16, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Jun 16, 2026',purchasedVia:'reseller'},
+    ],
   }
 };
 
@@ -3194,6 +3282,42 @@ const USER_ORG={
     roleLabel:'Primary admin',
     byOrg:{
       poppins:{
+        role:'admin',roleLabel:'Primary admin',
+        seats:[],
+        unassigned:[],
+      }
+    }
+  },
+  // Bob — Primary admin of DeBuyer Inc., a reseller-managed org. He purchased
+  // Essentials from Anna Banana and Advanced from Ginger Grainger. He himself holds
+  // no personal seat (he's the buyer/admin, not a product user). The reseller
+  // relationship is why his org has hideSupport/hideBilling flags.
+  bob:{
+    orgs:['debuyer'],
+    defaultOrg:'debuyer',
+    initials:'BD',avatarBg:'#7c3aed',name:'Bob DeBuyer',email:'bob@debuyer.com',
+    roleLabel:'Primary admin',
+    byOrg:{
+      debuyer:{
+        role:'admin',roleLabel:'Primary admin',
+        seats:[],
+        unassigned:[],
+      }
+    }
+  },
+  // Freya — Primary admin of VanFrugal LLC. Hybrid: she first bought Global Mapper
+  // Professional direct from the website (May 4, 2026), then bought Global Mapper
+  // Essentials via Anna Banana (Reseller) on Jun 16, 2026. Because at least one
+  // subscription is reseller-managed, seat-expansion requests route through the
+  // partner even for her direct product — but she still has Billing visibility
+  // for the direct purchase she made.
+  freya:{
+    orgs:['vanfrugal'],
+    defaultOrg:'vanfrugal',
+    initials:'FV',avatarBg:'#0891b2',name:'Freya VanFrugal',email:'freya@vanfrugal.com',
+    roleLabel:'Primary admin',
+    byOrg:{
+      vanfrugal:{
         role:'admin',roleLabel:'Primary admin',
         seats:[],
         unassigned:[],
@@ -3396,8 +3520,10 @@ function applyAccountField(){
 function seedInvoicesFor(orgKey){
   const org = ORG_DATA[orgKey];
   if(!org || !org.products) return [];
-  // Issue invoice numbers in stable order: 1041, 1042, 1043 ... based on the product order.
-  return org.products.map((p,i) => ({
+  // Only direct-purchased products generate invoices in the Hub. Reseller-billed
+  // items go on the reseller's invoice, so they're filtered out here.
+  const bp = billableProductsFor(org);
+  return bp.map((p,i) => ({
     id: 1041 + i,
     desc: p.name + ' \u2013 Annual (' + p.seats + ' seats)',
     date: p.purchasedOn || org.created || 'Today',
@@ -3441,7 +3567,7 @@ function renderInvoiceHistory(){
   const annual = document.getElementById('bill-annual-spend');
   if(annual) annual.textContent = orgAnnualSpend(currentOrg);
   const sub = document.getElementById('bill-annual-sub');
-  if(sub) sub.textContent = (ORG_DATA[currentOrg]?.products?.length || 0) + ' active products';
+  if(sub) sub.textContent = (billableProductsFor(ORG_DATA[currentOrg]).length) + ' active products';
   // "Last payment" = the most recent invoice
   const last = invoices[0];
   const lastAmt = document.getElementById('bill-last-amt');
@@ -3516,7 +3642,7 @@ function updateDashOrgBanners(){
   applyAutoRenewOverrides();
   const org=ORG_DATA[currentOrg];
   const u=currentUData();
-  const ORG_DASH={'acme':{total:48,seats:14,unassigned:34,renewal:'Jun 14, 2027',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jan 10, 2027',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2027',days:'293 days away',tickets:0,awaiting:0}};
+  const ORG_DASH={'acme':{total:48,seats:14,unassigned:34,renewal:'Jun 14, 2027',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jan 10, 2027',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2027',days:'293 days away',tickets:0,awaiting:0},'debuyer':{total:7,seats:0,unassigned:7,renewal:'Jun 1, 2027',days:'320 days away',tickets:0,awaiting:0},'vanfrugal':{total:11,seats:0,unassigned:11,renewal:'May 4, 2027',days:'292 days away',tickets:0,awaiting:0}};
   const USER_SEATS={'admin':{'acme':['Global Mapper Professional','Global Mapper Advanced']},'user':{'acme':['Global Mapper Professional'],'davis':['Global Mapper Essentials']},'penny':{'poppins':[]},'gary':{},'alan':{'snape':[]}};
   const dash=currentOrg?ORG_DASH[currentOrg]:null;
   // Overwrite the seeded dash totals/seats/unassigned with live counts derived from the
@@ -3529,7 +3655,23 @@ function updateDashOrgBanners(){
   }
   const ICONS={'Global Mapper Professional':{code:'PRO',bg:'var(--avenza-blue-lt)',fg:'var(--avenza-blue)'},'Global Mapper Advanced':{code:'ADV',bg:'var(--green-lt)',fg:'var(--green)'},'Global Mapper Essentials':{code:'ESS',bg:'#eff6ff',fg:'#2563eb'}};
   // Purchaser info per org/product
-  const PURCHASED={'acme':{'Global Mapper Professional':'Jane Doe / Jun 14, 2026','Global Mapper Advanced':'Jane Doe / Jun 14, 2026','Global Mapper Essentials':'Jane Doe / May 1, 2026'},'poppins':{'Global Mapper Advanced':'Penny Purchaser / Jan 10, 2026'},'davis':{'Global Mapper Essentials':'Davis Admin / Mar 3, 2026'}};
+  const PURCHASED={
+    'acme':{
+      'Global Mapper Professional':'Jane Doe / jane@acme.com / Jun 14, 2026',
+      'Global Mapper Advanced':'Jane Doe / jane@acme.com / Jun 14, 2026',
+      'Global Mapper Essentials':'Jane Doe / jane@acme.com / May 1, 2026'
+    },
+    'poppins':{'Global Mapper Advanced':'Penny Purchaser / penny@poppins.com / Jan 10, 2026'},
+    'davis':{'Global Mapper Essentials':'Davis Admin / admin@davislane.com / Mar 3, 2026'},
+    'debuyer':{
+      'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 1, 2026',
+      'Global Mapper Advanced':'Ginger Grainger (Reseller) / ginger@grainger.com / Jul 9, 2026'
+    },
+    'vanfrugal':{
+      'Global Mapper Professional':'Freya VanFrugal / freya@vanfrugal.com / May 4, 2026',
+      'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 16, 2026'
+    }
+  };
 
   // ── Admin greeting ──
   const grEl=document.getElementById('a-dash-greeting');
@@ -3599,9 +3741,16 @@ function updateDashOrgBanners(){
       const sl=p.status==='expiring'?'Expiring soon':'Active';
       const pinfo=(purc[p.name]||'').split('/');
       const pby=pinfo[0]?pinfo[0].trim():'';
-      const pon=pinfo[1]?pinfo[1].trim():'';
+      const pmail=pinfo[1]?pinfo[1].trim():'';
+      const pon=pinfo[2]?pinfo[2].trim():(pinfo[1]?pinfo[1].trim():''); // graceful for legacy 2-slash entries
+      // If pinfo has only 2 parts (old shape: Name/Date), pmail will actually hold the date.
+      // Detect: emails contain "@". If pmail lacks "@", it's the date field from legacy data.
+      const emailLooksReal = pmail.indexOf('@') > -1;
+      const pmailStr = emailLooksReal ? pmail : '';
+      const pdate = emailLooksReal ? pon : pmail;
+      const purchaserLabel = pby + (pmailStr ? (' <span style="color:var(--text-muted);font-weight:400">[' + pmailStr + ']</span>') : '');
       return '<tr><td><div style="display:flex;align-items:center;gap:9px"><div class="prod-icon" style="background:'+ic.bg+';color:'+ic.fg+'">'+ic.code+'</div>'+p.name+'</div></td>'
-        +'<td style="font-size:12px;color:var(--text-secondary)">'+pby+(pon?'<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+pon+'</div>':'')+'</td>'
+        +'<td style="font-size:12px;color:var(--text-secondary)">'+purchaserLabel+(pdate?'<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+pdate+'</div>':'')+'</td>'
         +'<td>'+p.seats+'</td>'
         +'<td style="color:var(--text-muted)">'+(p.nextRenewal||p.renewal||'').replace(/,.*/,'')+'</td>'
         +'<td><span class="pill '+sc+'">'+sl+'</span></td></tr>';
@@ -3657,13 +3806,32 @@ function updateDashOrgBanners(){
       const sl=p.status==='expiring'?'Expiring soon':'Active';
       const pinfo=(purc[p.name]||'').split('/');
       const pby=pinfo[0]?pinfo[0].trim():'';
-      const pon=pinfo[1]?pinfo[1].trim():'';
+      const pmail=pinfo[1]?pinfo[1].trim():'';
+      // Handle both new 3-part (Name/Email/Date) and legacy 2-part (Name/Date) shapes.
+      const emailLooksReal = pmail.indexOf('@') > -1;
+      const pmailStr = emailLooksReal ? pmail : '';
+      const pon = emailLooksReal ? (pinfo[2]?pinfo[2].trim():'') : pmail;
+      // Reseller-purchased products don't have in-Hub auto-renew — that's between
+      // the customer and the reseller. Show a clearer hint instead of the direct-
+      // purchase auto-renew/expires wording.
+      const isResellerPurchase = p.purchasedVia === 'reseller';
+      let renewalHint = '';
+      if(p.renewal){
+        if(isResellerPurchase){
+          renewalHint = ' &nbsp;|&nbsp; Renews ' + p.renewal + ' \u00b7 <span style="color:var(--text-muted)">Managed by reseller</span>';
+        } else {
+          renewalHint = ' &nbsp;|&nbsp; ' + (p.autoRenew!==false?'Auto-renews on ':'Expires on ') + p.renewal;
+        }
+      }
+      // Purchaser label: "Name [email]" with the email in a muted color so it reads
+      // as secondary information without dominating the row.
+      const purchaserLabel = pby + (pmailStr ? (' <span style="color:var(--text-muted)">[' + pmailStr + ']</span>') : '');
       return '<div class="prod-row">'
         +'<div class="prod-icon" style="background:'+p.iconBg+';color:'+p.iconFg+';width:40px;height:40px;border-radius:var(--radius-sm);font-size:11px">'+p.icon+'</div>'
         +'<div class="prod-info"><div class="prod-name">'+p.name+'</div>'
         +'<div class="prod-type">'
-        +'Purchased by '+pby+(pon?' \u00b7 '+pon:'')
-        +(p.renewal?' &nbsp;|&nbsp; '+(p.autoRenew!==false?'Auto-renews on ':'Expires on ')+p.renewal:'')
+        +'Purchased by '+purchaserLabel+(pon?' \u00b7 '+pon:'')
+        +renewalHint
         +'</div></div>'
         +'<div style="margin-right:20px;text-align:center">'
           +'<div class="track" style="width:100px"><div class="fill '+bc+'" style="width:'+pct+'%"></div></div>'
@@ -3682,8 +3850,11 @@ function updateDashOrgBanners(){
   const renewCount=document.getElementById('bill-renewals-count');
   if(renewList&&org){
     // Use real "today" so days-away counts stay accurate as time passes.
+    // Reseller-billed products are excluded from the Billing renewals list (they
+    // don't appear on our invoices, so they don't renew here either).
     const today=new Date(); today.setHours(0,0,0,0);
-    const products=org.products.slice().map(p=>{
+    const billable = billableProductsFor(org);
+    const products=billable.slice().map(p=>{
       const d=new Date(p.renewal);
       const days=Math.round((d-today)/(1000*60*60*24));
       return Object.assign({},p,{daysUntil:days,renewDate:d});
@@ -3706,23 +3877,30 @@ function updateDashOrgBanners(){
       const pillLabel=auto?'Auto-renew':'Manual renewal';
       // Escape the product name for inline string contexts
       const safeName=p.name.replace(/'/g,"\\'");
-      // Build the toggle: checkbox + slider, wired to toggleAutoRenew.
-      const toggleHtml=
-        '<label class="toggle-switch" title="' + (auto?'Auto-renew is ON':'Auto-renew is OFF') + '" onclick="event.stopPropagation()">'
-        +'<input type="checkbox" ' + (auto?'checked':'') + ' onchange="toggleAutoRenew(\''+safeName+'\', this.checked)"/>'
-        +'<span class="slider"></span>'
-        +'</label>';
+      // Reseller-purchased products don't have in-Hub auto-renew. If one somehow
+      // renders here (billingDirectPurchasesOnly usually filters them out first),
+      // show a static "Managed by reseller" hint instead of the toggle.
+      const isResellerPurchase = p.purchasedVia === 'reseller';
+      const toggleHtml = isResellerPurchase
+        ? '<span style="font-size:10.5px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-left:6px" title="Auto-renewal for reseller-purchased subscriptions is managed by your reseller partner, not in the Hub.">Managed by reseller</span>'
+        : (
+          '<label class="toggle-switch" title="' + (auto?'Auto-renew is ON':'Auto-renew is OFF') + '" onclick="event.stopPropagation()">'
+          +'<input type="checkbox" ' + (auto?'checked':'') + ' onchange="toggleAutoRenew(\''+safeName+'\', this.checked)"/>'
+          +'<span class="slider"></span>'
+          +'</label>'
+        );
       const daysText=p.daysUntil<0?'Renewed '+(-p.daysUntil)+' days ago'
                    :p.daysUntil===0?'Renews today'
                    :p.daysUntil<=30?p.daysUntil+' days away'
                    :p.daysUntil+' days away';
       const daysColor=p.daysUntil<=30?'color:var(--amber);font-weight:600':'';
+      const renewLabel = isResellerPurchase ? '' : ('Auto-renew ' + (auto?'on':'off') + ' ');
       return '<div style="display:flex;align-items:center;padding:14px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);gap:14px">'
         +'<div class="prod-icon" style="background:'+p.iconBg+';color:'+p.iconFg+';width:40px;height:40px;border-radius:var(--radius-sm);font-size:11px;flex-shrink:0">'+p.icon+'</div>'
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'
             +'<div style="font-size:14px;font-weight:600;color:var(--text-primary)">'+p.name+'</div>'
-            +'<span style="display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;color:'+(auto?'var(--green)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.04em">Auto-renew '+(auto?'on':'off')+' '+toggleHtml+'</span>'
+            +'<span style="display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;color:'+(auto?'var(--green)':'var(--text-muted)')+';text-transform:uppercase;letter-spacing:.04em">'+renewLabel+toggleHtml+'</span>'
           +'</div>'
           +'<div style="font-size:12px;color:var(--text-muted);display:flex;gap:14px;flex-wrap:wrap">'
             +'<span><strong style="color:var(--text-secondary)">'+p.seats+' seats</strong></span>'
@@ -3770,6 +3948,53 @@ function updateDashOrgBanners(){
         '<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Renewal reminder sent</div><div class="tick-meta">May 14, 2025 · Global Mapper Professional &amp; Advanced</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-5081 opened</div><div class="tick-meta">May 12, 2025 · Awaiting reply</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--red)"></div><div><div class="tick-title">Global Mapper Trial subscription expired</div><div class="tick-meta">Jun 14, 2026 · Converted to full Professional + Advanced licenses</div></div></div>';
+    } else if(currentOrg==='debuyer'){
+      // Reseller-managed org: only license-purchase activity is shown. No support
+      // ticks, no renewal reminders (those flow through the reseller partner).
+      adminAct.innerHTML=
+        '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Purchased Global Mapper Advanced \u2014 2 seats</div><div class="tick-meta">Jul 9, 2026 \u00b7 Reseller: Ginger Grainger \u00b7 $2,398</div></div></div>'+
+        '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Purchased Global Mapper Essentials \u2014 5 seats</div><div class="tick-meta">Jun 1, 2026 \u00b7 Reseller: Anna Banana \u00b7 $2,995</div></div></div>';
+    } else if(currentOrg==='vanfrugal'){
+      // Hybrid org: direct purchase came first, then a reseller purchase. Newest first.
+      adminAct.innerHTML=
+        '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Purchased Global Mapper Essentials \u2014 10 seats</div><div class="tick-meta">Jun 16, 2026 \u00b7 Reseller: Anna Banana \u00b7 $5,990</div></div></div>'+
+        '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Purchased Global Mapper Professional \u2014 1 seat</div><div class="tick-meta">May 4, 2026 \u00b7 Direct purchase (website) \u00b7 $2,199</div></div></div>';
+    }
+    // Prepend any downloaded-product ticks the admin has accumulated.
+    if(typeof _refreshDownloadActivity === 'function') _refreshDownloadActivity();
+  }
+
+  // ── Reseller-managed org tweaks to dashboard cards ──────────────────────────
+  // Hide the Next renewal metric (it navigates to Billing, which is hidden). The
+  // Recent support card stays visible but empty for reseller orgs — support goes
+  // through the partner outside the Hub. Reset for non-reseller orgs.
+  const nextRenewalCard = document.getElementById('a-dash-next-renewal-card');
+  if(nextRenewalCard) nextRenewalCard.style.display = (org && org.hideBilling) ? 'none' : '';
+  const recentSupportList = document.getElementById('a-dash-recent-support-list');
+  if(recentSupportList && org && org.hideSupport){
+    // Reseller-managed: no in-Hub tickets to show. Empty state gives the same
+    // hint the Support page itself gives, so admins understand why it's blank.
+    recentSupportList.innerHTML =
+      '<div style="text-align:center;padding:20px 12px;font-size:12.5px;color:var(--text-muted);line-height:1.5">'
+      + 'No tickets to show.<br>Support is provided by your authorized Blue Marble partner.'
+      + '</div>';
+  }
+
+  // Dynamic "N licenses expiring" banner. Previously this was hardcoded copy that
+  // read wrong for orgs whose products aren't in the expiring status. Now driven
+  // by data — only shows when at least one product has status:'expiring'.
+  const expBanner = document.getElementById('a-dash-expiring-banner');
+  const expTxt = document.getElementById('a-dash-expiring-txt');
+  if(expBanner){
+    const expiringProducts = (org && org.products) ? org.products.filter(p => p.status === 'expiring') : [];
+    if(expiringProducts.length){
+      expBanner.style.display = 'flex';
+      if(expTxt){
+        const names = expiringProducts.map(p => p.name).join(' &amp; ');
+        expTxt.innerHTML = '<strong>'+expiringProducts.length+' license'+(expiringProducts.length!==1?'s':'')+'</strong> expiring soon &mdash; '+names+'. <a class="alert-link" onclick="nav(\'a-licenses\')">Review renewals \u2192</a>';
+      }
+    } else {
+      expBanner.style.display = 'none';
     }
   }
 
@@ -3802,6 +4027,18 @@ function applyOrgContext(){
   const isAdmin=uo.role==='admin';
   document.getElementById('grp-manage').style.display=isAdmin?'block':'none';
 
+  // Reseller-managed orgs (like DeBuyer Inc.) still keep Support in the sidebar so
+  // Bob can navigate there — the page itself shows the partner-referral message.
+  // Billing is genuinely inaccessible (managed by the reseller) so its sidebar
+  // item is hidden. Reset visibility for non-reseller orgs so switching back
+  // restores the normal experience.
+  const billingItem = document.getElementById('si-a-billing');
+  if(billingItem) billingItem.style.display = org.hideBilling ? 'none' : '';
+  // Support sidebar item is always visible — reset any inline display so it's not
+  // stuck hidden from an earlier prototype iteration or persona switch.
+  const supportItem = document.getElementById('si-u-support');
+  if(supportItem) supportItem.style.display = '';
+
   // Rebuild org dropdown list
   renderOrgDropdown();
 }
@@ -3823,6 +4060,7 @@ function switchUser(role){
   autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
   ticketOverrides = loadPersisted('ticketOverrides', {});
   productDownloads = loadPersisted('productDownloads', {});
+  downloadHistory = loadPersisted('downloadHistory', []);
 
   const u=USER_ORG[role];
   const ud=currentUData();
@@ -3964,6 +4202,8 @@ function switchUser(role){
        +'<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-6001 opened</div><div class="tick-meta">Apr 10, 2025 \u00b7 Awaiting reply</div></div></div>'
        +'<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Logged in from new device</div><div class="tick-meta">Apr 14, 2025 \u00b7 Chrome \u00b7 macOS</div></div></div>';
     }
+    // Prepend any downloaded-product ticks the user has accumulated.
+    _refreshDownloadActivity();
   }
 
   // Gary no-license notice
@@ -3985,6 +4225,8 @@ function switchUser(role){
     penny:{firstname:'Penny',lastname:'Purchaser',email:'penny@poppins.com',phone:'+1 720 555 0147',fax:'+1 720 555 0148',jobtitle:'Purchasing Agent',company:'Poppins',industry:'GIS & Mapping',address:'5280 Larimer Street',city:'Denver',zip:'80205',country:'US',state:'Colorado'},
     alan: {firstname:'Alan',lastname:'Rickman',email:'alan@lilyalways.com',phone:'+1 303 555 0142',fax:'',jobtitle:'Professor of Potions',company:'Lily Always',industry:'Education and Research',address:'1129 Pearl Street',city:'Boulder',zip:'80302',country:'US',state:'Colorado',timezone:'America/Denver (UTC-7)'},
     gary: {firstname:'Gary',lastname:'Oldman',email:'gary@noaccountyet.com',phone:'',fax:'',jobtitle:'Apprentice',company:"Gary\'s Soloship",industry:'',address:'1234 Peaks Blvd',city:'Colorado Springs',zip:'80903',country:'US',state:'Colorado'},
+    bob:  {firstname:'Bob',lastname:'DeBuyer',email:'bob@debuyer.com',phone:'+1 415 555 0217',fax:'',jobtitle:'IT Procurement Lead',company:'DeBuyer Inc.',industry:'GIS & Mapping',address:'88 Buyer Way',city:'Portland',zip:'97205',country:'US',state:'Oregon'},
+    freya:{firstname:'Freya',lastname:'VanFrugal',email:'freya@vanfrugal.com',phone:'+1 206 555 0163',fax:'',jobtitle:'GIS Analyst',company:'VanFrugal LLC',industry:'Environmental & Natural Resources',address:'1441 Fjord Way',city:'Seattle',zip:'98101',country:'US',state:'Washington'},
   };
   const pd=profiles[role];
   if(pa){pa.textContent=(pd.firstname[0]||'')+(pd.lastname[0]||'');pa.style.background=u.avatarBg;}
@@ -4216,6 +4458,11 @@ function getLastModified(u){
   if(seats.length){
     return {when: seats[seats.length-1], who: bys[bys.length-1] || ''};
   }
+  // Declined is a user-driven action that's typically the most recent thing that
+  // happened to a declined-status user. Prefer it over the earlier invite dates.
+  if(u.declinedOn){
+    return {when: u.declinedOn, who: u.declinedBy || ''};
+  }
   if(u.reinvitedOn){
     return {when: u.reinvitedOn, who: u.invitedBy || ''};
   }
@@ -4306,6 +4553,7 @@ function hasSeat(u){ return getSeats(u).length>0; }
 function statusLabel(u){
   if(hasSeat(u))              return {lbl:'Active',       cls:'active'};
   if(u.status==='reinvite')   return {lbl:'Re-Invite',    cls:'danger'};
+  if(u.status==='declined')   return {lbl:'Invite declined',cls:'warn'};
   if(u.status==='pending')    return {lbl:'Invite pending',cls:'warn'};
   if(u.status==='invited')    return {lbl:'Invite accepted',cls:'neutral'};
   return {lbl:u.status,cls:'neutral'};
@@ -4318,6 +4566,8 @@ function statusLabel(u){
 const PRIMARY_ADMINS = new Set([
   'jane@acme.com',        // Jane Doe — Acme primary admin
   'penny@poppins.com',    // Penny Purchaser — Poppins primary admin
+  'bob@debuyer.com',      // Bob DeBuyer — DeBuyer Inc. primary admin (reseller-managed)
+  'freya@vanfrugal.com',  // Freya VanFrugal — VanFrugal LLC primary admin (hybrid direct+reseller)
 ]);
 function isPrimaryAdmin(u){
   return u && u.email && PRIMARY_ADMINS.has(u.email.toLowerCase());
@@ -4488,6 +4738,30 @@ function renderUsers(){
     }
     return`<button class="btn xs danger" onclick="revokeConfirm(${ri},null)">Revoke seat</button>`;
   }
+  // "+ Add product" button shown alongside Revoke on the All Users tab for users
+  // who already hold at least one seat but not every product in the org. Named-user
+  // rule: one seat per product per user, so if they hold every product this org has,
+  // there's nothing to add and the button is suppressed. Offline users can't gain
+  // seats either — same reasoning as revoke restrictions.
+  function addProductBtn(u, ri){
+    const org = ORG_DATA[currentOrg];
+    if(!org || !org.products) return '';
+    const held = new Set(getSeats(u));
+    // Count products the user doesn't yet hold that also have free capacity
+    const canAdd = org.products.some(p => !held.has(p.name) && ((p.seats||0) - (p.used||0)) > 0);
+    if(!canAdd){
+      // Distinguish "holds everything" vs "no capacity" for a clearer message
+      const holdsAll = org.products.every(p => held.has(p.name));
+      const tip = holdsAll
+        ? u.name + ' already holds every product in this account.'
+        : 'No seats are currently available to assign. Purchase more from Billing.';
+      return '<button class="btn xs" disabled style="opacity:.5;cursor:not-allowed;color:var(--text-muted);background:var(--surface-2);border-color:var(--surface-3)" title="'+tip+'">+ Add product</button>';
+    }
+    if(u.offline){
+      return '<button class="btn xs" disabled style="opacity:.5;cursor:not-allowed;color:var(--text-muted);background:var(--surface-2);border-color:var(--surface-3)" title="This user is offline. Bring them online (recover the license file) before assigning additional products.">+ Add product</button>';
+    }
+    return '<button class="btn xs primary" onclick="openAssign('+ri+')" title="Assign an additional product license to this user">+ Add product</button>';
+  }
   // Renders the "Offline" column cell.
   //   - Offline user (has seat + offline flag): "Yes" + "Download license" link
   //   - Online user with a seat:                "No" in muted text
@@ -4503,25 +4777,33 @@ function renderUsers(){
     return '<span style="color:var(--text-muted)">No</span>';
   }
 
-  // Renders the Status column pill. Both "Invite pending" and "Re-Invite" statuses
-  // are made clickable — clicking opens the (re-)invite modal prefilled with the
-  // user's email. This unifies the two flows since the admin's intent is the same:
-  // re-send the invite email.
+  // Renders the Status column pill. "Invite pending", "Re-Invite", and "Invite
+  // declined" statuses are all clickable — clicking opens the (re-)invite modal
+  // prefilled with the user's email. This unifies the three "needs re-inviting"
+  // flows since the admin's intent is the same in each case: re-send the invite.
   function statusPillCell(u, ri){
     const st = statusLabel(u);
-    if(u.status==='pending' || u.status==='reinvite'){
-      const tip = u.status==='reinvite'
-        ? 'Click to re-send invite (previous one expired)'
-        : 'Click to re-send invite';
+    if(u.status==='pending' || u.status==='reinvite' || u.status==='declined'){
+      let tip;
+      if(u.status==='reinvite')      tip = 'Click to re-send invite (previous one expired)';
+      else if(u.status==='declined') tip = 'Click to invite this user again';
+      else                            tip = 'Click to re-send invite';
       return `<span class="pill ${st.cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="reinviteUser(${ri})" title="${tip}">${st.lbl}</span>`;
     }
     return `<span class="pill ${st.cls}">${st.lbl}</span>`;
   }
 
   // Renders the action cell for an unassigned user. Returns a disabled message for
-  // pending or re-invite users (they can't hold a seat until they accept their invite),
-  // or an Assign-seat button otherwise.
+  // pending, re-invite, or declined users (they can't hold a seat until they accept
+  // an invite), or an Assign-seat button otherwise.
   function assignCell(u, ri, freeCount, noSeatsText){
+    if(u.status==='declined'){
+      // The user themselves declined the invite. "By" here is the user's own name
+      // (not an admin) — matching the audit-trail pattern of "who did the action".
+      const by = u.declinedBy ? (' by ' + u.declinedBy) : '';
+      const on = u.declinedOn ? (' on ' + u.declinedOn) : '';
+      return `<span style="font-size:12px;color:var(--text-muted)" title="This user declined the invitation. Click the Invite declined pill in the Status column to send a new invite.">Invite declined${on}${by}</span>`;
+    }
     if(u.status==='pending'){
       // Prefer the most recent invite action: if the admin has re-invited this user,
       // show "Re-invited on <date>", otherwise show the original "Invite sent on <date>".
@@ -4565,7 +4847,7 @@ function renderUsers(){
       <td style="${PS}">${showDates?(u.lastLogin||'\u2014'):'\u2014'}</td>
       <td style="${PS}">${lastModifiedCell(u)}</td>
       <td style="${P}">${statusPillCell(u, ri)}</td>
-      <td style="${P};text-align:right">${isAss?revokeBtn(u,ri,true):assignCell(u,ri,fc,'No seats')}</td>
+      <td style="${P};text-align:right">${isAss?('<div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+addProductBtn(u,ri)+revokeBtn(u,ri,true)+'</div>'):assignCell(u,ri,fc,'No seats')}</td>
     </tr>`;
   });
   renderChunk(allRows,'tbl-all','spinner-all',12);
@@ -4586,7 +4868,7 @@ function renderUsers(){
       <td style="${PS}">${u.lastLogin||'\u2014'}</td>
       <td style="${PS}">${lastModifiedCell(u)}</td>
       <td style="${P}"><span class="pill active">Active</span></td>
-      <td style="${P};text-align:right">${revokeBtn(u,ri,false)}</td>
+      <td style="${P};text-align:right"><div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${addProductBtn(u,ri)}${revokeBtn(u,ri,false)}</div></td>
     </tr>`;
   });
   renderChunk(assRows,'tbl-assigned','spinner-assigned',12);
@@ -4614,24 +4896,113 @@ function renderUsers(){
 /* ═══════════════════════════════════════
    ASSIGN / REVOKE
 ═══════════════════════════════════════ */
-function openAssign(idx){assignTargetIdx=idx;const u=users[idx];document.getElementById('modal-assign-sub').textContent=`Assigning a seat to ${u.name} (${u.email}).`;document.getElementById('modal-assign').classList.add('open');}
+function openAssign(idx){
+  assignTargetIdx=idx;
+  const u=users[idx];
+  const org=ORG_DATA[currentOrg];
+  document.getElementById('modal-assign-sub').textContent = 'Assigning a seat to ' + u.name + ' (' + u.email + ').';
+
+  const sel = document.getElementById('modal-product-sel');
+  const confirmBtn = document.getElementById('modal-assign-confirm');
+  const noteEl = document.getElementById('modal-assign-note');
+  if(!sel || !org) { document.getElementById('modal-assign').classList.add('open'); return; }
+
+  // Products the user already holds — filter these out of the dropdown so we
+  // never allow a second seat of the same product (named-user rule).
+  const heldSet = new Set(getSeats(u));
+
+  // Live seat availability from the org's product list. recomputeOrgCounts keeps
+  // p.seats (total) and p.used up to date, so we don't hardcode counts anymore.
+  recomputeOrgCounts(currentOrg);
+  const options = (org.products || []).map(p => {
+    const free = Math.max(0, (p.seats||0) - (p.used||0));
+    return { name: p.name, free, alreadyHeld: heldSet.has(p.name) };
+  });
+
+  // Build the dropdown. Exclude products the user already has. Also exclude fully-
+  // subscribed products (no seats free) — they'd be selectable but not assignable.
+  const available = options.filter(o => !o.alreadyHeld && o.free > 0);
+  const heldOnly  = options.filter(o => o.alreadyHeld);
+
+  if(available.length === 0){
+    // Empty state: either the user has everything, or nothing has capacity.
+    sel.innerHTML = '<option disabled selected>No products available to assign</option>';
+    sel.disabled = true;
+    if(confirmBtn) confirmBtn.disabled = true;
+    let reason;
+    if(heldOnly.length === (org.products||[]).length){
+      reason = u.name + ' already holds a seat for every product in this account. Named-user licensing allows only one seat per product per user.';
+    } else {
+      reason = 'No seats are currently available. Purchase additional seats from the Billing page to assign more.';
+    }
+    if(noteEl){
+      noteEl.innerHTML = '<span style="color:var(--amber);font-weight:600">\u26a0</span> ' + reason;
+      noteEl.style.background = 'var(--amber-lt)';
+    }
+  } else {
+    sel.disabled = false;
+    if(confirmBtn) confirmBtn.disabled = false;
+    sel.innerHTML = available.map(o =>
+      '<option value="'+o.name+'">'+o.name+' \u2014 '+o.free+' seat'+(o.free!==1?'s':'')+' available</option>'
+    ).join('');
+    // If the user already holds some products, mention it so the admin has full context.
+    if(noteEl){
+      if(heldOnly.length){
+        const heldNames = heldOnly.map(h => h.name).join(', ');
+        noteEl.innerHTML = '<span style="color:var(--green);font-weight:600">\u2713</span> ' + u.name + ' currently holds: <strong>'+heldNames+'</strong>. Only products not yet held are shown above.';
+      } else {
+        noteEl.innerHTML = '<span style="color:var(--green);font-weight:600">\u2713</span> This user will hold 1 seat. Named-user licensing: one seat per product per user.';
+      }
+      noteEl.style.background = 'var(--surface-2)';
+    }
+  }
+
+  document.getElementById('modal-assign').classList.add('open');
+}
 function confirmAssign(){
   const u=users[assignTargetIdx];
-  u.seat=document.getElementById('modal-product-sel').value;
-  u.assignedOn='Today';
-  // Record which admin assigned the seat. Pulls the active admin's name from
-  // USER_ORG via currentUData() so the Users page shows who did the action.
+  const newProduct=document.getElementById('modal-product-sel').value;
+  if(!newProduct){ toast('Please pick a product'); return; }
+  // Guard: this user must not already hold this product. The dropdown filters out
+  // already-held products but we defend at the assignment layer too.
+  const existing = getSeats(u);
+  if(existing.indexOf(newProduct) > -1){
+    toast('\u26a0 ' + u.name + ' already has a ' + newProduct + ' seat');
+    return;
+  }
+  // Capture the admin's name once for both fields
   const me = currentUData();
-  u.assignedBy = (me && me.name) ? me.name : 'Admin';
-  u.since='Today';
-  u.status='active';
+  const adminName = (me && me.name) ? me.name : 'Admin';
+  const today = 'Today';
+  // Normalize the user's storage: single-string seat becomes array so we can push.
+  // This mirrors how the seed already stores multi-seat users (Priya, Amy, Jane).
+  if(u.seats && Array.isArray(u.seats)){
+    u.seats.push(newProduct);
+    if(!Array.isArray(u.assignedOn)) u.assignedOn = u.assignedOn ? [u.assignedOn] : [];
+    u.assignedOn.push(today);
+    if(!Array.isArray(u.assignedBy)) u.assignedBy = u.assignedBy ? [u.assignedBy] : [];
+    u.assignedBy.push(adminName);
+  } else if(u.seat){
+    // Convert from single-seat to multi-seat shape
+    u.seats = [u.seat, newProduct];
+    u.assignedOn = [u.assignedOn || today, today];
+    u.assignedBy = [u.assignedBy || adminName, adminName];
+    u.seat = null;
+  } else {
+    // First-time assignment stays as single seat (matches existing single-seat users)
+    u.seat = newProduct;
+    u.assignedOn = today;
+    u.assignedBy = adminName;
+  }
+  u.since = today;
+  u.status = 'active';
   _stampUserModification(u);
   savePersisted('users', users);
   recomputeOrgCounts(currentOrg);
   closeModal();
   renderUsers();
   updateDashOrgBanners();
-  toast(`✓ Seat assigned to ${u.name} — ${u.seat}`);
+  toast('\u2713 ' + newProduct + ' seat assigned to ' + u.name);
 }
 let revokeTargetIdx=null;
 function revokeConfirm(idx,product){
@@ -4786,6 +5157,10 @@ function confirmInvite(){
       existing.status='pending';
       existing.reinvitedOn=_formatTodayLabel();
       existing.invitedBy = adminName; // who re-sent the invite
+      // If the user previously declined, they're getting a fresh chance now.
+      // Clear the decline record so the action column shows the new invite date.
+      if(existing.declinedOn) existing.declinedOn = null;
+      if(existing.declinedBy) existing.declinedBy = null;
       _stampUserModification(existing);
       savePersisted('users', users);
       closeModal();renderUsers();
@@ -4844,6 +5219,31 @@ function openAddSeats(){
       return `<option value="${p.name}">${p.name} (Annual) — currently ${p.seats} seats</option>`;
     }).join('');
   }
+  // Reseller-managed orgs (org.resellerAddSeats) route seat requests through the
+  // partner instead of an in-app purchase. Swap the CTA label, subtitle, and cost
+  // hint so the admin knows what will happen when they click. Non-reseller orgs
+  // keep the original in-app purchase flow.
+  const titleEl = document.querySelector('#modal-add-seats .modal-title');
+  const subEl   = document.querySelector('#modal-add-seats .modal-sub');
+  const costEl  = document.getElementById('add-seats-cost');
+  const confirmBtn = document.querySelector('#modal-add-seats .btn.primary');
+  if(org && org.resellerAddSeats){
+    if(titleEl) titleEl.textContent = 'Request additional seats';
+    if(subEl)   subEl.textContent = 'Your subscriptions are managed by a Blue Marble reseller partner. We\'ll email them to provision the seats.';
+    if(costEl){
+      costEl.innerHTML = '<strong>How this works:</strong> Blue Marble will email your authorized reseller partner. They\'ll contact you with pricing and provision the new seats after purchase.';
+      costEl.style.background = 'var(--avenza-blue-lt)';
+    }
+    if(confirmBtn) confirmBtn.textContent = 'Email Blue Marble Partner';
+  } else {
+    if(titleEl) titleEl.textContent = 'Add seats';
+    if(subEl)   subEl.textContent = 'Increase the seat count on one of your subscriptions.';
+    if(costEl){
+      costEl.innerHTML = '<strong>Estimated cost:</strong> calculated at checkout. Pro-rated to current billing period.';
+      costEl.style.background = 'var(--surface-2)';
+    }
+    if(confirmBtn) confirmBtn.textContent = 'Confirm & add seats';
+  }
   document.getElementById('modal-add-seats').classList.add('open');
 }
 function confirmAddSeats(){
@@ -4851,8 +5251,18 @@ function confirmAddSeats(){
   const count = parseInt(document.getElementById('add-seats-count').value, 10);
   if(!count || count < 1){ toast('Enter a valid number of seats'); return; }
 
-  // Find the product in the current org and increment its seat count.
   const org = ORG_DATA[currentOrg];
+
+  // Reseller-managed orgs: no direct purchase happens here. Fire a confirmation
+  // toast and close the modal — the actual seat provisioning is done offline by
+  // the reseller partner. Nothing on the org's product data or invoice list changes.
+  if(org && org.resellerAddSeats){
+    closeModal();
+    toast('\u2713 Email sent to your authorized Blue Marble partner to provision ' + count + ' additional ' + productName + ' seat' + (count!==1?'s':'') + '. They will contact you with pricing shortly.');
+    return;
+  }
+
+  // Standard in-app purchase path (Acme, Poppins, Davis).
   const product = org && org.products && org.products.find(p => p.name === productName);
   if(!product){ toast('Product not found'); return; }
 
@@ -4918,6 +5328,83 @@ function downloadOfflineLicense(userName){
 // the same Global Mapper installer in practice — selecting the language is the
 // meaningful choice).
 let _currentInstallProduct = '';
+// Builds the "downloaded a product" ticks for the Recent activity widget.
+// Returns an HTML string of zero or more ticks, sorted by recency (newest first).
+// Unlike the My Products card (which shows only the latest download per product),
+// the activity widget shows the FULL history — each download is its own tick so
+// testers see a chronological log of installs over time.
+function _downloadActivityTicks(){
+  if(!downloadHistory || !downloadHistory.length) return '';
+  // Copy + sort newest-first (downloadHistory itself is append-order oldest-first)
+  const entries = downloadHistory.slice().filter(e => e && e.installer);
+  entries.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+  return entries.map(e =>
+    '<div class="tick tick-download">'
+    + '<div class="tick-dot" style="background:var(--avenza-blue)"></div>'
+    + '<div>'
+    +   '<div class="tick-title">Downloaded ' + (e.product||'') + ' \u2014 ' + e.installer + '</div>'
+    +   '<div class="tick-meta">' + (e.datetime||'') + (e.os?(' \u00b7 to '+e.os):'') + '</div>'
+    + '</div></div>'
+  ).join('');
+}
+
+// Inserts (or refreshes) the download ticks at the top of whichever Recent activity
+// widget is currently in view. Safe to call multiple times — existing download ticks
+// are removed first so they don't pile up. Targets both admin and user activity divs
+// since either may be visible depending on persona.
+function _refreshDownloadActivity(){
+  const ticksHTML = _downloadActivityTicks();
+  ['a-dash-activity', 'u-dash-activity'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    // Strip any previously-injected download ticks before re-adding fresh ones.
+    el.querySelectorAll('.tick-download').forEach(n => n.remove());
+    if(ticksHTML) el.insertAdjacentHTML('afterbegin', ticksHTML);
+  });
+}
+
+// The install picker options. The base list (Global Mapper installers in every
+// supported language) applies to every product tier. Bundled add-on products —
+// Geographic Calculator and MapPublisher — ship only with the higher tiers
+// (Professional and Advanced), so they're conditionally inserted right after
+// Global Mapper : English - msi when the target product qualifies.
+const _INSTALLER_BASE_OPTIONS = [
+  { value: 'English - 64-bit',    label: 'Global Mapper : English - 64-bit' },
+  { value: 'English - msi',       label: 'Global Mapper : English - msi' },
+  { value: 'French - 64-bit',     label: 'Global Mapper : French - 64-bit' },
+  { value: 'Chinese - 64-bit',    label: 'Global Mapper : Chinese - 64-bit' },
+  { value: 'Japanese - 64-bit',   label: 'Global Mapper : Japanese - 64-bit' },
+  { value: 'German - 64-bit',     label: 'Global Mapper : German - 64-bit' },
+  { value: 'Korean - 64-bit',     label: 'Global Mapper : Korean - 64-bit' },
+  { value: 'Polish - 64-bit',     label: 'Global Mapper : Polish - 64-bit' },
+  { value: 'Portuguese - 64-bit', label: 'Global Mapper : Portuguese - 64-bit' },
+  { value: 'Spanish - 64-bit',    label: 'Global Mapper : Spanish - 64-bit' },
+  { value: 'Turkish - 64-bit',    label: 'Global Mapper : Turkish - 64-bit' },
+];
+const _INSTALLER_TIER_EXTRAS = [
+  { value: 'Geographic Calculator - English', label: 'Geographic Calculator - English' },
+  { value: 'Geographic Calculator - msi',     label: 'Geographic Calculator - msi' },
+  { value: 'MapPublisher - Windows',          label: 'MapPublisher - Windows' },
+  { value: 'MapPublisher - macOS',            label: 'MapPublisher - macOS' },
+];
+
+// Returns the ordered installer option list for a given product name. For higher
+// tiers (Pro / Advanced) the tier-extras are inserted right after "English - msi"
+// so they read as a natural extension of the primary language list.
+function _installerOptionsFor(productName){
+  const isHigherTier = /Professional|Advanced/i.test(productName || '');
+  if(!isHigherTier) return _INSTALLER_BASE_OPTIONS.slice();
+  // Splice extras in immediately after the msi option
+  const out = [];
+  _INSTALLER_BASE_OPTIONS.forEach(opt => {
+    out.push(opt);
+    if(opt.value === 'English - msi'){
+      _INSTALLER_TIER_EXTRAS.forEach(x => out.push(x));
+    }
+  });
+  return out;
+}
+
 function openInstallProduct(productName){
   _currentInstallProduct = productName || 'Global Mapper';
   const titleEl = document.getElementById('install-product-title');
@@ -4927,9 +5414,14 @@ function openInstallProduct(productName){
   const success = document.getElementById('install-product-success');
   if(picker) picker.style.display = '';
   if(success) success.style.display = 'none';
-  // Default selection back to English 64-bit
+  // Rebuild the option list from the tier-aware source so higher-tier products
+  // see the Geographic Calculator + MapPublisher add-ons and lower tiers don't.
   const sel = document.getElementById('install-installer-sel');
-  if(sel) sel.value = 'English - 64-bit';
+  if(sel){
+    const opts = _installerOptionsFor(_currentInstallProduct);
+    sel.innerHTML = opts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('');
+    sel.value = 'English - 64-bit'; // default selection
+  }
   document.getElementById('modal-install-product').classList.add('open');
 }
 
@@ -4940,16 +5432,37 @@ function confirmInstallDownload(){
   const sel = document.getElementById('install-installer-sel');
   if(!sel) return;
   const choice = sel.value || 'English - 64-bit';
-  // Record the download so the My Products card can show "Downloaded ... on ... to ..."
+  // Record the download. Two stores: downloadHistory is the chronological audit log
+  // (drives the Recent activity widget); productDownloads is the latest-per-product
+  // map (drives the My Products card). Both kept in sync here.
   if(_currentInstallProduct){
+    const now = Date.now();
+    const formatted = _formatTodayDateTime();
+    const os = _detectOS();
+    // Append to history, cap the list so it doesn't grow unbounded over many tests.
+    downloadHistory.push({
+      product: _currentInstallProduct,
+      installer: choice,
+      datetime: formatted,
+      timestamp: now,
+      os: os,
+    });
+    if(downloadHistory.length > MAX_DOWNLOAD_HISTORY){
+      downloadHistory = downloadHistory.slice(-MAX_DOWNLOAD_HISTORY);
+    }
+    // Update latest-per-product (used by the My Products card)
     productDownloads[_currentInstallProduct] = {
       installer: choice,
-      datetime: _formatTodayDateTime(),
-      os: _detectOS(),
+      datetime: formatted,
+      timestamp: now,
+      os: os,
     };
+    savePersisted('downloadHistory', downloadHistory);
     savePersisted('productDownloads', productDownloads);
     // Re-render My Products so the new note appears immediately when the user closes the modal.
     if(typeof renderMyProducts === 'function') renderMyProducts(currentRole);
+    // Refresh Recent activity widget so the download shows up in the feed.
+    if(typeof _refreshDownloadActivity === 'function') _refreshDownloadActivity();
   }
   const picker = document.getElementById('install-product-picker');
   const success = document.getElementById('install-product-success');
@@ -5696,6 +6209,10 @@ function doLogin() {
     err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('user');
   } else if ((email === 'penny@poppins.com' || email === 'penny') && pass) {
     err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('penny');
+  } else if ((email === 'bob@debuyer.com' || email === 'bob') && pass) {
+    err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('bob');
+  } else if ((email === 'freya@vanfrugal.com' || email === 'freya') && pass) {
+    err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('freya');
   } else if ((email === 'alan@lilyalways.com' || email === 'alan') && pass) {
     err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('alan');
   } else if ((email === 'gary@noaccountyet.com' || email === 'gary') && pass) {
@@ -5871,9 +6388,36 @@ const TICKETS = [
 
 // Persistence: track status changes and runtime thread events per ticket
 let ticketOverrides = loadPersisted('ticketOverrides', {});
-// productDownloads: per-persona record of the most recent installer downloaded
-// for each product. Shape: { '<product name>': { installer, datetime, os } }
+// productDownloads: legacy per-product latest record. Kept for backward compatibility
+// with snapshots from earlier versions. The card now derives "latest per product" from
+// downloadHistory at render time, but loading the old key lets us migrate seamlessly.
 let productDownloads = loadPersisted('productDownloads', {});
+// downloadHistory: append-only chronological log of every download a user has made.
+// Each entry: { product, installer, datetime, timestamp, os }. The Recent activity
+// widget shows the most recent N from this; the My Products card shows the latest
+// entry that matches each product. Capped at MAX_DOWNLOAD_HISTORY (oldest dropped).
+let downloadHistory = loadPersisted('downloadHistory', []);
+// One-time migration: if the user has legacy productDownloads but no downloadHistory,
+// promote each per-product latest record into a single history entry so testers don't
+// lose their visible state when this version ships.
+(function _migrateProductDownloads(){
+  if(downloadHistory.length || !productDownloads || !Object.keys(productDownloads).length) return;
+  Object.keys(productDownloads).forEach(name => {
+    const dl = productDownloads[name] || {};
+    if(!dl.installer) return;
+    downloadHistory.push({
+      product: name,
+      installer: dl.installer,
+      datetime: dl.datetime || '',
+      timestamp: dl.timestamp || 0,
+      os: dl.os || '',
+    });
+  });
+  // Sort oldest-first so the latest record stays at the end (matches push() order)
+  downloadHistory.sort((a,b) => (a.timestamp||0) - (b.timestamp||0));
+  savePersisted('downloadHistory', downloadHistory);
+})();
+const MAX_DOWNLOAD_HISTORY = 25;
 // Shape: { '<ticket id>': { status?, resolved?, threadAppend: [event,...] } }
 
 function _ticketsFor(role){
@@ -5907,6 +6451,25 @@ function renderSupportTickets(role){
   // Gary / Alan — no licence, no support
   if(role==='gary'||role==='alan'){
     list.innerHTML='<div style="text-align:center;padding:36px 20px"><div style="width:48px;height:48px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#7a92ab" stroke-width="1.5"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#7a92ab" stroke-width="1.5" stroke-linecap="round"/></svg></div><div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Support not available</div><div style="font-size:13px;color:var(--text-muted);max-width:340px;margin:0 auto">You need an active product licence to open support cases. Contact your administrator to be assigned to an account and a product.</div></div>';
+    const so=document.getElementById('u-stat-open');
+    const sa=document.getElementById('u-stat-awaiting');
+    const sr=document.getElementById('u-stat-resolved');
+    if(so) so.textContent='0';
+    if(sa) sa.textContent='0';
+    if(sr) sr.textContent='0';
+    const ntBtn=document.querySelector('#pg-u-support .topbar-actions .btn.primary');
+    if(ntBtn) ntBtn.style.display='none';
+    const ntForm=document.getElementById('new-ticket-form');
+    if(ntForm) ntForm.classList.remove('open');
+    return;
+  }
+
+  // Reseller-managed orgs (like DeBuyer Inc.) route support through their partner
+  // instead of directly through Blue Marble. Show a partner-referral message and
+  // suppress the New ticket button. Flag is set on the org config (org.hideSupport).
+  const _org = ORG_DATA[currentOrg];
+  if(_org && _org.hideSupport){
+    list.innerHTML='<div style="text-align:center;padding:36px 20px"><div style="width:48px;height:48px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 12h6M9 8h6M9 16h4" stroke="#7a92ab" stroke-width="1.5" stroke-linecap="round"/><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" stroke="#7a92ab" stroke-width="1.5"/></svg></div><div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Support not available</div><div style="font-size:13px;color:var(--text-muted);max-width:380px;margin:0 auto;line-height:1.5">Contact your authorized Blue Marble partner to get support.</div></div>';
     const so=document.getElementById('u-stat-open');
     const sa=document.getElementById('u-stat-awaiting');
     const sr=document.getElementById('u-stat-resolved');
