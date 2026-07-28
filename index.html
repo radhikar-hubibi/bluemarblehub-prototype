@@ -408,6 +408,11 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
 .pill::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;display:block;flex-shrink:0}
 .pill.active{background:var(--green-lt);color:#166534;border:1px solid #bbf7d0}
 .pill.warn{background:var(--amber-lt);color:var(--amber);border:1px solid #fde68a}
+/* warn-alt: for "Invite Declined" — same warm family as pending amber but a
+   noticeably deeper orange so the two are distinguishable at a glance without
+   feeling unrelated. Both statuses open the re-invite flow. */
+.pill.warn-alt{background:#ffedd5;color:#c2410c;border:1px solid #fed7aa}
+.pill.warn-alt[onclick]:hover{background:#c2410c;color:#fff;border-color:#c2410c}
 .pill.info{background:var(--avenza-blue-lt);color:var(--avenza-blue);border:1px solid #bfdbfe}
 .pill.danger{background:var(--red-lt);color:var(--red);border:1px solid #fecaca}
 .pill.danger[onclick]:hover{background:var(--red);color:#fff;border-color:var(--red)}
@@ -1331,6 +1336,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     <button onclick="quickLogin('penny')" style="background:rgba(190,24,93,.25);border:1px solid rgba(252,231,243,.3);color:#fbcfe8;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Penny (Admin)</button>
     <button onclick="quickLogin('bob')" style="background:rgba(124,58,237,.25);border:1px solid rgba(221,214,254,.3);color:#ddd6fe;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Bob (Reseller buyer)</button>
     <button onclick="quickLogin('freya')" style="background:rgba(8,145,178,.25);border:1px solid rgba(207,250,254,.3);color:#cffafe;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Freya (Hybrid buyer)</button>
+    <button onclick="quickLogin('sonya')" style="background:rgba(79,70,229,.25);border:1px solid rgba(224,231,255,.3);color:#e0e7ff;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Sonya (Trial user)</button>
     <button onclick="quickLogin('gary')" style="background:rgba(109,40,217,.25);border:1px solid rgba(196,181,253,.3);color:#c4b5fd;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Gary (User)</button>
     <button onclick="quickLogin('alan')" style="background:rgba(15,118,110,.25);border:1px solid rgba(94,234,212,.3);color:#5eead4;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">Quick login: Alan (User)</button>
   </div>
@@ -1608,6 +1614,11 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
     Freya VanFrugal
     <span class="proto-role role-admin">Admin</span>
   </button>
+  <button class="proto-btn" id="sw-sonya" onclick="switchUser('sonya')">
+    <div class="proto-av" style="background:#4f46e5;color:#fff">SF</div>
+    Sonya Freeloader
+    <span class="proto-role role-admin">Admin</span>
+  </button>
   <button class="proto-btn" id="sw-alan" onclick="switchUser('alan')">
     <div class="proto-av" style="background:#0f766e;color:#fff">AR</div>
     Alan Rickman
@@ -1718,7 +1729,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         <button class="sb-item" id="si-a-licenses" onclick="nav('a-licenses');closeSidebar()">
           <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 6.5h6M5 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Licenses
-          <span class="sb-badge" id="lic-badge">2</span>
+          <span class="sb-badge" id="lic-badge" style="display:none"></span>
         </button>
         <button class="sb-item" id="si-a-billing" onclick="nav('a-billing');closeSidebar()">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 7.5h13" stroke="currentColor" stroke-width="1.3"/><rect x="3.5" y="9.5" width="3" height="1.5" rx=".5" fill="currentColor" opacity=".5"/></svg>
@@ -1904,7 +1915,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th>Email</th>
   <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
   <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Offline <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Connectivity status <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
@@ -1923,7 +1934,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th>Email</th>
   <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
   <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Offline <span class="sort-icon"></span></th>
+  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Connectivity status <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
   <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
   <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
@@ -1966,7 +1977,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh3')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh3"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp3')"><div class="profile-av" id="adpav3" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn3-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp3"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp3-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp3-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
           <button class="btn" onclick="openRemoveLicense()">Remove seats</button>
-          <button class="btn primary" onclick="openAddSeats()">+ Add seats</button>
+          <button class="btn primary" id="lic-add-seats-btn" onclick="openAddSeats()">+ Add seats</button>
         </div>
       </div>
       <div class="page-body">
@@ -2009,7 +2020,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
           <div class="metric blue"><div class="metric-label">Annual spend</div><div class="metric-val" id="bill-annual-spend">$77,752</div><div class="metric-sub" id="bill-annual-sub">3 active products</div></div>
           <div class="metric green"><div class="metric-label">Last payment</div><div class="metric-val" style="font-size:20px;margin-top:4px" id="bill-last-amt">$54,975.00</div><div class="metric-sub"><span class="up">Succeeded</span> · <span id="bill-last-date">Jun 14, 2026</span></div></div>
-          <div class="metric gray"><div class="metric-label">Payment method</div><div class="metric-val" style="font-size:17px;margin-top:4px">Visa ···· 4242</div><div class="metric-sub">Expires 09 / 28</div></div>
+          <div class="metric gray"><div class="metric-label">Payment method</div><div class="metric-val" style="font-size:17px;margin-top:4px" id="bill-pay-method">Visa ···· 4242</div><div class="metric-sub" id="bill-pay-method-sub">Expires 09 / 28</div></div>
         </div>
         <!-- ── Upcoming renewals widget ── -->
         <div class="card" style="margin-bottom:14px">
@@ -2670,6 +2681,52 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   </div>
 </div>
 
+<!-- OFFLINE LICENSE (request/view) -->
+<div class="modal-bg" id="modal-offline-license">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title" id="offline-modal-title">Request offline license</div>
+    <div class="modal-sub" id="offline-modal-sub">Enter the machine details and reason for offline access. The license will be valid for up to 90 days.</div>
+
+    <!-- Existing-license summary (view / re-download mode + self-initiated info) -->
+    <div id="offline-existing-summary" style="display:none;background:var(--avenza-blue-lt);border:1px solid rgba(37,99,235,.18);border-radius:var(--radius-sm);padding:12px 14px;margin-top:4px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--avenza-blue);margin-bottom:6px" id="offline-summary-heading">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5v4M8 11h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span id="offline-summary-heading-text">Existing offline license on file</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
+        <div><span id="offline-view-issued-on-label">Originally issued</span>: <strong id="offline-view-issued-on"></strong></div>
+        <div><span id="offline-view-issued-by-label">Issued by</span>: <strong id="offline-view-issued-by"></strong></div>
+        <div>Valid until: <strong id="offline-view-valid-until"></strong> <span id="offline-view-days-remaining" style="color:var(--text-muted);font-weight:400"></span></div>
+        <div id="offline-view-last-downloaded" style="display:none;color:var(--text-muted);font-size:11.5px;margin-top:3px"></div>
+      </div>
+    </div>
+
+    <div class="modal-label">Machine ID</div>
+    <input class="modal-select" id="offline-machine-id" type="text" placeholder="e.g. WIN-A47B2-XL-2024" style="font-family:'DM Mono',monospace"/>
+    <div id="offline-machine-hint" style="font-size:11px;color:var(--text-muted);margin-top:-4px;margin-bottom:4px">Unique hardware identifier from the target machine. Users can retrieve this from Global Mapper under Help &rarr; About.</div>
+
+    <div class="modal-label">Reason for offline access</div>
+    <textarea class="modal-select" id="offline-reason" rows="3" placeholder="e.g. Fieldwork with no reliable connectivity for 4 weeks" style="resize:vertical;min-height:60px;padding:8px 10px"></textarea>
+
+    <!-- Validity summary block -->
+    <div id="offline-validity-hint" style="background:var(--avenza-blue-lt);border-radius:var(--radius-sm);padding:10px 13px;font-size:12px;color:var(--text-secondary);margin-top:4px">
+      <span style="color:var(--avenza-blue);font-weight:600">&#8635;</span>
+      This offline license will be <strong>valid for <span id="offline-validity-days">up to 90</span> days</strong>
+      <span id="offline-validity-cap-note" style="color:var(--text-muted)"></span>.
+    </div>
+
+    <!-- Error state for validation failures -->
+    <div id="offline-error" style="display:none;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:var(--radius-sm);padding:10px 13px;font-size:12px;color:var(--red);margin-top:4px">
+      <strong>&#9888; Cannot issue offline license.</strong> <span id="offline-error-msg"></span>
+    </div>
+
+    <div class="modal-row">
+      <button class="btn primary" style="flex:1" id="offline-confirm-btn" onclick="confirmOfflineLicense()">Download license</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGE ROLE -->
 <div class="modal-bg" id="modal-change-role">
   <div class="modal">
@@ -2815,7 +2872,7 @@ function _seedFingerprint(dataKey){
       const myOrg = orgFor[persona];
       const seed = DEFAULT_USERS
         .filter(u => !myOrg || u.org === myOrg)
-        .map(u => u.email + '|' + (u.org || '') + '|' + (u.seat || (u.seats||[]).join(',')) + '|' + (u.status||'') + '|' + (u.role||'') + '|' + (u.invitedBy||'') + '|' + (Array.isArray(u.assignedBy)?u.assignedBy.join(','):(u.assignedBy||'')) + '|' + (u.offline?'1':'0'))
+        .map(u => u.email + '|' + (u.org || '') + '|' + (u.seat || (u.seats||[]).join(',')) + '|' + (u.status||'') + '|' + (u.role||'') + '|' + (u.invitedBy||'') + '|' + (Array.isArray(u.assignedBy)?u.assignedBy.join(','):(u.assignedBy||'')) + '|' + (u.offline?'1':'0') + '|' + (u.offlineMachineId||'') + '|' + (u.offlineIssuedOn||'') + '|' + (u.offlineSource||''))
         .sort()
         .join(';');
       return _hash(seed);
@@ -2872,13 +2929,19 @@ const DEFAULT_USERS = [
   {name:'Jane Doe',   email:'jane@acme.com',  initials:'JD',role:'Admin', seats:['Global Mapper Professional','Global Mapper Advanced'],createdOn:'Dec 20, 2024',assignedOn:['Jan 12, 2025','Jan 12, 2025'],assignedBy:['Self (Admin)','Self (Admin)'], status:'active',color:0,lastLogin:'Today, 9:14 AM'},
   {name:'Mary Beth',  email:'mary@acme.com',  initials:'MB',role:'Member',seat:'Global Mapper Professional',createdOn:'Mar 18, 2025',assignedOn:'Apr 1, 2025',assignedBy:'Jane Doe',  status:'active',color:1,lastLogin:'Today, 8:32 AM'},
   {name:'Mark Smith', email:'mark@acme.com',  initials:'MS',role:'Admin', seat:'Global Mapper Professional',createdOn:'Jan 2, 2025', assignedOn:'Jan 15, 2025',assignedBy:'Jane Doe', status:'active',color:2,lastLogin:'Yesterday, 4:55 PM'},
-  {name:'Amy Lee',    email:'amy@acme.com',   initials:'AL',role:'Member',seat:'Global Mapper Essentials',createdOn:'Jan 20, 2025',assignedOn:'Feb 2, 2025',assignedBy:'Jane Doe',status:'active',offline:true,color:3,lastLogin:'May 12, 2025'},
+  {name:'Amy Lee',    email:'amy@acme.com',   initials:'AL',role:'Member',seat:'Global Mapper Essentials',createdOn:'Jan 20, 2025',assignedOn:'Feb 2, 2025',assignedBy:'Jane Doe',status:'active',offline:true,offlineMachineId:'WIN-A47B2-XL-2024',offlineReason:'Fieldwork in remote coastal survey — no reliable connectivity for 6-8 weeks.',offlineIssuedOn:'Jun 1, 2026',offlineIssuedBy:'Jane Doe',color:3,lastLogin:'May 12, 2025'},
   {name:'Tom Rees',   email:'tom@acme.com',   initials:'TR',role:'Admin', seat:'Global Mapper Professional',createdOn:'Feb 5, 2025', assignedOn:'Feb 18, 2025',assignedBy:'Jane Doe', status:'active',color:4,lastLogin:'May 11, 2025'},
-  {name:'Priya Nair', email:'priya@acme.com', initials:'PN',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],  createdOn:'Feb 15, 2025',assignedOn:['Mar 1, 2025','Apr 10, 2025'],assignedBy:['Jane Doe','Tom Rees'],status:'active',offline:true,color:5,lastLogin:'May 10, 2025'},
+  {name:'Priya Nair', email:'priya@acme.com', initials:'PN',role:'Member',seats:['Global Mapper Essentials','Global Mapper Advanced'],  createdOn:'Feb 15, 2025',assignedOn:['Mar 1, 2025','Apr 10, 2025'],assignedBy:['Jane Doe','Tom Rees'],status:'active',offline:true,offlineMachineId:'MAC-P801N-MBP-2023',offlineReason:'Extended assignment at client site with restricted network access.',offlineIssuedOn:'Jun 15, 2026',offlineIssuedBy:'Tom Rees',color:5,lastLogin:'May 10, 2025'},
   {name:'Sam Kim',    email:'sam@acme.com',   initials:'SK',role:'Admin', seat:'Global Mapper Advanced',    createdOn:'Feb 20, 2025',assignedOn:'Mar 5, 2025',assignedBy:'Jane Doe',  status:'active',color:6,lastLogin:'May 9, 2025'},
-  {name:'Lena Hart',  email:'lena@acme.com',  initials:'LH',role:'Member',seat:'Global Mapper Professional',createdOn:'Feb 25, 2025',assignedOn:'Mar 10, 2025',assignedBy:'Mark Smith', status:'active',offline:true,color:7,lastLogin:'May 8, 2025'},
-  {name:'Alice Morgan',email:'alice.morgan@acme.com',initials:'AM',role:'Member',seat:null,createdOn:'',invitedOn:'Jan 1, 2025',status:'reinvite',color:0,lastLogin:''},
-  {name:'Carlos Rivera',email:'carlos.rivera@acme.com',initials:'CR',role:'Member',seat:null,createdOn:'',invitedOn:'Feb 2, 2025',status:'reinvite',color:1,lastLogin:''},
+  {name:'Lena Hart',  email:'lena@acme.com',  initials:'LH',role:'Member',seat:'Global Mapper Professional',createdOn:'Feb 25, 2025',assignedOn:'Mar 10, 2025',assignedBy:'Mark Smith', status:'active',offline:true,offlineMachineId:'WIN-LH-STUDIO-01',offlineReason:'Off-grid research trip — 3D mapping in Patagonia.',offlineIssuedOn:'Jul 10, 2026',offlineIssuedBy:'Jane Doe',color:7,lastLogin:'May 8, 2025'},
+  // Freya Andersen — self-initiated offline. She flipped her own status from
+  // within the application; our identity system (Keycloak) reported that back.
+  // No admin issued a license file, no machine ID captured — just the fact of
+  // offline status + the identity-system-reported validity window. If she later
+  // needs a downloadable license, the admin's Request-license flow will apply.
+  {name:'Freya Andersen',email:'freya.andersen@acme.com',initials:'FA',role:'Member',seat:'Global Mapper Professional',createdOn:'Mar 5, 2025',assignedOn:'Mar 15, 2025',assignedBy:'Jane Doe',status:'active',offline:true,offlineSource:'self',offlineIssuedOn:'Jul 27, 2026',offlineValidUntil:'Mar 16, 2027',color:1,lastLogin:'Jul 26, 2026, 5:41 PM'},
+  {name:'Alice Morgan',email:'alice.morgan@acme.com',initials:'AM',role:'Member',seat:null,createdOn:'',invitedOn:'Jan 1, 2025',status:'declined',declinedOn:'Jan 12, 2025',declinedBy:'Alice Morgan',color:0,lastLogin:''},
+  {name:'Carlos Rivera',email:'carlos.rivera@acme.com',initials:'CR',role:'Member',seat:null,createdOn:'',invitedOn:'Feb 2, 2025',status:'declined',declinedOn:'Feb 10, 2025',declinedBy:'Carlos Rivera',color:1,lastLogin:''},
   {name:'Diana Patel',email:'diana.patel@acme.com',initials:'DP',role:'Member',seat:null,createdOn:'',invitedOn:'Mar 3, 2025',status:'pending',color:2,lastLogin:''},
   {name:'Ethan Brooks',email:'ethan.brooks@acme.com',initials:'EB',role:'Member',seat:null,createdOn:'Apr 10, 2025',invitedOn:'Apr 4, 2025',status:'pending',color:3,lastLogin:'May 13, 2025'},
   {name:'Fiona Walsh',email:'fiona.walsh@acme.com',initials:'FW',role:'Member',seat:null,createdOn:'Apr 15, 2025',invitedOn:'May 5, 2025',status:'pending',color:4,lastLogin:'May 10, 2025'},
@@ -2907,7 +2970,6 @@ const DEFAULT_USERS = [
   {name:'Callum OBrien',email:'callum.obrien@acme.com',initials:'CO',role:'Member',seat:null,createdOn:'',invitedOn:'Mar 28, 2025',status:'invited',color:3,lastLogin:''},
   {name:'Delia Santos',email:'delia.santos@acme.com',initials:'DS',role:'Member',seat:'Global Mapper Professional',createdOn:'May 9, 2025',assignedOn:'May 14, 2025',assignedBy:'Mark Smith',status:'active',color:4,lastLogin:'May 4, 2025'},
   {name:'Emeka Eze',email:'emeka.eze@acme.com',initials:'EE',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 14, 2025',assignedBy:'Tom Rees',status:'active',color:5,lastLogin:'May 3, 2025'},
-  {name:'Freya Andersen',email:'freya.andersen@acme.com',initials:'FA',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 15, 2025',assignedBy:'Sam Kim',status:'active',color:6,lastLogin:'May 2, 2025'},
   {name:'Grant Nakamura',email:'grant.nakamura@acme.com',initials:'GN',role:'Member',seat:'Global Mapper Essentials',createdOn:'May 11, 2025',assignedOn:'May 15, 2025',assignedBy:'Jane Doe',status:'active',color:7,lastLogin:'May 2, 2025'},
   {name:'Holly Davies',email:'holly.davies@acme.com',initials:'HD',role:'Member',seat:null,createdOn:'May 11, 2025',invitedOn:'Mar 5, 2025',status:'invited',color:0,lastLogin:'May 1, 2025'},
   {name:'Ivan Sousa',email:'ivan.sousa@acme.com',initials:'IS',role:'Member',seat:null,createdOn:'May 12, 2025',invitedOn:'Apr 6, 2025',status:'invited',color:1,lastLogin:'May 1, 2025'},
@@ -2990,6 +3052,14 @@ const DEFAULT_USERS_VANFRUGAL = [
 ];
 DEFAULT_USERS.push(...DEFAULT_USERS_VANFRUGAL);
 
+// Freeloader Inc. — Sonya is the primary admin, sole user, on a 14-day trial.
+// No paid products, no other users invited. Represents the "just signed up and
+// evaluating" persona for stakeholders reviewing the trial experience.
+const DEFAULT_USERS_FREELOADER = [
+  {org:'freeloader',name:'Sonya Freeloader',email:'sonya@freeloader.com',initials:'SF',role:'Admin',seat:'Global Mapper Trial',createdOn:'Jul 27, 2026',assignedOn:'Jul 27, 2026',assignedBy:'Sonya Freeloader',status:'active',color:2,lastLogin:'Today, 10:15 AM'},
+];
+DEFAULT_USERS.push(...DEFAULT_USERS_FREELOADER);
+
 // Normalization: stamp invitedBy on any pending/invited user that doesn't already
 // have it set. Acme is distributed across the 4 admins by date (Jane handled all
 // invites until April 2025, then Mark / Tom / Sam joined the rotation as they were
@@ -3006,7 +3076,7 @@ DEFAULT_USERS.push(...DEFAULT_USERS_VANFRUGAL);
   const acmeRecentAdmins = ['Mark Smith', 'Tom Rees', 'Sam Kim', 'Jane Doe'];
   DEFAULT_USERS.forEach(u => {
     if(u.invitedBy) return; // explicit value wins
-    if(!u.invitedOn && !u.invitedBy && u.status!=='pending' && u.status!=='invited' && u.status!=='reinvite') return;
+    if(!u.invitedOn && !u.invitedBy && u.status!=='pending' && u.status!=='invited' && u.status!=='declined') return;
     if(u.org === 'poppins'){
       u.invitedBy = 'Penny Purchaser';
       return;
@@ -3089,15 +3159,26 @@ function orgAnnualSpend(orgKey){
 }
 
 // Returns the products that appear on the in-Hub Billing page for an org. For
-// most orgs this is every product they have. For orgs flagged with
-// billingDirectPurchasesOnly, reseller-purchased items are excluded (they're
-// billed by the reseller partner directly, not on our invoice).
+// most orgs this is every product they have. Two filters apply:
+//   • Orgs flagged billingDirectPurchasesOnly hide reseller-purchased items
+//     (billed by the reseller partner directly, not on our invoice).
+//   • Trial products are always excluded — trials are free, produce no invoice,
+//     and shouldn't appear as a billing line item anywhere.
 function billableProductsFor(org){
   if(!org || !org.products) return [];
+  let list = org.products.filter(p => p.status !== 'trial');
   if(org.billingDirectPurchasesOnly){
-    return org.products.filter(p => p.purchasedVia !== 'reseller');
+    list = list.filter(p => p.purchasedVia !== 'reseller');
   }
-  return org.products;
+  return list;
+}
+
+// True if every product in the org is a trial. Trial subscriptions can't add
+// seats — the user needs to convert to a paid subscription first. Used to
+// disable + tooltip the Add seats buttons on the Licenses page.
+function _isTrialOnlyOrg(org){
+  if(!org || !org.products || !org.products.length) return false;
+  return org.products.every(p => p.status === 'trial');
 }
 
 const ORG_DATA={
@@ -3214,8 +3295,32 @@ const ORG_DATA={
     resellerAddSeats:true,
     billingDirectPurchasesOnly:true,
     products:[
-      {key:'vp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',type:'Annual',seats:1,used:0,renewal:'May 4, 2027',status:'active',autoRenew:false,amount:'$2,199',purchasedOn:'May 4, 2026',purchasedVia:'direct'},
+      {key:'vp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',type:'Annual',seats:1,used:0,renewal:'May 4, 2027',status:'active',autoRenew:true,amount:'$2,199',purchasedOn:'May 4, 2026',purchasedVia:'direct'},
       {key:'ve', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',   type:'Annual',seats:10,used:0,renewal:'Jun 16, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Jun 16, 2026',purchasedVia:'reseller'},
+    ],
+  },
+  freeloader:{
+    key:'freeloader',
+    name:'Freeloader Inc.',
+    avatar:'FI',
+    avatarBg:'#4f46e5',
+    avatarFg:'#e0e7ff',
+    domain:'freeloader.com',
+    plan:'Global Mapper Trial (14-day)',
+    accountId:'ZEN-01099-FREELOADER',
+    created:'July 27, 2026',
+    // Trial ends 14 days after start (Jul 27 → Aug 10)
+    nextRenewal:'Aug 10, 2026',
+    annualSpend:'$0',
+    products:[
+      // Trial: 1 seat, 14-day duration, $0 cost. Started today so it's actively
+      // running. Automatically assigned to Sonya at signup (used:1) — trial
+      // signups auto-provision a seat for the signup email. purchasedVia stays
+      // 'direct' since she signed up herself via the website; no reseller involved.
+      // Status is 'trial' — non-billable, no invoice line generated on the
+      // Billing page (but the Billing sidebar link stays visible since she's
+      // still a direct Blue Marble customer, just not currently invoiced).
+      {key:'ft', icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Trial',type:'14-day trial',seats:1,used:1,renewal:'Aug 10, 2026',status:'trial',autoRenew:false,amount:'$0.00',purchasedOn:'Jul 27, 2026',purchasedVia:'direct'},
     ],
   }
 };
@@ -3320,6 +3425,28 @@ const USER_ORG={
       vanfrugal:{
         role:'admin',roleLabel:'Primary admin',
         seats:[],
+        unassigned:[],
+      }
+    }
+  },
+  // Sonya — Primary admin of Freeloader Inc., trial-only user. Signed up for a
+  // 14-day Global Mapper Trial on Jul 30, 2026. No paid products. She's a
+  // representative "trialing customer" persona for stakeholders to see what the
+  // trial experience looks like before conversion.
+  sonya:{
+    orgs:['freeloader'],
+    defaultOrg:'freeloader',
+    initials:'SF',avatarBg:'#4f46e5',name:'Sonya Freeloader',email:'sonya@freeloader.com',
+    roleLabel:'Primary admin',
+    byOrg:{
+      freeloader:{
+        role:'admin',roleLabel:'Primary admin',
+        // Trial signup auto-provisions a seat for the signup email. Sonya holds
+        // the trial license herself — that's the point of a trial, the person
+        // signing up is the one evaluating the product.
+        seats:[
+          {icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Trial',type:'14-day trial',assignedBy:'Self (Trial signup)',since:'Jul 27, 2026',renewal:'Aug 10, 2026',status:'trial'},
+        ],
         unassigned:[],
       }
     }
@@ -3564,10 +3691,13 @@ function renderInvoiceHistory(){
   }).join('');
 
   // Update the billing-page metric cards based on the actual data.
+  const org = ORG_DATA[currentOrg];
+  const billable = billableProductsFor(org);
+  const isEmptyBilling = billable.length === 0;
   const annual = document.getElementById('bill-annual-spend');
   if(annual) annual.textContent = orgAnnualSpend(currentOrg);
   const sub = document.getElementById('bill-annual-sub');
-  if(sub) sub.textContent = (billableProductsFor(ORG_DATA[currentOrg]).length) + ' active products';
+  if(sub) sub.textContent = billable.length + ' active product' + (billable.length!==1?'s':'');
   // "Last payment" = the most recent invoice
   const last = invoices[0];
   const lastAmt = document.getElementById('bill-last-amt');
@@ -3577,7 +3707,19 @@ function renderInvoiceHistory(){
     if(lastDate) lastDate.textContent = last.date || '';
   } else {
     if(lastAmt) lastAmt.textContent = '$0.00';
-    if(lastDate) lastDate.textContent = '—';
+    if(lastDate) lastDate.textContent = '\u2014';
+  }
+  // Payment method: hardcoded placeholder for orgs with real billing activity,
+  // blank em-dash for orgs with no billable products (trial-only). Nothing to
+  // charge = nothing to have on file yet.
+  const payMethod = document.getElementById('bill-pay-method');
+  const payMethodSub = document.getElementById('bill-pay-method-sub');
+  if(isEmptyBilling){
+    if(payMethod) payMethod.textContent = '\u2014';
+    if(payMethodSub) payMethodSub.textContent = 'No payment method on file';
+  } else {
+    if(payMethod) payMethod.textContent = 'Visa \u00b7\u00b7\u00b7\u00b7 4242';
+    if(payMethodSub) payMethodSub.textContent = 'Expires 09 / 28';
   }
 }
 
@@ -3642,7 +3784,7 @@ function updateDashOrgBanners(){
   applyAutoRenewOverrides();
   const org=ORG_DATA[currentOrg];
   const u=currentUData();
-  const ORG_DASH={'acme':{total:48,seats:14,unassigned:34,renewal:'Jun 14, 2027',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jan 10, 2027',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2027',days:'293 days away',tickets:0,awaiting:0},'debuyer':{total:7,seats:0,unassigned:7,renewal:'Jun 1, 2027',days:'320 days away',tickets:0,awaiting:0},'vanfrugal':{total:11,seats:0,unassigned:11,renewal:'May 4, 2027',days:'292 days away',tickets:0,awaiting:0}};
+  const ORG_DASH={'acme':{total:48,seats:14,unassigned:34,renewal:'Jun 14, 2027',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jan 10, 2027',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2027',days:'293 days away',tickets:0,awaiting:0},'debuyer':{total:7,seats:0,unassigned:7,renewal:'Jun 1, 2027',days:'320 days away',tickets:0,awaiting:0},'vanfrugal':{total:11,seats:0,unassigned:11,renewal:'May 4, 2027',days:'292 days away',tickets:0,awaiting:0},'freeloader':{total:1,seats:1,unassigned:0,renewal:'Aug 10, 2026',days:'14 days away',tickets:0,awaiting:0}};
   const USER_SEATS={'admin':{'acme':['Global Mapper Professional','Global Mapper Advanced']},'user':{'acme':['Global Mapper Professional'],'davis':['Global Mapper Essentials']},'penny':{'poppins':[]},'gary':{},'alan':{'snape':[]}};
   const dash=currentOrg?ORG_DASH[currentOrg]:null;
   // Overwrite the seeded dash totals/seats/unassigned with live counts derived from the
@@ -3670,6 +3812,9 @@ function updateDashOrgBanners(){
     'vanfrugal':{
       'Global Mapper Professional':'Freya VanFrugal / freya@vanfrugal.com / May 4, 2026',
       'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 16, 2026'
+    },
+    'freeloader':{
+      'Global Mapper Trial':'Sonya Freeloader / sonya@freeloader.com / Jul 27, 2026'
     }
   };
 
@@ -3687,23 +3832,32 @@ function updateDashOrgBanners(){
     const s=document.getElementById('a-dash-active-seats');if(s)s.textContent=dash.seats;
     const sSub=document.getElementById('a-dash-active-seats-sub');if(sSub)sSub.textContent='of '+dash.total+' total';
     const ss=document.getElementById('a-dash-seats-sub');  if(ss)ss.textContent=dash.unassigned+' unassigned';
-    const r=document.getElementById('a-dash-renewal');     if(r)r.textContent=dash.renewal;
+    // Next renewal — trial-only orgs don't have a renewal date because trials
+    // expire, they don't renew. Show "No renewal set" instead of the trial
+    // expiration date to avoid implying auto-conversion to paid.
+    const trialOnly = _isTrialOnlyOrg(ORG_DATA[currentOrg]);
+    const r=document.getElementById('a-dash-renewal');
+    if(r) r.textContent = trialOnly ? 'No renewal set' : dash.renewal;
     const rd=document.getElementById('a-dash-renewal-days');
     if(rd){
-      // Compute days-until from the real current date, not a hardcoded label.
-      const today=new Date(); today.setHours(0,0,0,0);
-      const renewDate=new Date(dash.renewal);
-      let label;
-      if(isNaN(renewDate)){
-        label=dash.days; // fallback to seed label
+      if(trialOnly){
+        rd.textContent = 'Trial expires ' + dash.renewal;
       } else {
-        const days=Math.round((renewDate-today)/(1000*60*60*24));
-        if(days < 0)        label=(-days)+' days ago';
-        else if(days === 0) label='today';
-        else if(days === 1) label='tomorrow';
-        else                label=days+' days away';
+        // Compute days-until from the real current date, not a hardcoded label.
+        const today=new Date(); today.setHours(0,0,0,0);
+        const renewDate=new Date(dash.renewal);
+        let label;
+        if(isNaN(renewDate)){
+          label=dash.days; // fallback to seed label
+        } else {
+          const days=Math.round((renewDate-today)/(1000*60*60*24));
+          if(days < 0)        label=(-days)+' days ago';
+          else if(days === 0) label='today';
+          else if(days === 1) label='tomorrow';
+          else                label=days+' days away';
+        }
+        rd.textContent=label;
       }
-      rd.textContent=label;
     }
     const ot=document.getElementById('a-dash-open-tickets');
     const aw=document.getElementById('a-dash-awaiting-sub');
@@ -3838,7 +3992,9 @@ function updateDashOrgBanners(){
           +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">'+p.used+' of '+p.seats+' seats</div>'
         +'</div>'
         +'<span class="pill '+sc+'" style="margin-right:14px">'+sl+'</span>'
-        +'<button class="btn sm" style="margin-right:6px" onclick="openAddSeats()">Add seats</button>'
+        +(p.status === 'trial'
+          ? '<button class="btn sm" style="margin-right:6px;opacity:.5;cursor:not-allowed" disabled title="Additional seats cannot be added to trial">Add seats</button>'
+          : '<button class="btn sm" style="margin-right:6px" onclick="openAddSeats()">Add seats</button>')
         +'<button class="btn sm" onclick="nav(\'a-users\')">Manage</button>'
         +'</div>';
     }).join('');
@@ -3983,10 +4139,12 @@ function updateDashOrgBanners(){
   // Dynamic "N licenses expiring" banner. Previously this was hardcoded copy that
   // read wrong for orgs whose products aren't in the expiring status. Now driven
   // by data — only shows when at least one product has status:'expiring'.
+  // The sidebar Licenses badge derives from the same count so both stay in sync.
   const expBanner = document.getElementById('a-dash-expiring-banner');
   const expTxt = document.getElementById('a-dash-expiring-txt');
+  const licBadge = document.getElementById('lic-badge');
+  const expiringProducts = (org && org.products) ? org.products.filter(p => p.status === 'expiring') : [];
   if(expBanner){
-    const expiringProducts = (org && org.products) ? org.products.filter(p => p.status === 'expiring') : [];
     if(expiringProducts.length){
       expBanner.style.display = 'flex';
       if(expTxt){
@@ -3995,6 +4153,33 @@ function updateDashOrgBanners(){
       }
     } else {
       expBanner.style.display = 'none';
+    }
+  }
+  if(licBadge){
+    if(expiringProducts.length){
+      licBadge.style.display = '';
+      licBadge.textContent = expiringProducts.length;
+    } else {
+      licBadge.style.display = 'none';
+    }
+  }
+
+  // Trial-only orgs can't add seats. Disable the top-bar Add seats button and
+  // surface an explanatory tooltip. The button STAYS visible so testers see the
+  // action exists — it's just gated until conversion. Row-level Add seats
+  // buttons receive the same treatment in the licenses render loop.
+  const addBtn = document.getElementById('lic-add-seats-btn');
+  if(addBtn){
+    if(_isTrialOnlyOrg(org)){
+      addBtn.disabled = true;
+      addBtn.title = 'Additional seats cannot be added to trial';
+      addBtn.style.opacity = '0.5';
+      addBtn.style.cursor = 'not-allowed';
+    } else {
+      addBtn.disabled = false;
+      addBtn.title = '';
+      addBtn.style.opacity = '';
+      addBtn.style.cursor = '';
     }
   }
 
@@ -4027,6 +4212,11 @@ function applyOrgContext(){
   const isAdmin=uo.role==='admin';
   document.getElementById('grp-manage').style.display=isAdmin?'block':'none';
 
+  // Reseller-managed orgs (like DeBuyer Inc.) still keep Support in the sidebar so
+  // Bob can navigate there — the page itself shows the partner-referral message.
+  // Billing is genuinely inaccessible (managed by the reseller) so its sidebar
+  // item is hidden. Reset visibility for non-reseller orgs so switching back
+  // restores the normal experience.
   // Reseller-managed orgs (like DeBuyer Inc.) still keep Support in the sidebar so
   // Bob can navigate there — the page itself shows the partner-referral message.
   // Billing is genuinely inaccessible (managed by the reseller) so its sidebar
@@ -4227,6 +4417,7 @@ function switchUser(role){
     gary: {firstname:'Gary',lastname:'Oldman',email:'gary@noaccountyet.com',phone:'',fax:'',jobtitle:'Apprentice',company:"Gary\'s Soloship",industry:'',address:'1234 Peaks Blvd',city:'Colorado Springs',zip:'80903',country:'US',state:'Colorado'},
     bob:  {firstname:'Bob',lastname:'DeBuyer',email:'bob@debuyer.com',phone:'+1 415 555 0217',fax:'',jobtitle:'IT Procurement Lead',company:'DeBuyer Inc.',industry:'GIS & Mapping',address:'88 Buyer Way',city:'Portland',zip:'97205',country:'US',state:'Oregon'},
     freya:{firstname:'Freya',lastname:'VanFrugal',email:'freya@vanfrugal.com',phone:'+1 206 555 0163',fax:'',jobtitle:'GIS Analyst',company:'VanFrugal LLC',industry:'Environmental & Natural Resources',address:'1441 Fjord Way',city:'Seattle',zip:'98101',country:'US',state:'Washington'},
+    sonya:{firstname:'Sonya',lastname:'Freeloader',email:'sonya@freeloader.com',phone:'+1 512 555 0198',fax:'',jobtitle:'Independent Consultant',company:'Freeloader Inc.',industry:'Consulting & Advisory',address:'2200 Congress Ave, Ste 4B',city:'Austin',zip:'78701',country:'US',state:'Texas'},
   };
   const pd=profiles[role];
   if(pa){pa.textContent=(pd.firstname[0]||'')+(pd.lastname[0]||'');pa.style.background=u.avatarBg;}
@@ -4435,6 +4626,70 @@ function _detectOS(){
   }
 }
 
+// ── Offline license validity helpers ────────────────────────────────────────
+// Offline licenses are issued for a maximum of 90 days, but the expiration is
+// also capped at the earliest license/subscription renewal date for the user's
+// products. So a user whose Essentials renews in 60 days would get a 60-day
+// offline license, not 90.
+const OFFLINE_LICENSE_MAX_DAYS = 90;
+
+// Parse a friendly date string like "Jun 14, 2027" into a Date. Returns null on
+// failure so callers can fall back cleanly rather than crash on bad dates.
+function _parseFriendlyDate(str){
+  if(!str) return null;
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Formats a Date as "Aug 30, 2026" — matches the visual convention used everywhere else
+function _formatFriendlyDate(d){
+  if(!d) return '';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+
+// Computes the offline license validity end-date for a given user. Uses the
+// issue-date + 90 days, capped at the earliest renewal date across the user's
+// currently-held product seats. Returns { validUntil: Date, daysValid: number }.
+function _computeOfflineValidity(u, issueDateStr){
+  const issueDate = _parseFriendlyDate(issueDateStr) || new Date();
+  // Cap #1: 90 days from issue
+  const maxEnd = new Date(issueDate.getTime());
+  maxEnd.setDate(maxEnd.getDate() + OFFLINE_LICENSE_MAX_DAYS);
+
+  // Cap #2: earliest renewal across their held products
+  const org = ORG_DATA[currentOrg];
+  const held = new Set(getSeats(u));
+  let earliestRenewal = null;
+  if(org && Array.isArray(org.products)){
+    org.products.forEach(p => {
+      if(!held.has(p.name)) return;
+      const d = _parseFriendlyDate(p.renewal);
+      if(d && (!earliestRenewal || d < earliestRenewal)){
+        earliestRenewal = d;
+      }
+    });
+  }
+  const validUntil = (earliestRenewal && earliestRenewal < maxEnd) ? earliestRenewal : maxEnd;
+  const daysValid = Math.max(0, Math.round((validUntil - issueDate) / (1000*60*60*24)));
+  return { validUntil, daysValid };
+}
+
+// Returns the days remaining until the offline license expires, based on today.
+// Used for the "Valid for N days" hint under the Download license link.
+function _offlineDaysRemaining(u){
+  if(!u || !u.offlineIssuedOn) return null;
+  // Prefer stored expiration if present (set at issue time so it doesn't drift)
+  let validUntil = _parseFriendlyDate(u.offlineValidUntil);
+  if(!validUntil){
+    // Fall back to recomputing from issue-date + cap logic
+    validUntil = _computeOfflineValidity(u, u.offlineIssuedOn).validUntil;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = Math.round((validUntil - today) / (1000*60*60*24));
+  return Math.max(0, days);
+}
+
 // Helper used by audit trail. When a runtime action mutates a user record, stamp the
 // modification date+time and the admin who performed it. Pulls the active admin's
 // name from currentUData(). Falls back to "Admin" if no name available.
@@ -4552,8 +4807,7 @@ function hasSeat(u){ return getSeats(u).length>0; }
 
 function statusLabel(u){
   if(hasSeat(u))              return {lbl:'Active',       cls:'active'};
-  if(u.status==='reinvite')   return {lbl:'Re-Invite',    cls:'danger'};
-  if(u.status==='declined')   return {lbl:'Invite declined',cls:'warn'};
+  if(u.status==='declined')   return {lbl:'Invite declined',cls:'warn-alt'};
   if(u.status==='pending')    return {lbl:'Invite pending',cls:'warn'};
   if(u.status==='invited')    return {lbl:'Invite accepted',cls:'neutral'};
   return {lbl:u.status,cls:'neutral'};
@@ -4568,6 +4822,7 @@ const PRIMARY_ADMINS = new Set([
   'penny@poppins.com',    // Penny Purchaser — Poppins primary admin
   'bob@debuyer.com',      // Bob DeBuyer — DeBuyer Inc. primary admin (reseller-managed)
   'freya@vanfrugal.com',  // Freya VanFrugal — VanFrugal LLC primary admin (hybrid direct+reseller)
+  'sonya@freeloader.com', // Sonya Freeloader — Freeloader Inc. primary admin (trial)
 ]);
 function isPrimaryAdmin(u){
   return u && u.email && PRIMARY_ADMINS.has(u.email.toLowerCase());
@@ -4762,32 +5017,53 @@ function renderUsers(){
     }
     return '<button class="btn xs primary" onclick="openAssign('+ri+')" title="Assign an additional product license to this user">+ Add product</button>';
   }
-  // Renders the "Offline" column cell.
-  //   - Offline user (has seat + offline flag): "Yes" + "Download license" link
-  //   - Online user with a seat:                "No" in muted text
-  //   - Unassigned user (no seat to be offline with): em-dash
+  // Renders the Connectivity status column. Four states:
+  //   • No seat                          → em-dash (nothing to be offline with)
+  //   • Has seat, online (offline:false) → "Online" in green + "Request offline
+  //     license" link (admin can start the flow to issue a license)
+  //   • Has seat, offline, self-initiated → "Roaming" in amber, NO link. Roaming
+  //     users have declared themselves offline from within the app; an offline
+  //     license can't be requested until they come off roaming. The admin sees
+  //     the state but has no direct action here.
+  //   • Has seat, offline, admin-issued → "Offline" in amber + "Download offline
+  //     license" link + "Valid for N days" hint. Admin can re-download the file.
   function offlineCell(u){
     const hasAnySeat = hasSeat(u);
     if(!hasAnySeat) return '<span style="color:var(--text-muted)">\u2014</span>';
+    const ri = users.indexOf(u);
     if(u.offline){
-      const safeName = String(u.name||'').replace(/'/g,"\\'");
-      return '<div style="font-weight:600;color:var(--amber)">Yes</div>'
-        + '<div style="font-size:11px;margin-top:2px"><a href="#" style="color:var(--avenza-blue);text-decoration:underline" onclick="downloadOfflineLicense(\''+safeName+'\');return false;">Download license</a></div>';
+      const daysLeft = _offlineDaysRemaining(u);
+      const validText = (daysLeft !== null)
+        ? ('Valid for ' + daysLeft + ' day' + (daysLeft!==1?'s':''))
+        : 'Valid for 90 days';
+      const isSelf = u.offlineSource === 'self';
+      if(isSelf){
+        // Roaming — self-initiated offline. No action link; the user must come
+        // off roaming (return online) before an offline license can be issued.
+        return '<div style="font-weight:600;color:var(--amber)" title="User is offline via self-initiated roaming. An offline license cannot be requested until they come off roaming.">Roaming</div>'
+          + '<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">' + validText + '</div>';
+      }
+      // Offline — admin-issued license. Show the download-again link + validity.
+      return '<div style="font-weight:600;color:var(--amber)">Offline</div>'
+        + '<div style="font-size:11px;margin-top:2px"><a href="#" style="color:var(--avenza-blue);text-decoration:underline" title="Re-download the offline license file for this user." onclick="openOfflineLicense('+ri+');return false;">Download offline license</a></div>'
+        + '<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">' + validText + '</div>';
     }
-    return '<span style="color:var(--text-muted)">No</span>';
+    // Online — has a seat, no offline license issued, not roaming. Admin can
+    // request a new offline license via the modal.
+    return '<div style="font-weight:600;color:var(--green)">Online</div>'
+      + '<div style="font-size:11px;margin-top:2px"><a href="#" style="color:var(--avenza-blue);text-decoration:underline" onclick="openOfflineLicense('+ri+');return false;">Request offline license</a></div>';
   }
 
-  // Renders the Status column pill. "Invite pending", "Re-Invite", and "Invite
-  // declined" statuses are all clickable — clicking opens the (re-)invite modal
-  // prefilled with the user's email. This unifies the three "needs re-inviting"
-  // flows since the admin's intent is the same in each case: re-send the invite.
+  // Renders the Status column pill. "Invite pending" and "Invite declined"
+  // statuses are clickable — clicking opens the (re-)invite modal prefilled with
+  // the user's email. This unifies the two "needs re-inviting" flows since the
+  // admin's intent is the same in each case: re-send the invite.
   function statusPillCell(u, ri){
     const st = statusLabel(u);
-    if(u.status==='pending' || u.status==='reinvite' || u.status==='declined'){
-      let tip;
-      if(u.status==='reinvite')      tip = 'Click to re-send invite (previous one expired)';
-      else if(u.status==='declined') tip = 'Click to invite this user again';
-      else                            tip = 'Click to re-send invite';
+    if(u.status==='pending' || u.status==='declined'){
+      const tip = (u.status==='declined')
+        ? 'Click to invite this user again'
+        : 'Click to re-send invite';
       return `<span class="pill ${st.cls}" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="reinviteUser(${ri})" title="${tip}">${st.lbl}</span>`;
     }
     return `<span class="pill ${st.cls}">${st.lbl}</span>`;
@@ -4818,9 +5094,6 @@ function renderUsers(){
         sentLabel = 'Invite sent' + by;
       }
       return `<span style="font-size:12px;color:var(--text-muted)" title="User must accept their invite before a seat can be assigned">${sentLabel}</span>`;
-    }
-    if(u.status==='reinvite'){
-      return `<span style="font-size:12px;color:var(--text-muted)" title="The user's invite expired. Click the Re-Invite pill to re-send before assigning a seat.">Re-invite required</span>`;
     }
     if(freeCount>0){
       return `<button class="btn sm primary" onclick="openAssign(${ri})">Assign seat \u2192</button>`;
@@ -5209,10 +5482,17 @@ function confirmInvite(){
    ADD / REMOVE SEATS
 ═══════════════════════════════════════ */
 function openAddSeats(){
+  const org=ORG_DATA[currentOrg];
+  // Trial-only orgs can't add seats — a trial user needs to convert to a paid
+  // subscription before scaling their team. Toast an explanation instead of
+  // opening the modal.
+  if(_isTrialOnlyOrg(org)){
+    toast('Additional seats cannot be added to a trial. Convert to a paid subscription first.');
+    return;
+  }
   // Build the subscription dropdown from the current org's products so it always
   // reflects the right products & seat counts for whichever persona is active.
   const sel=document.getElementById('add-seats-product');
-  const org=ORG_DATA[currentOrg];
   if(sel && org && org.products){
     sel.innerHTML=org.products.map(p=>{
       // All subscriptions are annual — show the per-product current seat count
@@ -5317,9 +5597,305 @@ function payNow(productName, amount){
 // Admin action for the Offline column. In a real product this would generate a
 // signed license file the admin can hand off to a disconnected user. The prototype
 // simulates the workflow with a confirmation + toast so testers see the intent.
-function downloadOfflineLicense(userName){
-  if(!userName) return;
-  toast('\u2193 Downloading offline license for ' + userName + '\u2026');
+// ── Offline license workflow ────────────────────────────────────────────────
+// Three paths through the same modal:
+//   REQUEST — user is currently online (u.offline !== true). Admin enters
+//     MachineID + reason, clicks Download license. Backend (Keycloak) confirms
+//     the user has no active session, then u.offline flips true.
+//   RE-DOWNLOAD — user is offline with a still-valid license. Admin can pull the
+//     .lic file again (user lost the file, got a new laptop, etc.). Machine ID
+//     and reason can be updated but the 90-day clock stays anchored to the
+//     original issue date so re-download can't extend indefinitely.
+//   FRESH ISSUE AFTER EXPIRY — user is offline but past the validity window.
+//     Modal offers to issue a brand-new license with a fresh 90-day window.
+let _offlineTargetIdx = null;
+
+function openOfflineLicense(idx){
+  _offlineTargetIdx = idx;
+  const u = users[idx];
+  if(!u) return;
+
+  const modal = document.getElementById('modal-offline-license');
+  const title = document.getElementById('offline-modal-title');
+  const sub = document.getElementById('offline-modal-sub');
+  const summary = document.getElementById('offline-existing-summary');
+  const machineInput = document.getElementById('offline-machine-id');
+  const reasonInput = document.getElementById('offline-reason');
+  const machineHint = document.getElementById('offline-machine-hint');
+  const validityHint = document.getElementById('offline-validity-hint');
+  const validityDays = document.getElementById('offline-validity-days');
+  const capNote = document.getElementById('offline-validity-cap-note');
+  const errorBox = document.getElementById('offline-error');
+  const confirmBtn = document.getElementById('offline-confirm-btn');
+  const headingText = document.getElementById('offline-summary-heading-text');
+  const issuedOnLabel = document.getElementById('offline-view-issued-on-label');
+  const issuedByLabel = document.getElementById('offline-view-issued-by-label');
+
+  if(errorBox) errorBox.style.display = 'none';
+
+  // Reset to defaults; each branch may override
+  if(headingText)   headingText.textContent = 'Existing offline license on file';
+  if(issuedOnLabel) issuedOnLabel.textContent = 'Originally issued';
+  if(issuedByLabel) issuedByLabel.textContent = 'Issued by';
+
+  // Two subtypes of "offline: true":
+  //   • Admin-issued (u.offlineSource === 'admin' or unset) — view/re-download mode
+  //   • Self-initiated (u.offlineSource === 'self') — request mode, since no admin
+  //     license exists yet. The admin is being asked to issue one on top of the
+  //     user's self-initiated offline status.
+  const isSelfInitiated = u.offlineSource === 'self';
+
+  // Compute the validity window for THIS user's product mix, whether we're in
+  // request or view mode. Used to show "Valid for N days" and any renewal cap note.
+  const todayStr = _formatFriendlyDate(new Date());
+  const validity = _computeOfflineValidity(u, u.offlineIssuedOn || todayStr);
+  const capReason = (validity.daysValid < OFFLINE_LICENSE_MAX_DAYS)
+    ? ' (capped early because at least one product subscription renews before day 90)'
+    : '';
+
+  if(u.offline && !isSelfInitiated){
+    // ── VIEW / RE-DOWNLOAD MODE ────────────────────────────────────────────
+    // The user has an existing offline license. The admin can re-download the
+    // same license (e.g. user lost their .lic file, got a new machine) as long
+    // as the license is still within its validity window. The backend performs
+    // a real check on Keycloak sessions to confirm the user is still offline —
+    // the prototype skips that check but leaves the workflow visible.
+    const daysLeft = _offlineDaysRemaining(u);
+    const isExpired = (daysLeft !== null && daysLeft <= 0);
+    if(title) title.textContent = 'Offline license \u2014 ' + u.name;
+    if(sub){
+      sub.textContent = isExpired
+        ? 'The offline license has expired. Issue a new one below.'
+        : 'This user\u2019s offline license is still valid. Re-download the file, or update the machine ID / reason if it has changed.';
+    }
+    if(summary){
+      summary.style.display = '';
+      document.getElementById('offline-view-issued-on').textContent = u.offlineIssuedOn || '(unknown)';
+      document.getElementById('offline-view-issued-by').textContent = u.offlineIssuedBy || '(unknown)';
+      document.getElementById('offline-view-valid-until').textContent = _formatFriendlyDate(validity.validUntil);
+      const remainingEl = document.getElementById('offline-view-days-remaining');
+      if(remainingEl){
+        if(isExpired){
+          remainingEl.innerHTML = ' \u00b7 <span style="color:var(--red);font-weight:600">expired</span>';
+        } else if(daysLeft !== null){
+          remainingEl.textContent = ' \u00b7 ' + daysLeft + ' day' + (daysLeft!==1?'s':'') + ' remaining';
+        } else {
+          remainingEl.textContent = '';
+        }
+      }
+      // Add a note about the last download date if we've re-downloaded before.
+      // This helps admins see how recently the file was retrieved.
+      const lastEl = document.getElementById('offline-view-last-downloaded');
+      if(lastEl){
+        if(u.offlineLastDownloadedOn && u.offlineLastDownloadedOn !== u.offlineIssuedOn){
+          lastEl.style.display = '';
+          lastEl.innerHTML = 'Last re-download: <strong>' + u.offlineLastDownloadedOn + '</strong>';
+        } else {
+          lastEl.style.display = 'none';
+        }
+      }
+    }
+    // Prefill inputs with the stored values — but leave them EDITABLE so the
+    // admin can update the machine ID if the target machine changed (e.g. IT
+    // shipped a new laptop) without going through a full revoke/re-request.
+    if(machineInput){
+      machineInput.value = u.offlineMachineId || '';
+      machineInput.readOnly = false;
+      machineInput.style.opacity = '';
+    }
+    if(reasonInput){
+      reasonInput.value = u.offlineReason || '';
+      reasonInput.readOnly = false;
+      reasonInput.style.opacity = '';
+    }
+    if(machineHint) machineHint.style.display = '';
+    // The blue validity hint is still meaningful — show the current remaining
+    // days for context (or 90 fresh days if we're issuing a replacement).
+    if(validityHint) validityHint.style.display = '';
+    if(validityDays){
+      validityDays.textContent = isExpired ? validity.daysValid : (daysLeft || 0);
+    }
+    if(capNote){
+      capNote.textContent = isExpired
+        ? capReason  // new license, use fresh cap logic
+        : ' (from original issue date; re-downloading does not reset the clock)';
+    }
+    if(confirmBtn){
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = isExpired ? 'Issue new offline license' : 'Download license';
+      confirmBtn.style.opacity = '';
+      confirmBtn.style.cursor = '';
+    }
+  } else {
+    // ── REQUEST MODE ───────────────────────────────────────────────────────
+    // Applies to two cases:
+    //   (a) User is fully online — first-time offline license request
+    //   (b) User is self-initiated offline (offlineSource='self') — admin is
+    //       being asked to issue a downloadable license on top of the user's
+    //       self-declared offline status
+    if(title) title.textContent = 'Request offline license';
+    if(sub){
+      sub.textContent = isSelfInitiated
+        ? (u.name + ' went offline from within the app. Issue a downloadable license file for their target machine below.')
+        : ('Enter the machine details and reason for ' + u.name + '. The license file will be scoped to that specific machine.');
+    }
+    // For self-initiated users, show a small info card explaining the identity-
+    // system data we have on them (offline-since date, current validity window
+    // reported by Keycloak). This gives the admin context for their decision.
+    if(summary){
+      if(isSelfInitiated){
+        summary.style.display = '';
+        // Self-initiated context — override labels to reflect that this info
+        // came from the identity system, not an admin-issued license.
+        if(headingText)   headingText.textContent = 'User is self-initiated offline';
+        if(issuedOnLabel) issuedOnLabel.textContent = 'Went offline on';
+        if(issuedByLabel) issuedByLabel.textContent = 'Initiated by';
+        document.getElementById('offline-view-issued-on').textContent = u.offlineIssuedOn || '(unknown)';
+        const iByEl = document.getElementById('offline-view-issued-by');
+        if(iByEl) iByEl.textContent = 'User (self-initiated from app)';
+        // Prefer stored offlineValidUntil for self-initiated users since the
+        // identity system's window may differ from our default calculation.
+        const validUntilEl = document.getElementById('offline-view-valid-until');
+        if(validUntilEl){
+          const vu = _parseFriendlyDate(u.offlineValidUntil) || validity.validUntil;
+          validUntilEl.textContent = _formatFriendlyDate(vu);
+        }
+        const remainingEl = document.getElementById('offline-view-days-remaining');
+        if(remainingEl){
+          const days = _offlineDaysRemaining(u);
+          remainingEl.textContent = (days !== null) ? (' \u00b7 ' + days + ' day' + (days!==1?'s':'') + ' remaining') : '';
+        }
+        const lastEl = document.getElementById('offline-view-last-downloaded');
+        if(lastEl) lastEl.style.display = 'none';
+      } else {
+        summary.style.display = 'none';
+      }
+    }
+    if(machineInput){
+      machineInput.value = '';
+      machineInput.readOnly = false;
+      machineInput.style.opacity = '';
+    }
+    if(reasonInput){
+      reasonInput.value = '';
+      reasonInput.readOnly = false;
+      reasonInput.style.opacity = '';
+    }
+    if(machineHint) machineHint.style.display = '';
+    if(validityHint) validityHint.style.display = '';
+    if(validityDays) validityDays.textContent = validity.daysValid;
+    if(capNote){
+      // For self-initiated users we want to make it clear that clicking Download
+      // license issues a NEW admin license that takes over from the current
+      // self-declared offline status — the 90 days is for the new license, not
+      // the current self-initiated window shown in the summary above.
+      capNote.textContent = isSelfInitiated
+        ? (' (a new admin-issued license replaces the current self-initiated status)' + capReason)
+        : capReason;
+    }
+    if(confirmBtn){
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Download license';
+      confirmBtn.style.opacity = '';
+      confirmBtn.style.cursor = '';
+    }
+  }
+  modal.classList.add('open');
+}
+
+function confirmOfflineLicense(){
+  if(_offlineTargetIdx === null) return;
+  const u = users[_offlineTargetIdx];
+  if(!u) return;
+
+  const machineInput = document.getElementById('offline-machine-id');
+  const reasonInput = document.getElementById('offline-reason');
+  const errorBox = document.getElementById('offline-error');
+  const errorMsg = document.getElementById('offline-error-msg');
+
+  const machineId = (machineInput ? machineInput.value : '').trim();
+  const reason = (reasonInput ? reasonInput.value : '').trim();
+
+  // ── Validation (applies to all paths) ────────────────────────────────────
+  if(!machineId){
+    if(errorBox && errorMsg){
+      errorMsg.textContent = 'Machine ID is required. Please enter the target machine\u2019s hardware identifier.';
+      errorBox.style.display = '';
+    }
+    return;
+  }
+  if(!reason){
+    if(errorBox && errorMsg){
+      errorMsg.textContent = 'Please enter a reason for the offline license. This is recorded in the audit trail.';
+      errorBox.style.display = '';
+    }
+    return;
+  }
+
+  const me = currentUData();
+  const adminName = (me && me.name) ? me.name : 'Admin';
+  const todayStr = _formatFriendlyDate(new Date());
+
+  // Three code paths depending on current state:
+  //   1. Fresh request      — u.offline === false
+  //   2. Re-download        — u.offline === true, admin-issued, license still valid
+  //   3. Fresh issue        — u.offline === true and either (a) admin-issued but
+  //      expired, or (b) self-initiated (admin is now issuing a downloadable
+  //      license on top of the user's self-initiated status — the admin's
+  //      license takes over as the authoritative record with a fresh 90-day
+  //      window).
+  //
+  // In a real backend, before path 1 fires we'd hit Keycloak to confirm the
+  // user has no active session (i.e. is genuinely offline). The prototype skips
+  // that check; the workflow itself is what stakeholders review.
+  const wasOffline = !!u.offline;
+  const isSelfInitiated = u.offlineSource === 'self';
+  const daysLeft = _offlineDaysRemaining(u);
+  const isExpired = wasOffline && (daysLeft !== null && daysLeft <= 0);
+
+  // Path 2 is re-download only for ADMIN-ISSUED offline users. Self-initiated
+  // users go to Path 3 so the admin's license becomes authoritative.
+  if(wasOffline && !isSelfInitiated && !isExpired){
+    // ── Path 2: Re-download the existing license ─────────────────────────
+    // The 90-day clock does NOT reset — that would let admins renew indefinitely.
+    // Machine ID and reason CAN be updated (target machine may have changed).
+    u.offlineMachineId = machineId;
+    u.offlineReason = reason;
+    u.offlineLastDownloadedOn = todayStr;
+    _stampUserModification(u);
+    savePersisted('users', users);
+    closeModal();
+    renderUsers();
+    const remainText = (daysLeft !== null)
+      ? ' (' + daysLeft + ' day' + (daysLeft!==1?'s':'') + ' remaining on original license)'
+      : '';
+    toast('\u2193 License re-downloaded for ' + u.name + remainText);
+    return;
+  }
+
+  // ── Path 1 (fresh) or Path 3 (post-expiry / self-initiated takeover) ─────
+  // All fresh-issue cases: NEW license with a fresh validity window. If the
+  // user was self-initiated offline, the admin's license takes over and we
+  // clear the offlineSource marker so future reads treat this as admin-issued.
+  const validity = _computeOfflineValidity(u, todayStr);
+  u.offline = true;
+  u.offlineSource = 'admin';
+  u.offlineMachineId = machineId;
+  u.offlineReason = reason;
+  u.offlineIssuedOn = todayStr;
+  u.offlineIssuedBy = adminName;
+  u.offlineValidUntil = _formatFriendlyDate(validity.validUntil);
+  u.offlineLastDownloadedOn = todayStr;
+  _stampUserModification(u);
+  savePersisted('users', users);
+  closeModal();
+  renderUsers();
+  const successMsg = isExpired
+    ? ('\u2713 New offline license issued to ' + u.name + ' (valid for ' + validity.daysValid + ' days)')
+    : (isSelfInitiated
+        ? ('\u2713 Offline license issued to ' + u.name + '. Admin license now authoritative (valid for ' + validity.daysValid + ' days).')
+        : ('\u2713 Offline license issued to ' + u.name + ' (valid for ' + validity.daysValid + ' days)'));
+  toast(successMsg);
 }
 
 // Opens the install picker modal. The modal lets the user choose a language and
@@ -5391,8 +5967,12 @@ const _INSTALLER_TIER_EXTRAS = [
 // Returns the ordered installer option list for a given product name. For higher
 // tiers (Pro / Advanced) the tier-extras are inserted right after "English - msi"
 // so they read as a natural extension of the primary language list.
+// Trial subscribers internally map to the Professional tier, so the trial
+// installer also gets the Pro/Advanced-only add-ons (Geographic Calculator,
+// MapPublisher). Otherwise the trial would give a smaller feature preview
+// than what conversion to paid delivers.
 function _installerOptionsFor(productName){
-  const isHigherTier = /Professional|Advanced/i.test(productName || '');
+  const isHigherTier = /Professional|Advanced|Trial/i.test(productName || '');
   if(!isHigherTier) return _INSTALLER_BASE_OPTIONS.slice();
   // Splice extras in immediately after the msi option
   const out = [];
@@ -5814,19 +6394,37 @@ function renderMyProducts(role){
   }
   const assignedHTML=ud.seats.map(s=>{
     // Status → pill class + label. 'expired' shows a red Expired pill;
-    // 'warn' shows an amber Expiring soon pill; everything else is Active.
+    // 'warn' shows an amber Expiring soon pill; 'trial' shows an indigo Trial
+    // pill (14-day free trial); everything else is Active.
     const isExpired = s.status==='expired';
-    const pillCls = isExpired ? 'danger' : (s.status==='warn' ? 'warn' : 'active');
-    const pillLbl = isExpired ? 'Expired' : (s.status==='warn' ? 'Expiring soon' : 'Active');
-    // Action buttons: for expired products, the Upgrade CTA links out to the
-    // Global Mapper Pro marketing page in a new tab. For active products, the
-    // Install button opens a language/installer picker modal.
+    const isTrial   = s.status==='trial';
+    // Status pill: trials show as "Active" (same green pill as paid) so status
+    // reads consistently across all personas — a trial subscription IS an
+    // active subscription, just time-limited. The trial nature is communicated
+    // via the "14-day trial" type text and the Upgrade CTA button.
+    const pillCls = isExpired ? 'danger'
+                  : (s.status==='warn' ? 'warn' : 'active');
+    const pillLbl = isExpired ? 'Expired'
+                  : (s.status==='warn' ? 'Expiring soon' : 'Active');
+    // Action buttons:
+    //   • Expired → Upgrade + Get help
+    //   • Trial (active) → Install + Upgrade + Get help (three buttons — Upgrade
+    //     is the primary CTA to convert before the 14 days run out)
+    //   • Active paid → Install + Get help
     const safeName = String(s.name).replace(/'/g,"\\'");
-    const actionBtns = isExpired
-      ? `<button class="btn primary" onclick="window.open('https://www.bluemarblegeo.com/global-mapper-pro/','_blank','noopener,noreferrer')">Upgrade to full license</button>
-         <button class="btn" onclick="nav('u-support')">Get help</button>`
-      : `<button class="btn primary" onclick="openInstallProduct('${safeName}')">Install product</button>
+    const upgradeUrl = 'https://www.bluemarblegeo.com/global-mapper-pro/';
+    let actionBtns;
+    if(isExpired){
+      actionBtns = `<button class="btn primary" onclick="window.open('${upgradeUrl}','_blank','noopener,noreferrer')">Upgrade to full license</button>
          <button class="btn" onclick="nav('u-support')">Get help</button>`;
+    } else if(isTrial){
+      actionBtns = `<button class="btn primary" onclick="openInstallProduct('${safeName}')">Install product</button>
+         <button class="btn" style="background:var(--avenza-blue);color:#fff;border-color:var(--avenza-blue)" onclick="window.open('${upgradeUrl}','_blank','noopener,noreferrer')">Upgrade to full license</button>
+         <button class="btn" onclick="nav('u-support')">Get help</button>`;
+    } else {
+      actionBtns = `<button class="btn primary" onclick="openInstallProduct('${safeName}')">Install product</button>
+         <button class="btn" onclick="nav('u-support')">Get help</button>`;
+    }
     // Inline download note (only when there's a recorded download for this product).
     // Format: "Downloaded Global Mapper : English - 64-bit on Jun 26, 2026 10:20 pm to Windows 11"
     // The note sits to the right of the action buttons on wide screens and wraps
@@ -6213,6 +6811,8 @@ function doLogin() {
     err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('bob');
   } else if ((email === 'freya@vanfrugal.com' || email === 'freya') && pass) {
     err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('freya');
+  } else if ((email === 'sonya@freeloader.com' || email === 'sonya') && pass) {
+    err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('sonya');
   } else if ((email === 'alan@lilyalways.com' || email === 'alan') && pass) {
     err.classList.remove('show'); currentLoginMethod = 'password'; enterApp('alan');
   } else if ((email === 'gary@noaccountyet.com' || email === 'gary') && pass) {
