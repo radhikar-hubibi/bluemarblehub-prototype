@@ -421,6 +421,39 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
 .card .table.table-wide{min-width:1280px}
 
 /* ─────────────────────────────────────────────
+   WIDE-TABLE SCROLL VIEWPORT
+   Two problems made the right-hand columns unreachable during demos:
+     1. overflow-x:auto relies on OS overlay scrollbars, which fade out when
+        idle, so there was no visual cue the columns existed at all.
+     2. The scrollbar sits at the bottom edge of the card. With a dozen rows
+        the card ran past the fold, putting the scrollbar off-screen.
+   Fixed by giving the card a bounded height so it becomes its own scroll
+   viewport (bottom edge always visible), forcing the horizontal track to be
+   permanently reserved, and styling it for contrast. overflow-y stays auto so
+   short tables don't get a pointless vertical track.
+───────────────────────────────────────────── */
+.card:has(> .table-wide){
+  max-height:min(62vh,600px);
+  overflow-x:scroll !important;
+  overflow-y:auto !important;
+  scrollbar-width:auto;
+  scrollbar-color:#8fa0b3 var(--surface-2);
+}
+.card:has(> .table-wide)::-webkit-scrollbar{height:14px;width:11px}
+.card:has(> .table-wide)::-webkit-scrollbar-track{background:var(--surface-2);border-top:1px solid var(--surface-3)}
+.card:has(> .table-wide)::-webkit-scrollbar-thumb{background:#8fa0b3;border-radius:8px;border:3px solid var(--surface-2)}
+.card:has(> .table-wide)::-webkit-scrollbar-thumb:hover{background:#6c8098}
+.card:has(> .table-wide)::-webkit-scrollbar-corner{background:var(--surface-2)}
+/* Header has to stay put now that the table scrolls vertically inside the card.
+   Background goes on the th itself — a background on the tr doesn't travel with
+   a sticky cell. */
+.table-wide thead th{
+  position:sticky;top:0;z-index:3;
+  background:var(--surface-2);
+  box-shadow:inset 0 -1px 0 var(--surface-3)
+}
+
+/* ─────────────────────────────────────────────
    PILLS / BADGES
 ───────────────────────────────────────────── */
 .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
@@ -550,6 +583,32 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
   outline:none;margin-bottom:14px;background:var(--surface)
 }
 .modal-input:focus,.modal-select:focus{border-color:var(--avenza-blue);box-shadow:0 0 0 3px rgba(13,110,253,.1)}
+
+/* ─────────────────────────────────────────────
+   LARGE MODAL VARIANT (.modal.lg)
+   Used by the Manage subscription modal, which is far taller and wider than
+   the other ten modals. It is a variant rather than an edit to .modal because
+   those ten share that rule and must not move.
+   Structure is fixed header (title + tabs) / scrolling body / fixed footer —
+   putting overflow on .modal itself would scroll the tabs and the primary
+   button out of view along with the content.
+───────────────────────────────────────────── */
+.modal.lg{width:680px;max-height:82vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.modal.lg .m-head{padding:22px 26px 0;flex-shrink:0}
+.modal.lg .m-tabs{display:flex;gap:2px;padding:14px 26px 0;border-bottom:1px solid var(--surface-3);flex-shrink:0}
+.modal.lg .m-body{padding:20px 26px;overflow-y:auto;flex:1;min-height:0}
+.modal.lg .m-foot{padding:15px 26px;border-top:1px solid var(--surface-3);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;background:var(--surface-2)}
+/* Cancel is destructive and sits one click from two routine actions, so its tab
+   and its confirm button are visually demoted until deliberately selected. */
+.tab.danger.on{color:var(--red);border-bottom-color:var(--red)}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.danger:hover{filter:brightness(.93)}
+.m-note{border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;font-size:13px;color:var(--text-secondary);line-height:1.6}
+.m-note.warn{background:var(--amber-lt);border-color:transparent}
+.m-note.info{background:var(--surface-2)}
+.m-stub{border:1px dashed var(--border);border-radius:var(--radius-md);padding:22px;text-align:center;color:var(--text-muted);font-size:13px;line-height:1.7}
+.m-kv{display:flex;justify-content:space-between;gap:14px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--surface-3)}
+.m-kv:last-child{border-bottom:none}
 
 /* ─────────────────────────────────────────────
    FORM INPUTS (profile / account)
@@ -684,6 +743,44 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
    MOBILE OVERLAY
 ───────────────────────────────────────────── */
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200}
+
+/* ─────────────────────────────────────────────
+   COLLAPSIBLE SIDEBAR
+   Collapses to a 64px icon rail. Scoped to >1024px because below that the
+   sidebar is already an off-canvas drawer and collapsing it would fight the
+   drawer behaviour.
+
+   Nav labels are bare text nodes next to their <svg>, not wrapped in a span,
+   so they are hidden with font-size:0 on the button rather than by editing
+   nine markup blocks. The icons carry explicit width/height so they survive.
+   The org avatar and user avatar deliberately stay visible — account switching
+   is central to demoing this prototype and shouldn't disappear on collapse.
+───────────────────────────────────────────── */
+@media (min-width:1025px){
+  .sidebar.collapsed{width:64px}
+  .sidebar.collapsed .sb-brand{justify-content:center;padding-left:0;padding-right:0}
+  .sidebar.collapsed .sb-brand > div:not(.sb-collapse-wrap){display:none}
+  .sidebar.collapsed .sb-group-label{display:none}
+  .sidebar.collapsed .sb-badge{display:none}
+  .sidebar.collapsed .sb-item{font-size:0;justify-content:center;gap:0;padding:9px 0}
+  .sidebar.collapsed .sb-item svg{width:17px;height:17px}
+  .sidebar.collapsed .org-switcher{padding-left:8px;padding-right:8px}
+  .sidebar.collapsed .org-btn{justify-content:center;padding-left:0;padding-right:0}
+  .sidebar.collapsed .org-info,
+  .sidebar.collapsed .org-btn > svg{display:none}
+  .sidebar.collapsed .sb-user{justify-content:center;padding-left:0;padding-right:0}
+  .sidebar.collapsed .sb-user > div:not(.sb-av){display:none}
+  .sidebar.collapsed .sb-collapse{transform:rotate(180deg)}
+}
+.sb-collapse{
+  margin-left:auto;flex-shrink:0;
+  width:26px;height:26px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.07);border:none;cursor:pointer;
+  color:rgba(255,255,255,.65);transition:background .12s,color .12s,transform .2s
+}
+.sb-collapse:hover{background:rgba(255,255,255,.16);color:#fff}
+@media (max-width:1024px){ .sb-collapse{display:none} }
 
 /* ─────────────────────────────────────────────
    WORKFLOW STEPPER (prototype helper)
@@ -1755,6 +1852,11 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
         <div class="sb-product-name" style="font-size:13px;letter-spacing:-.01em">Blue Marble Hub</div>
         <div style="font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.08em;text-transform:uppercase;margin-top:1px">Blue Marble Geo</div>
       </div>
+      <div class="sb-collapse-wrap" style="margin-left:auto;display:flex">
+        <button class="sb-collapse" id="sb-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3.5L5.5 8l4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </div>
 
     <!-- Org / account switcher -->    <!-- Org / account switcher -->    <!-- Org / account switcher -->
@@ -2010,7 +2112,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th></th>
 </tr></thead>
 <tbody id="tbl-all"></tbody>
-<tbody><tr><td colspan="12"><div class="lazy-spinner" id="spinner-all"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
+<tbody><tr><td colspan="13"><div class="lazy-spinner" id="spinner-all"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-assigned" style="display:none">
           <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-assigned" placeholder="Search assigned users…" oninput="setUserSearch('assigned', this.value)"><button id="users-search-clear-assigned" class="search-clear" type="button" onclick="clearUserSearch('assigned')" style="display:none" title="Clear search">×</button></div>
@@ -2029,7 +2131,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th></th>
 </tr></thead>
 <tbody id="tbl-assigned"></tbody>
-<tbody><tr><td colspan="12"><div class="lazy-spinner" id="spinner-assigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
+<tbody><tr><td colspan="13"><div class="lazy-spinner" id="spinner-assigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-unassigned" style="display:none">
           <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-unassigned" placeholder="Search unassigned / pending users…" oninput="setUserSearch('unassigned', this.value)"><button id="users-search-clear-unassigned" class="search-clear" type="button" onclick="clearUserSearch('unassigned')" style="display:none" title="Clear search">×</button></div>
@@ -2043,7 +2145,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   <th>Assign seat</th>
 </tr></thead>
 <tbody id="tbl-unassigned"></tbody>
-<tbody><tr><td colspan="7"><div class="lazy-spinner" id="spinner-unassigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
+<tbody><tr><td colspan="8"><div class="lazy-spinner" id="spinner-unassigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
       </div>
     </div>
@@ -2855,6 +2957,27 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   </div>
 </div>
 
+<!-- MANAGE SUBSCRIPTION — tabbed: Upgrade (default) / Downgrade / Cancel -->
+<div class="modal-bg" id="modal-manage-sub">
+  <div class="modal lg">
+    <div class="m-head">
+      <div class="modal-title" id="ms-title">Manage subscription</div>
+      <div class="modal-sub" id="ms-sub" style="margin-bottom:0"></div>
+    </div>
+    <div class="m-tabs">
+      <button class="tab on" id="ms-tab-upgrade"   onclick="switchManageTab('upgrade')">Upgrade</button>
+      <button class="tab"    id="ms-tab-downgrade" onclick="switchManageTab('downgrade')">Downgrade</button>
+      <button class="tab danger" id="ms-tab-cancel" onclick="switchManageTab('cancel')">Cancel</button>
+    </div>
+    <div class="m-body">
+      <div id="ms-pane-upgrade"></div>
+      <div id="ms-pane-downgrade" style="display:none"></div>
+      <div id="ms-pane-cancel" style="display:none"></div>
+    </div>
+    <div class="m-foot" id="ms-foot"></div>
+  </div>
+</div>
+
 <!-- ADD SEATS -->
 <div class="modal-bg" id="modal-add-seats">
   <div class="modal">
@@ -3090,7 +3213,7 @@ const UCOLORS=[
    prototype edits (which is the right tradeoff for prototyping).
 ═══════════════════════════════════════════════════════════ */
 const PERSIST_PREFIX = 'bmh';
-const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'ticketOverrides', 'productDownloads', 'downloadHistory'];
+const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'cancellations', 'ticketOverrides', 'productDownloads', 'downloadHistory'];
 
 function _personaKey(){
   // currentRole is defined a few lines below; fall back to 'admin' on first call.
@@ -3137,6 +3260,7 @@ function _seedFingerprint(dataKey){
     if(dataKey === 'extraInvoices') return _hash('empty');
     if(dataKey === 'invoiceCount')  return _hash('start:1045');
     if(dataKey === 'autoRenewOverrides') return _hash('empty');
+    if(dataKey === 'cancellations') return _hash('empty');
     if(dataKey === 'ticketOverrides') return _hash('empty');
     if(dataKey === 'productDownloads') return _hash('empty');
     if(dataKey === 'downloadHistory') return _hash('empty');
@@ -3408,6 +3532,18 @@ let invoiceCount = loadPersisted('invoiceCount', 1045);
 // Shape: { "<orgKey>:<productName>": true|false, ... }
 let autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
 
+// cancellations: per-product cancellation records, keyed 'org:Product Name'.
+// Shape: { on: 'Aug 10, 2026' }. A record's presence IS the cancelled state —
+// autoRenew is forced false alongside it, but the two are kept separate so an
+// admin who simply toggled auto-renew off is not treated as having cancelled.
+let cancellations = loadPersisted('cancellations', {});
+function _cancelKey(org, productName){ return org + ':' + productName; }
+function isCancelled(productName, org){ return !!cancellations[_cancelKey(org||currentOrg, productName)]; }
+function cancelledOn(productName, org){
+  const r = cancellations[_cancelKey(org||currentOrg, productName)];
+  return r ? r.on : null;
+}
+
 
 /* ───────────────────────────────────────
    ORG DATA — defines orgs and membership
@@ -3487,7 +3623,10 @@ const ORG_DATA={
     products:[
       {key:'pp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional', type:'Annual',seats:25,used:8, renewal:'Jun 14, 2027',status:'active',autoRenew:true, amount:'$54,975', purchasedOn:'Jun 14, 2026'},
       {key:'an', icon:'ADV',iconBg:'#e8f7ef',iconFg:'#1ba461',name:'Global Mapper Advanced',     type:'Annual',seats:15,used:3, renewal:'Jun 14, 2027',status:'active',autoRenew:false,amount:'$17,985', purchasedOn:'Jun 14, 2026'},
-      {key:'api',icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials',   type:'Annual',seats:8, used:3, renewal:'May 1, 2027', status:'active',autoRenew:true, amount:'$4,792',  purchasedOn:'May 1, 2026'},
+      // Co-termed: bought May 1, 2026 but aligned to Acme's common renewal date
+      // so every Acme subscription renews together on Jun 14. The first term is
+      // the pro-rated stub from purchase to that shared date.
+      {key:'api',icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials',   type:'Annual',seats:8, used:3, renewal:'Jun 14, 2027', status:'active',autoRenew:true, amount:'$4,792',  purchasedOn:'May 1, 2026'},
     ],
   },
   poppins:{
@@ -4039,6 +4178,14 @@ function toggleAutoRenew(productName, nowOn){
   if(!org || !org.products) return;
   const product = org.products.find(p => p.name === productName);
   if(!product) return;
+  // Belt and braces: the toggle is rendered disabled for a cancelled
+  // subscription, but guard here too so auto-renew can never be switched back
+  // on without going through the explicit Undo action.
+  if(isCancelled(productName) && nowOn){
+    toast('This subscription is cancelled. Use Manage \u2192 Cancel \u2192 Undo cancellation to restore auto-renew.');
+    updateDashOrgBanners();
+    return;
+  }
   product.autoRenew = !!nowOn;
   autoRenewOverrides[currentOrg + ':' + productName] = !!nowOn;
   savePersisted('autoRenewOverrides', autoRenewOverrides);
@@ -4262,7 +4409,12 @@ function updateDashOrgBanners(){
         if(isResellerPurchase){
           renewalHint = ' &nbsp;|&nbsp; Renews ' + p.renewal + ' \u00b7 <span style="color:var(--text-muted)">Managed by reseller</span>';
         } else {
-          renewalHint = ' &nbsp;|&nbsp; ' + (p.autoRenew!==false?'Auto-renews on ':'Expires on ') + p.renewal;
+          renewalHint = isCancelled(p.name)
+            // Cancelled: lead with the cancellation, but keep the access-until date
+            // visible so nobody reads "Cancelled Aug 10" as "service stopped today".
+            ? ' &nbsp;|&nbsp; <span style="color:var(--red);font-weight:600">Cancelled ' + cancelledOn(p.name)
+              + '</span> \u00b7 access until ' + p.renewal
+            : ' &nbsp;|&nbsp; ' + (p.autoRenew!==false?'Auto-renews on ':'Expires on ') + p.renewal;
         }
       }
       // Purchaser label: "Name [email]" with the email in a muted color so it reads
@@ -4283,7 +4435,9 @@ function updateDashOrgBanners(){
         +(p.status === 'trial'
           ? '<button class="btn sm" style="margin-right:6px;opacity:.5;cursor:not-allowed" disabled title="Additional seats cannot be added to trial">Add seats</button>'
           : '<button class="btn sm" style="margin-right:6px" onclick="openAddSeats()">Add seats</button>')
-        +'<button class="btn sm" onclick="nav(\'a-users\')">Manage</button>'
+        +'<button class="btn sm" style="margin-right:6px" onclick="viewAssignedSeats()">Assigned seats</button>'
+        // Manage opens the tabbed subscription modal (upgrade / downgrade / cancel).
+        +'<button class="btn sm" onclick="openManageSub(\''+p.name.replace(/'/g,"\\'")+'\')">Manage</button>'
         +'</div>';
     }).join('');
   }
@@ -4325,7 +4479,17 @@ function updateDashOrgBanners(){
       // renders here (billingDirectPurchasesOnly usually filters them out first),
       // show a static "Managed by reseller" hint instead of the toggle.
       const isResellerPurchase = p.purchasedVia === 'reseller';
-      const toggleHtml = isResellerPurchase
+      // A cancelled subscription locks the auto-renew toggle off. Re-enabling is
+      // deliberately NOT possible from this switch — the only way back is the
+      // explicit "Undo cancellation" action in the Manage modal, so an accidental
+      // flick of a toggle can't silently resurrect a cancelled subscription.
+      const cancelled = isCancelled(p.name);
+      const toggleHtml = cancelled
+        ? '<label class="toggle-switch" title="Cancelled on ' + cancelledOn(p.name)
+          + ' \u2014 use Manage \u2192 Cancel \u2192 Undo to restore auto-renew"'
+          + ' style="opacity:.45;cursor:not-allowed" onclick="event.stopPropagation()">'
+          + '<input type="checkbox" disabled/><span class="slider"></span></label>'
+        : isResellerPurchase
         ? '<span style="font-size:10.5px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-left:6px" title="Auto-renewal for reseller-purchased subscriptions is managed by your reseller partner, not in the Hub.">Managed by reseller</span>'
         : (
           '<label class="toggle-switch" title="' + (auto?'Auto-renew is ON':'Auto-renew is OFF') + '" onclick="event.stopPropagation()">'
@@ -4338,7 +4502,9 @@ function updateDashOrgBanners(){
                    :p.daysUntil<=30?p.daysUntil+' days away'
                    :p.daysUntil+' days away';
       const daysColor=p.daysUntil<=30?'color:var(--amber);font-weight:600':'';
-      const renewLabel = isResellerPurchase ? '' : ('Auto-renew ' + (auto?'on':'off') + ' ');
+      const renewLabel = cancelled ? 'Cancelled '
+                       : isResellerPurchase ? ''
+                       : ('Auto-renew ' + (auto?'on':'off') + ' ');
       return '<div style="display:flex;align-items:center;padding:14px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);gap:14px">'
         +'<div class="prod-icon" style="background:'+p.iconBg+';color:'+p.iconFg+';width:40px;height:40px;border-radius:var(--radius-sm);font-size:11px;flex-shrink:0">'+p.icon+'</div>'
         +'<div style="flex:1;min-width:0">'
@@ -4349,17 +4515,23 @@ function updateDashOrgBanners(){
           +'<div style="font-size:12px;color:var(--text-muted);display:flex;gap:14px;flex-wrap:wrap">'
             +'<span><strong style="color:var(--text-secondary)">'+p.seats+' seats</strong></span>'
             +'<span>'+p.type+' subscription</span>'
-            +'<span>Renews <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
-            +'<span style="'+daysColor+'">'+daysText+'</span>'
+            +(cancelled
+               ? '<span style="color:var(--red);font-weight:600">Cancelled '+cancelledOn(p.name)+'</span>'
+                 +'<span>Access until <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
+                 +'<span><button class="co-link" style="font-size:12px" onclick="openManageSub(\''+p.name.replace(/'/g,"\\'")+'\')">Undo</button></span>'
+               : '<span>Renews <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
+                 +'<span style="'+daysColor+'">'+daysText+'</span>')
           +'</div>'
         +'</div>'
         +'<div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
           +'<div style="display:flex;align-items:center;gap:10px">'
             +'<div>'
               +'<div style="font-size:16px;font-weight:700;color:var(--text-primary);text-align:right">'+productAmount(p)+'</div>'
-              +'<div style="font-size:11px;color:var(--text-muted);text-align:right">'+(auto?'will be charged':'requires renewal')+'</div>'
+              +'<div style="font-size:11px;color:var(--text-muted);text-align:right">'+(cancelled?'will not be charged':auto?'will be charged':'requires renewal')+'</div>'
             +'</div>'
-            +'<button class="btn primary sm" onclick="payNow(\''+p.name.replace(/\'/g,"\\\'")+'\',\''+productAmount(p)+'\')">Pay now</button>'
+            +(cancelled
+               ? '<button class="btn primary sm" disabled style="opacity:.45;cursor:not-allowed" title="This subscription is cancelled and will not renew">Pay now</button>'
+               : '<button class="btn primary sm" onclick="payNow(\''+p.name.replace(/\'/g,"\\\'")+'\',\''+productAmount(p)+'\')">Pay now</button>')
           +'</div>'
         +'</div>'
       +'</div>';
@@ -4536,6 +4708,7 @@ function switchUser(role){
   extraInvoices = loadPersisted('extraInvoices', []);
   invoiceCount = loadPersisted('invoiceCount', 1045);
   autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
+  cancellations = loadPersisted('cancellations', {});
   ticketOverrides = loadPersisted('ticketOverrides', {});
   productDownloads = loadPersisted('productDownloads', {});
   downloadHistory = loadPersisted('downloadHistory', []);
@@ -4825,6 +4998,384 @@ function switchTab(tab){
     if(tabEl) tabEl.classList.toggle('on',t===tab);
     if(viewEl) viewEl.style.display=t===tab?'block':'none';
   });
+}
+
+// Licenses → Users deep link, used by the "Assigned seats" button on each
+// product row. Order matters: nav('a-users') calls renderUsers(), which fills
+// all three tab bodies but deliberately does not change which tab is active,
+// so switchTab has to run second or the Users page would open on "All users".
+function viewAssignedSeats(){
+  nav('a-users');
+  switchTab('assigned');
+}
+
+/* ═══════════════════════════════════════
+   MANAGE SUBSCRIPTION MODAL
+   Three tabs off the Manage button on each Licenses product row.
+
+     Upgrade   — immediate, affects the active cycle. Pro-rated for the
+                 remainder of the term, then hands off to the checkout pages.
+                 [layout stubbed this pass]
+     Downgrade — takes effect at the next renewal only. Writes a pending change
+                 that surfaces in Billing → upcoming renewals.
+                 [layout stubbed this pass]
+     Cancel    — turns auto-renew off and records a cancellation date. Fully
+                 implemented, including Undo.
+
+   The modal is the SELECTION surface only; review/confirm happens on a page
+   (checkout for upgrade, a scheduled-change page for downgrade) so we never
+   end up with tab navigation and wizard steps competing inside one container.
+═══════════════════════════════════════ */
+let _msProduct = null;   // product name this modal is acting on
+let _msTab     = 'upgrade';
+
+function openManageSub(productName){
+  const org = ORG_DATA[currentOrg];
+  if(!org) return;
+
+  // Reseller-managed orgs route subscription changes through the partner, the
+  // same way openAddSeats does — the Hub is not the system of record for them.
+  if(org.resellerAddSeats){
+    toast('Subscription changes for reseller-purchased products are handled by your partner. Contact them to upgrade, downgrade or cancel.');
+    return;
+  }
+  const product = org.products && org.products.find(p => p.name === productName);
+  if(!product){ toast('Product not found'); return; }
+  if(product.status === 'trial'){
+    toast('Trials cannot be upgraded, downgraded or cancelled here. Purchase a subscription to manage it.');
+    return;
+  }
+
+  _msProduct = productName;
+  _msResetUpgrade();   // fresh selection each time the modal opens
+  // Open on the tab most likely to be wanted: Cancel if it is already
+  // cancelled (so Undo is one click away), otherwise the Upgrade default.
+  _msTab = isCancelled(productName) ? 'cancel' : 'upgrade';
+
+  const t = document.getElementById('ms-title');
+  const s = document.getElementById('ms-sub');
+  if(t) t.textContent = 'Manage ' + productName;
+  if(s) s.textContent = product.seats + ' seats \u00b7 ' + product.used + ' assigned \u00b7 '
+                      + (isCancelled(productName)
+                          ? 'Cancelled ' + cancelledOn(productName)
+                          : 'Renews ' + product.renewal);
+
+  switchManageTab(_msTab);
+  document.getElementById('modal-manage-sub').classList.add('open');
+}
+
+function switchManageTab(tab){
+  _msTab = tab;
+  ['upgrade','downgrade','cancel'].forEach(t=>{
+    const tabEl  = document.getElementById('ms-tab-'+t);
+    const paneEl = document.getElementById('ms-pane-'+t);
+    if(tabEl)  tabEl.classList.toggle('on', t===tab);
+    if(paneEl) paneEl.style.display = (t===tab) ? 'block' : 'none';
+  });
+  if(tab==='upgrade')   renderManageUpgrade();
+  if(tab==='downgrade') renderManageDowngrade();
+  if(tab==='cancel')    renderManageCancel();
+}
+
+function _msProductObj(){
+  const org = ORG_DATA[currentOrg];
+  return org && org.products ? org.products.find(p=>p.name===_msProduct) : null;
+}
+
+// ── Upgrade tab ──
+/* Tier ladder, cheapest first. Rank drives which tiers can act as an upgrade
+   target and which of the org's products can donate seats to it. */
+const TIER_ORDER = ['Global Mapper Essentials','Global Mapper Advanced','Global Mapper Professional'];
+function tierRank(name){ return TIER_ORDER.indexOf(name); }
+
+/* Fraction of the current term still to run. Because subscriptions are
+   co-termed, every product in an org shares a renewal date, so an upgrade is
+   charged only for the days between today and that date. */
+function termFractionRemaining(renewalStr){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(renewalStr);
+  if(isNaN(end.getTime())) return 1;
+  const days = Math.max(0, Math.round((end - today) / 86400000));
+  return Math.max(0, Math.min(1, days / 365));
+}
+function daysRemaining(renewalStr){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(renewalStr);
+  if(isNaN(end.getTime())) return 0;
+  return Math.max(0, Math.round((end - today) / 86400000));
+}
+
+// Users in the current org holding a seat of the given product.
+function _holdersOf(productName){
+  return users.filter(u => (!u.org || u.org === currentOrg) && getSeats(u).indexOf(productName) > -1);
+}
+
+function renderManageUpgrade(){
+  const p = _msProductObj(); if(!p) return;
+  const org = ORG_DATA[currentOrg];
+  const pane = document.getElementById('ms-pane-upgrade');
+  const foot = document.getElementById('ms-foot');
+
+  // Tiers above the one clicked, that the org already owns.
+  const targets = (org.products || []).filter(x => tierRank(x.name) > tierRank(p.name) && x.status !== 'trial');
+  if(tierRank(p.name) === -1 || !targets.length){
+    pane.innerHTML = '<div class="m-note info">'
+      + '<strong>' + p.name + ' is already your highest tier.</strong><br>'
+      + 'There is nothing above it to upgrade to. To move seats up from a lower tier, open Manage on that tier instead.</div>';
+    foot.innerHTML = '<button class="btn" onclick="closeManageSub()">Close</button>';
+    return;
+  }
+  if(!_msUpgradeTarget || tierRank(_msUpgradeTarget) <= tierRank(p.name)) _msUpgradeTarget = targets[0].name;
+
+  const target  = org.products.find(x => x.name === _msUpgradeTarget);
+  const sources = (org.products || []).filter(x => tierRank(x.name) > -1
+                    && tierRank(x.name) < tierRank(_msUpgradeTarget) && x.status !== 'trial');
+  const days = daysRemaining(target.renewal);
+
+  let h = '<div class="m-note info" style="margin-bottom:16px">'
+    + '<strong>Upgrades take effect immediately.</strong> You are charged only for the '
+    + days + ' days left in the current term \u2014 ' + Math.round(termFractionRemaining(target.renewal)*100)
+    + '% of a full year. Moved seats are charged the tier difference; the unused value of the '
+    + 'lower-tier seat is credited automatically.</div>';
+
+  h += '<label class="modal-label">Upgrade to</label>'
+     + '<select class="modal-select" id="ms-up-target" onchange="_msSetTarget(this.value)">'
+     + targets.map(t => '<option value="'+t.name+'"'+(t.name===_msUpgradeTarget?' selected':'')+'>'
+         + t.name + ' \u2014 ' + _coMoney(PRICING[t.name]||0) + '/seat/year</option>').join('')
+     + '</select>';
+
+  h += '<label class="modal-label" style="margin-top:6px">Brand new seats</label>'
+     + '<input class="modal-input" type="number" min="0" value="'+_msNetNew+'" id="ms-up-new" oninput="_msRecalc()"/>';
+
+  sources.forEach(src => {
+    const holders = _holdersOf(src.name);
+    const freeSeats = Math.max(0, (src.seats||0) - (src.used||0));
+    const diff = (PRICING[_msUpgradeTarget]||0) - (PRICING[src.name]||0);
+    h += '<div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-top:14px">'
+       + '<div style="font-size:13.5px;font-weight:600;color:var(--text-primary);margin-bottom:2px">Move seats up from '+src.name+'</div>'
+       + '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px">'
+       +   src.seats+' seats \u00b7 '+freeSeats+' unassigned \u00b7 upgrade difference '
+       +   _coMoney(diff)+'/seat/year</div>'
+       + '<label class="modal-label">Unassigned seats to move (max '+freeSeats+')</label>'
+       + '<input class="modal-input" type="number" min="0" max="'+freeSeats+'" value="'+(_msMoves[src.name]||0)+'" '
+       +   'data-src="'+src.name+'" oninput="_msSetMove(this)" style="margin-bottom:10px"/>';
+    if(holders.length){
+      h += '<div class="modal-label">Move assigned users up</div>';
+      holders.forEach(u => {
+        const checked = (_msUsers[src.name]||[]).indexOf(u.email) > -1 ? ' checked' : '';
+        h += '<label class="co-check" style="margin-top:6px">'
+           + '<input type="checkbox" data-src="'+src.name+'" value="'+u.email+'" onchange="_msToggleUser(this)"'+checked+'/>'
+           + '<span>'+u.name+' <span style="color:var(--text-muted)">\u00b7 '+u.email+'</span></span></label>';
+      });
+    } else {
+      h += '<div style="font-size:12px;color:var(--text-muted)">No assigned users on this tier.</div>';
+    }
+    h += '</div>';
+  });
+
+  h += '<div id="ms-up-total" style="margin-top:18px"></div>';
+  pane.innerHTML = h;
+  _msRecalc();
+}
+
+let _msUpgradeTarget = null;
+let _msNetNew = 0;
+let _msMoves  = {};   // { sourceProductName: unassignedSeatCount }
+let _msUsers  = {};   // { sourceProductName: [email, ...] }
+
+function _msResetUpgrade(){ _msUpgradeTarget=null; _msNetNew=0; _msMoves={}; _msUsers={}; }
+function _msSetTarget(v){ _msUpgradeTarget=v; _msMoves={}; _msUsers={}; renderManageUpgrade(); }
+function _msSetMove(el){ _msMoves[el.dataset.src] = Math.max(0, parseInt(el.value,10)||0); _msRecalc(); }
+function _msToggleUser(el){
+  const k = el.dataset.src;
+  _msUsers[k] = _msUsers[k] || [];
+  const i = _msUsers[k].indexOf(el.value);
+  if(el.checked && i === -1) _msUsers[k].push(el.value);
+  if(!el.checked && i > -1)  _msUsers[k].splice(i,1);
+  _msRecalc();
+}
+
+/* Builds the priced line items for the current selection. Shared by the live
+   total in the modal and the order handed to checkout, so the number shown in
+   the modal is by construction the number charged. */
+function _msBuildUpgradeOrder(){
+  const org = ORG_DATA[currentOrg];
+  const target = org.products.find(x => x.name === _msUpgradeTarget);
+  if(!target) return null;
+  const frac = termFractionRemaining(target.renewal);
+  const tPrice = PRICING[_msUpgradeTarget] || 0;
+  const netNew = Math.max(0, parseInt(_msNetNew,10) || 0);
+  const lines = [], moves = [];
+  let total = 0, movedSeats = 0, movedUsers = 0;
+
+  if(netNew > 0){
+    const amt = Math.round(tPrice * netNew * frac);
+    lines.push({ tag:'New seats', name:_msUpgradeTarget,
+      sub:_coMoney(tPrice)+' \u00d7 '+netNew+' new seat'+(netNew!==1?'s':'')+', pro-rated to '+target.renewal,
+      amount:amt });
+    total += amt;
+  }
+
+  (org.products||[]).forEach(src => {
+    if(tierRank(src.name) === -1 || tierRank(src.name) >= tierRank(_msUpgradeTarget)) return;
+    const unassigned = Math.max(0, _msMoves[src.name] || 0);
+    const emails = (_msUsers[src.name] || []).slice();
+    const qty = unassigned + emails.length;
+    if(!qty) return;
+    const diff = tPrice - (PRICING[src.name] || 0);
+    const amt = Math.round(diff * qty * frac);
+    const who = emails.length
+      ? emails.map(e => (users.find(u=>u.email===e)||{}).name || e).join(', ')
+      : '';
+    lines.push({ tag:'Tier upgrade', name: src.name + ' \u2192 ' + _msUpgradeTarget,
+      sub: _coMoney(diff)+' difference \u00d7 '+qty+' seat'+(qty!==1?'s':'')+', pro-rated to '+target.renewal,
+      detail: who ? 'Users moving: '+who : (unassigned+' unassigned seat'+(unassigned!==1?'s':'')),
+      amount: amt });
+    total += amt;
+    movedSeats += qty; movedUsers += emails.length;
+    moves.push({ from:src.name, unassigned:unassigned, userEmails:emails });
+  });
+
+  return {
+    kind:'upgrade', orgKey:currentOrg, targetTier:_msUpgradeTarget,
+    netNew:netNew, moves:moves, lines:lines, total:total,
+    movedSeats:movedSeats, movedUsers:movedUsers,
+    renewal: target.renewal,
+    nextCharge: (target.seats + netNew + movedSeats) * tPrice,
+    invoiceDesc: 'Upgrade to ' + _msUpgradeTarget + ' \u2013 '
+      + (netNew ? netNew + ' new' : '') + (netNew && movedSeats ? ' + ' : '')
+      + (movedSeats ? movedSeats + ' upgraded' : '') + ' seat'
+      + ((netNew + movedSeats) !== 1 ? 's' : '') + ' (pro-rated)',
+    note: 'Takes effect immediately. Your next renewal on ' + target.renewal
+      + ' will bill the full new configuration.',
+  };
+}
+
+function _msRecalc(){
+  const el = document.getElementById('ms-up-new');
+  if(el) _msNetNew = Math.max(0, parseInt(el.value,10) || 0);
+  const o = _msBuildUpgradeOrder();
+  const box = document.getElementById('ms-up-total');
+  const foot = document.getElementById('ms-foot');
+  if(!o || !box) return;
+  const seats = o.netNew + o.movedSeats;
+
+  box.innerHTML = o.lines.length
+    ? '<div class="m-note info">'
+      + o.lines.map(L => '<div class="m-kv"><span>'+L.name+'<br><span style="font-size:11.5px;color:var(--text-muted)">'+L.sub+'</span></span>'
+          + '<strong style="white-space:nowrap">'+_coMoney(L.amount)+'</strong></div>').join('')
+      + '<div class="m-kv" style="border-top:1px solid var(--border);margin-top:6px;padding-top:10px">'
+      +   '<strong>Due today</strong><strong style="font-size:15px">'+_coMoney(o.total)+'</strong></div></div>'
+    : '<div class="m-stub">Choose new seats or seats to move up to see the cost.</div>';
+
+  foot.innerHTML = '<button class="btn" onclick="closeManageSub()">Close</button>'
+    + '<button class="btn primary" '+(seats?'':'disabled ')+'onclick="startUpgradeCheckout()">'
+    + (seats ? 'Continue to checkout \u00b7 ' + _coMoney(o.total) : 'Continue to checkout') + '</button>';
+}
+
+function startUpgradeCheckout(){
+  const o = _msBuildUpgradeOrder();
+  if(!o || !o.lines.length){ toast('Choose at least one seat to upgrade.'); return; }
+  _pendingOrder = o;
+  closeManageSub();
+  nav('a-order-summary');
+}
+
+// ── Downgrade tab (layout only this pass) ──
+function renderManageDowngrade(){
+  const p = _msProductObj(); if(!p) return;
+  document.getElementById('ms-pane-downgrade').innerHTML =
+      '<div class="m-note warn" style="margin-bottom:16px"><strong>Downgrades take effect at your next renewal.</strong> '
+    + 'Nothing changes today and nothing is charged. From ' + p.renewal
+    + ' your subscription renews at the new configuration, which you will be able to see in Billing \u2192 upcoming renewals.</div>'
+    + '<div class="m-stub">Downgrade configuration goes here.<br>'
+    + 'Target tier \u00b7 how many seats \u00b7 which users move \u00b7 new next-term configuration,'
+    + '<br>then hand off to the scheduled-change confirmation page.</div>';
+  document.getElementById('ms-foot').innerHTML =
+      '<button class="btn" onclick="closeManageSub()">Close</button>'
+    + '<button class="btn primary" disabled title="Not built yet">Schedule change</button>';
+}
+
+// ── Cancel tab (fully implemented) ──
+function renderManageCancel(){
+  const p = _msProductObj(); if(!p) return;
+  const pane = document.getElementById('ms-pane-cancel');
+  const foot = document.getElementById('ms-foot');
+  const done = isCancelled(_msProduct);
+
+  if(done){
+    pane.innerHTML =
+        '<div class="m-note info" style="margin-bottom:16px"><strong>This subscription is cancelled.</strong><br>'
+      + 'Auto-renew is off and locked. Your team keeps full access until ' + p.renewal
+      + ', after which the subscription ends and its seats are released.</div>'
+      + '<div class="m-kv"><span>Cancelled on</span><strong>' + cancelledOn(_msProduct) + '</strong></div>'
+      + '<div class="m-kv"><span>Access until</span><strong>' + p.renewal + '</strong></div>'
+      + '<div class="m-kv"><span>Seats affected</span><strong>' + p.seats + ' (' + p.used + ' currently assigned)</strong></div>'
+      + '<div style="font-size:12.5px;color:var(--text-muted);margin-top:16px;line-height:1.6">'
+      + 'Undoing restores auto-renew and clears the cancellation date. The subscription returns to renewing normally on ' + p.renewal + '.</div>';
+    foot.innerHTML =
+        '<button class="btn" onclick="closeManageSub()">Close</button>'
+      + '<button class="btn primary" onclick="undoCancelSub()">Undo cancellation</button>';
+  } else {
+    pane.innerHTML =
+        '<div class="m-note warn" style="margin-bottom:16px"><strong>Cancelling turns off auto-renew.</strong><br>'
+      + 'Nothing is charged and nothing changes today \u2014 your team keeps full access until ' + p.renewal + '. '
+      + 'At that date the subscription ends and its seats are released.</div>'
+      + '<div class="m-kv"><span>Subscription</span><strong>' + p.name + '</strong></div>'
+      + '<div class="m-kv"><span>Seats</span><strong>' + p.seats + ' (' + p.used + ' currently assigned)</strong></div>'
+      + '<div class="m-kv"><span>Access until</span><strong>' + p.renewal + '</strong></div>'
+      + '<div class="m-kv"><span>Amount not charged at renewal</span><strong>' + productAmount(p) + '</strong></div>'
+      + '<label class="co-check" style="margin-top:18px"><input type="checkbox" id="ms-cancel-ack"/> '
+      + '<span>I understand this subscription will not renew on ' + p.renewal + '.</span></label>';
+    foot.innerHTML =
+        '<button class="btn" onclick="closeManageSub()">Keep subscription</button>'
+      + '<button class="btn danger" onclick="confirmCancelSub()">Cancel subscription</button>';
+  }
+}
+
+function confirmCancelSub(){
+  const p = _msProductObj(); if(!p) return;
+  const ack = document.getElementById('ms-cancel-ack');
+  if(!ack || !ack.checked){ toast('Please confirm you understand this subscription will not renew.'); return; }
+
+  const key = _cancelKey(currentOrg, p.name);
+  cancellations[key] = { on: _formatFriendlyDate(new Date()) };
+  savePersisted('cancellations', cancellations);
+
+  // Cancelling forces auto-renew off through the existing flag and override map,
+  // so there is a single source of truth rather than a parallel cancelled state.
+  p.autoRenew = false;
+  autoRenewOverrides[currentOrg + ':' + p.name] = false;
+  savePersisted('autoRenewOverrides', autoRenewOverrides);
+
+  _refreshAfterSubChange();
+  renderManageCancel();
+  toast('\u2713 ' + p.name + ' cancelled \u00b7 access continues until ' + p.renewal);
+}
+
+function undoCancelSub(){
+  const p = _msProductObj(); if(!p) return;
+  delete cancellations[_cancelKey(currentOrg, p.name)];
+  savePersisted('cancellations', cancellations);
+
+  p.autoRenew = true;
+  autoRenewOverrides[currentOrg + ':' + p.name] = true;
+  savePersisted('autoRenewOverrides', autoRenewOverrides);
+
+  _refreshAfterSubChange();
+  renderManageCancel();
+  toast('\u2713 Cancellation undone \u00b7 ' + p.name + ' renews on ' + p.renewal);
+}
+
+function closeManageSub(){
+  document.getElementById('modal-manage-sub').classList.remove('open');
+  _msProduct = null;
+}
+
+// Every surface that shows renewal or auto-renew state for a product.
+function _refreshAfterSubChange(){
+  updateDashOrgBanners();
+  renderInvoiceHistory();
 }
 
 function av(u){const c=UCOLORS[u.color];return`<div class="user-av" style="background:${c.bg};color:${c.fg}">${u.initials}</div>`;}
@@ -5146,7 +5697,114 @@ function getLastModified(u){
   }
   return {when: u.createdOn || '', who: ''};
 }
-const LAZY_PAGE=50;        // records per chunk
+const LAZY_PAGE=8;         // records per chunk
+
+/* Lazy loading for the users tables.
+   Was: render 50, then dump the remainder after a fixed 400ms. With a page size
+   larger than any org's user count it never actually engaged, so nothing was
+   ever lazy about it.
+   Now: render the first chunk, then append further chunks as the operator
+   scrolls the table's own viewport. If the table is short enough that the
+   viewport can't scroll, there is no scroll event to react to — so we top up
+   automatically, otherwise the tail of the list would be unreachable. */
+const _lazyState = {};     // tbodyId -> { rows, spinnerId, busy, gen }
+let _lazyGen = 0;
+
+function renderChunk(rows,tbodyId,spinnerId,colSpan){
+  const tbody=document.getElementById(tbodyId);
+  if(!tbody) return;
+  const emptyRow=`<tr><td colspan="${colSpan}" style="padding:20px 16px;text-align:center;color:var(--text-muted)">No users found.</td></tr>`;
+  const first=rows.slice(0,LAZY_PAGE);
+  tbody.innerHTML=first.length?first.join(''):emptyRow;
+
+  // Generation token: renderUsers() can run again (tab switch, persona switch,
+  // sort, search) while a chunk timer is still pending. Without this the stale
+  // callback appends its rows onto the freshly rebuilt table, duplicating rows.
+  _lazyState[tbodyId]={rows:rows.slice(LAZY_PAGE),spinnerId:spinnerId,busy:false,gen:++_lazyGen};
+  const spinner=document.getElementById(spinnerId);
+  if(spinner) spinner.classList.remove('show');
+
+  _bindLazyScroll(tbody);
+  _lazyTopUp(tbodyId);
+}
+
+// The scrolling ancestor is the card that wraps the table.
+function _lazyHost(tbody){ return tbody ? tbody.closest('.card') : null; }
+
+function _bindLazyScroll(tbody){
+  const host=_lazyHost(tbody);
+  if(!host || host.dataset.lazyBound) return;
+  host.dataset.lazyBound='1';
+  host.addEventListener('scroll', ()=>{
+    // Which tbody is live depends on the active tab, so resolve it per event
+    // rather than closing over one id.
+    const tb=host.querySelector('tbody[id^="tbl-"]');
+    if(!tb) return;
+    if(host.scrollTop + host.clientHeight >= host.scrollHeight - 90) _lazyLoadMore(tb.id);
+  });
+}
+
+function _lazyLoadMore(tbodyId){
+  const st=_lazyState[tbodyId];
+  if(!st || st.busy || !st.rows.length) return;
+  st.busy=true;
+  const gen=st.gen;
+  const spinner=document.getElementById(st.spinnerId);
+  if(spinner) spinner.classList.add('show');
+  setTimeout(()=>{
+    const cur=_lazyState[tbodyId];
+    if(!cur || cur.gen!==gen){ if(spinner) spinner.classList.remove('show'); return; }
+    const tbody=document.getElementById(tbodyId);
+    if(tbody) tbody.insertAdjacentHTML('beforeend', cur.rows.splice(0,LAZY_PAGE).join(''));
+    if(spinner) spinner.classList.remove('show');
+    cur.busy=false;
+    _lazyTopUp(tbodyId);
+  },350);
+}
+
+// Load the next chunk when the viewport isn't scrollable, so rows can't strand.
+function _lazyTopUp(tbodyId){
+  const st=_lazyState[tbodyId];
+  if(!st || !st.rows.length) return;
+  const gen=st.gen;
+  setTimeout(()=>{
+    const cur=_lazyState[tbodyId];
+    if(!cur || cur.gen!==gen) return;
+    const tbody=document.getElementById(tbodyId);
+    const host=_lazyHost(tbody);
+    if(!host) return;
+    // Not laid out (hidden tab) or not tall enough to scroll → append anyway,
+    // otherwise there is no scroll event to drive the rest of the list.
+    if(host.clientHeight===0 || host.scrollHeight <= host.clientHeight + 8) _lazyLoadMore(tbodyId);
+  },80);
+}
+
+/* Sidebar collapse. Stored outside the persona-scoped persistence layer
+   because it is an operator UI preference, not demo data — it should survive
+   persona switches and Reset prototype data. */
+function toggleSidebarCollapse(){
+  const sb=document.getElementById('sidebar');
+  if(!sb) return;
+  const now=!sb.classList.contains('collapsed');
+  sb.classList.toggle('collapsed', now);
+  const btn=document.getElementById('sb-collapse-btn');
+  if(btn){
+    btn.title = now ? 'Expand sidebar' : 'Collapse sidebar';
+    btn.setAttribute('aria-label', btn.title);
+  }
+  try{ localStorage.setItem('bmh:ui:sidebarCollapsed', now ? '1' : '0'); }catch(e){}
+}
+
+function restoreSidebarCollapse(){
+  let v=null;
+  try{ v=localStorage.getItem('bmh:ui:sidebarCollapsed'); }catch(e){}
+  if(v==='1'){
+    const sb=document.getElementById('sidebar');
+    if(sb) sb.classList.add('collapsed');
+    const btn=document.getElementById('sb-collapse-btn');
+    if(btn){ btn.title='Expand sidebar'; btn.setAttribute('aria-label','Expand sidebar'); }
+  }
+}
 
 function sortUsers(key){
   if(sortKey===key) sortDir*=-1; else {sortKey=key;sortDir=1;}
@@ -5185,24 +5843,6 @@ function sortedUsers(arr){
     }
     return va.localeCompare(vb)*sortDir;
   });
-}
-
-function renderChunk(rows,tbodyId,spinnerId,colSpan){
-  const tbody=document.getElementById(tbodyId);
-  if(!tbody) return;
-  const spinner=document.getElementById(spinnerId);
-  const first=rows.slice(0,LAZY_PAGE);
-  const rest=rows.slice(LAZY_PAGE);
-  const emptyRow=`<tr><td colspan="${colSpan}" style="padding:20px 16px;text-align:center;color:var(--text-muted)">No users found.</td></tr>`;
-  tbody.innerHTML=first.length?first.join(''):emptyRow;
-  if(spinner) spinner.classList.remove('show');
-  if(rest.length===0) return;
-  // Show spinner then lazy-load remainder after brief delay
-  if(spinner) spinner.classList.add('show');
-  setTimeout(()=>{
-    tbody.innerHTML+=rest.join('');
-    if(spinner) spinner.classList.remove('show');
-  },400);
 }
 
 function getSeats(u){
@@ -6022,12 +6662,21 @@ function confirmAddSeats(){
   // or checkout had already been billed. Confirming here just builds the
   // pending order and hands off to step 1 of the purchase flow.
   const unitPrice = PRICING[productName] || 0;
+  const lineTotal = unitPrice * count;
   _pendingOrder = {
+    kind:        'addseats',
     orgKey:      currentOrg,
     productName: productName,
     count:       count,
     unitPrice:   unitPrice,
-    lineTotal:   unitPrice * count,
+    lineTotal:   lineTotal,
+    // Orders are multi-line so upgrade (which bills net-new seats and tier
+    // upgrades as separate lines) can share this checkout. Add seats is simply
+    // the one-line case.
+    lines: [{ tag:'Addon', name: productName,
+              sub: _coMoney(unitPrice) + ' \u00d7 ' + count + ' additional seat' + (count!==1?'s':''),
+              amount: lineTotal }],
+    total:       lineTotal,
     renewal:     product.renewal || '\u2014',
     // What the whole subscription will bill at its next renewal once these
     // seats are added — existing seats plus the new ones.
@@ -6075,13 +6724,18 @@ function _coBrand(elId){
 // The summary panel is identical on both steps apart from its call to action,
 // so it is built once and the CTA is passed in.
 function _coSummaryHTML(o, ctaHTML){
-  const line = _coMoney(o.lineTotal);
+  const line = _coMoney(o.total);
+  let items = '';
+  o.lines.forEach(L => {
+    items += '<div class="co-line"><div><div style="color:var(--text-primary)">'+L.name+'</div>'
+           +   '<div class="co-line-sub">'+L.sub+'</div></div>'
+           +   '<div style="white-space:nowrap;color:var(--text-primary)">'+_coMoney(L.amount)+'</div></div>';
+  });
   return ''
     + '<div class="co-sum-h">Order summary</div>'
-    + '<div class="co-line"><div><div style="color:var(--text-primary)">'+o.productName+'</div>'
-    +   '<div class="co-line-sub">'+_coMoney(o.unitPrice)+' \u00d7 '+o.count+' / year</div></div>'
-    +   '<div style="white-space:nowrap;color:var(--text-primary)">'+line+'</div></div>'
-    + '<div class="co-line" style="font-weight:600;color:var(--text-primary)"><div>Subtotal (1 item)</div><div>'+line+'</div></div>'
+    + items
+    + '<div class="co-line" style="font-weight:600;color:var(--text-primary)"><div>Subtotal ('
+    +   o.lines.length+' item'+(o.lines.length!==1?'s':'')+')</div><div>'+line+'</div></div>'
     + '<div class="co-div"></div>'
     + '<button class="co-link" onclick="toast(\'Coupon codes are not enabled in this prototype.\')">Apply coupon</button>'
     + '<div class="co-div"></div>'
@@ -6107,12 +6761,15 @@ function renderOrderSummary(){
 
   const items = document.getElementById('co-items');
   if(items){
-    items.innerHTML =
+    items.innerHTML = o.lines.map(L =>
         '<div class="co-item"><div>'
-      +   '<span class="co-tag">Addon</span>'
-      +   '<div class="co-item-name">'+o.productName+'</div>'
-      +   '<div class="co-item-meta">'+_coMoney(o.unitPrice)+' \u00d7 '+o.count+' additional seat'+(o.count!==1?'s':'')+'</div>'
-      + '</div><div class="co-item-price">'+_coMoney(o.lineTotal)+'</div></div>'
+      +   '<span class="co-tag">'+(L.tag||'Addon')+'</span>'
+      +   '<div class="co-item-name">'+L.name+'</div>'
+      +   '<div class="co-item-meta">'+L.sub+'</div>'
+      +   (L.detail ? '<div class="co-item-meta" style="margin-top:6px">'+L.detail+'</div>' : '')
+      + '</div><div class="co-item-price">'+_coMoney(L.amount)+'</div></div>'
+      ).join('')
+      + (o.note ? '<div class="m-note info" style="margin-bottom:16px">'+o.note+'</div>' : '')
       + '<button class="co-link" onclick="cancelOrder()">Cancel and return to Licenses</button>';
   }
 
@@ -6145,7 +6802,7 @@ function renderCheckout(){
         '<label class="co-check"><input type="checkbox" id="co-terms"/> '
       + '<span>By checking out you agree to our <span style="text-decoration:underline">Terms of Service</span> '
       + 'and <span style="text-decoration:underline">Privacy Policy</span></span></label>'
-      + '<button class="co-cta" id="co-pay-btn" onclick="payOrder()">Pay '+_coMoney(o.lineTotal)+'</button>');
+      + '<button class="co-cta" id="co-pay-btn" onclick="payOrder()">Pay '+_coMoney(o.total)+'</button>');
   }
 }
 
@@ -6180,20 +6837,26 @@ function _commitOrder(){
   const o = _pendingOrder;
   if(!o) return;
   const org = ORG_DATA[o.orgKey];
-  const product = org && org.products && org.products.find(p => p.name === o.productName);
-  if(!product){ toast('Product not found'); _pendingOrder = null; nav('a-licenses'); return; }
+  if(!org){ toast('Organisation not found'); _pendingOrder = null; nav('a-licenses'); return; }
 
-  product.seats  = (product.seats || 0) + o.count;
-  product.amount = productAmount(product);
+  if(o.kind === 'upgrade'){
+    if(!_commitUpgrade(o, org)) return;
+  } else {
+    const product = org.products && org.products.find(p => p.name === o.productName);
+    if(!product){ toast('Product not found'); _pendingOrder = null; nav('a-licenses'); return; }
+    product.seats  = (product.seats || 0) + o.count;
+    product.amount = productAmount(product);
+    o.newSeatsAfter = product.seats;
+  }
 
   invoiceCount += 1;
   const todayLabel = _formatFriendlyDate(new Date());
   extraInvoices.unshift({
     id:     invoiceCount,
     org:    o.orgKey,
-    desc:   o.productName + ' \u2013 ' + o.count + ' additional seat' + (o.count!==1?'s':'') + ' (Annual)',
+    desc:   o.invoiceDesc || (o.productName + ' \u2013 ' + o.count + ' additional seat' + (o.count!==1?'s':'') + ' (Annual)'),
     date:   todayLabel,
-    amount: _formatMoney(o.lineTotal),
+    amount: _formatMoney(o.total),
     status: 'Paid',
   });
   savePersisted('extraInvoices', extraInvoices);
@@ -6208,14 +6871,72 @@ function _commitOrder(){
     billTo:    (fn + ' ' + ln).trim() || currentUData().name,
     email:     (document.getElementById('co-email').value || '').trim(),
     cardLast4: card.slice(-4),
-    newSeats:  product.seats,
+    newSeats:  o.newSeatsAfter,
   });
   _pendingOrder = null;
 
+  savePersisted('users', users);
   renderUsers();
   updateDashOrgBanners();
   renderInvoiceHistory();
   nav('a-order-confirmation');
+}
+
+/* Applies an immediate tier upgrade. Three things move at once:
+     - seat COUNTS shift from each source tier to the target
+     - seat ASSIGNMENTS follow, so a moved user's licence changes tier today
+     - `used` counts track the assignments on both sides
+   Net-new seats only grow the target. Returns false if the org data has
+   drifted since the order was built (product deleted, user removed). */
+function _commitUpgrade(o, org){
+  const target = org.products.find(p => p.name === o.targetTier);
+  if(!target){ toast('Target tier not found'); _pendingOrder = null; nav('a-licenses'); return false; }
+
+  const me = currentUData();
+  const adminName = (me && me.name) ? me.name : 'Admin';
+  let movedSeats = 0;
+
+  o.moves.forEach(mv => {
+    const src = org.products.find(p => p.name === mv.from);
+    if(!src) return;
+    const total = (mv.unassigned || 0) + (mv.userEmails ? mv.userEmails.length : 0);
+    if(!total) return;
+
+    src.seats  = Math.max(0, (src.seats || 0) - total);
+    target.seats = (target.seats || 0) + total;
+    movedSeats += total;
+
+    // Re-point each selected user's seat from the source tier to the target.
+    (mv.userEmails || []).forEach(email => {
+      const u = users.find(x => x.email === email);
+      if(!u) return;
+      _normaliseSeatArrays(u);
+      const i = u.seats.indexOf(mv.from);
+      if(i === -1) return;
+      u.seats[i]      = o.targetTier;
+      u.assignedOn[i] = 'Today';
+      u.assignedBy[i] = adminName;
+      src.used    = Math.max(0, (src.used || 0) - 1);
+      target.used = (target.used || 0) + 1;
+    });
+    src.amount = productAmount(src);
+  });
+
+  target.seats  = (target.seats || 0) + (o.netNew || 0);
+  target.amount = productAmount(target);
+  o.newSeatsAfter = target.seats;
+  o.movedSeats = movedSeats;
+  return true;
+}
+
+// Users store seats as either a single string (legacy) or parallel arrays.
+// Normalise to arrays so an index-wise tier swap is safe.
+function _normaliseSeatArrays(u){
+  if(!Array.isArray(u.seats))      u.seats      = u.seats ? [u.seats] : (u.seat ? [u.seat] : []);
+  if(!Array.isArray(u.assignedOn)) u.assignedOn = u.assignedOn ? [u.assignedOn] : [];
+  if(!Array.isArray(u.assignedBy)) u.assignedBy = u.assignedBy ? [u.assignedBy] : [];
+  while(u.assignedOn.length < u.seats.length) u.assignedOn.push('\u2014');
+  while(u.assignedBy.length < u.seats.length) u.assignedBy.push('\u2014');
 }
 
 function renderConfirmation(){
@@ -6231,16 +6952,22 @@ function renderConfirmation(){
     + '<div class="co-h1" style="margin-bottom:6px">Thank you for your order</div>'
     + '<div style="font-size:13.5px;color:var(--text-muted);margin-bottom:24px">'
     +   'Order ' + o.orderId + ' \u00b7 ' + o.placedOn + '</div>'
-    + '<table class="co-rc"><thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Amount</th></tr></thead><tbody>'
-    +   '<tr><td><div style="color:var(--text-primary);font-weight:600">'+o.productName+'</div>'
-    +     '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">Additional seats \u00b7 Annual</div></td>'
-    +     '<td style="text-align:right">'+o.count+'</td>'
-    +     '<td style="text-align:right">'+_coMoney(o.lineTotal)+'</td></tr>'
-    +   '<tr class="co-rc-tot"><td>Total</td><td></td><td style="text-align:right">'+_coMoney(o.lineTotal)+'</td></tr>'
+    + '<table class="co-rc"><thead><tr><th>Item</th><th style="text-align:right">Amount</th></tr></thead><tbody>'
+    +   o.lines.map(L =>
+          '<tr><td><div style="color:var(--text-primary);font-weight:600">'+L.name+'</div>'
+        + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">'+L.sub+'</div>'
+        + (L.detail ? '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">'+L.detail+'</div>' : '')
+        + '</td><td style="text-align:right;vertical-align:top">'+_coMoney(L.amount)+'</td></tr>').join('')
+    +   '<tr class="co-rc-tot"><td>Total</td><td style="text-align:right">'+_coMoney(o.total)+'</td></tr>'
     + '</tbody></table>'
     + '<div style="margin-top:22px;font-size:13.5px;color:var(--text-secondary);line-height:1.85">'
     +   '<div>Billed to: '+o.billTo+(o.cardLast4?' \u00b7 card ending '+o.cardLast4:'')+'</div>'
-    +   '<div>This subscription now has <strong>'+o.newSeats+' seats</strong> and renews on '+o.renewal+'.</div>'
+    +   '<div>' + (o.kind === 'upgrade'
+          ? o.targetTier + ' now has <strong>'+o.newSeats+' seats</strong>'
+            + (o.movedUsers ? ', including '+o.movedUsers+' upgraded user'+(o.movedUsers!==1?'s':'')+'' : '')
+            + '. Changes are active now and renew on '+o.renewal+'.'
+          : 'This subscription now has <strong>'+o.newSeats+' seats</strong> and renews on '+o.renewal+'.')
+    +   '</div>'
     +   '<div style="margin-top:14px">A confirmation email has been sent to '+(o.email||'your inbox')+'. '
     +     'You will also receive a separate invoice from Chargebee.</div>'
     +   '<div style="margin-top:10px">Visit the '
@@ -8058,6 +8785,7 @@ currentOrg='acme';
 renderUsers();
 renderMyProducts('admin');
 renderSupportTickets('admin');
+restoreSidebarCollapse();
 
 
 /* ═══════════════════════════════════════
