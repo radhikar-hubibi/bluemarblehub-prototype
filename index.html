@@ -2957,6 +2957,23 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   </div>
 </div>
 
+<!-- REVOKE SEAT CONFIRMATION -->
+<div class="modal-bg" id="modal-revoke-confirm">
+  <div class="modal">
+    <div class="modal-title">Revoke License Seat?</div>
+    <div class="modal-sub" id="rvk-sub"></div>
+    <div id="rvk-product-wrap" style="display:none;margin-top:12px">
+      <label class="modal-label" for="rvk-product">Seat to revoke</label>
+      <select class="modal-select" id="rvk-product" onchange="_rvkRefresh()"></select>
+    </div>
+    <div class="m-note warn" id="rvk-note" style="margin-top:14px"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn danger" style="flex:1" onclick="confirmRevokeSeat()">Revoke Seat</button>
+    </div>
+  </div>
+</div>
+
 <!-- MANAGE SUBSCRIPTION — tabbed: Upgrade (default) / Downgrade / Cancel -->
 <div class="modal-bg" id="modal-manage-sub">
   <div class="modal lg">
@@ -3023,20 +3040,16 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
 <!-- REMOVE USER -->
 <div class="modal-bg" id="modal-remove-user">
   <div class="modal">
-    <div class="modal-title">Remove user</div>
-    <div class="modal-sub">Select a user to remove. Their seat will be unassigned first.</div>
-    <div class="modal-label">User</div>
-    <select class="modal-select" id="remove-user-sel">
-      <option value="Dana Cruz">Dana Cruz (dana@acme.com)</option>
-      <option value="Riko Muto">Riko Muto (riko@acme.com)</option>
-      <option value="Wei Zhang">Wei Zhang (wei@acme.com)</option>
-    </select>
-    <div style="background:var(--red-lt);border:1px solid #fecaca;border-radius:var(--radius-sm);padding:11px 13px;font-size:12px;color:var(--red)">
-      ⚠️ The user will lose all access immediately.
-    </div>
-    <div class="modal-row">
-      <button class="btn danger" style="flex:1" onclick="confirmRemoveUser()">Remove user</button>
-      <button class="btn" onclick="closeModal()">Cancel</button>
+    <div class="modal-title">Remove User?</div>
+    <div class="modal-sub" id="rmu-sub"></div>
+    <div class="modal-label" style="margin-top:12px">User</div>
+    <select class="modal-select" id="remove-user-sel" onchange="_rmuRefresh()"></select>
+    <div id="rmu-seats" style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px"></div>
+    <div class="m-note warn" id="rmu-note"></div>
+    <div id="rmu-offline" style="margin-top:10px"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn danger" style="flex:1" onclick="confirmRemoveUser()">Remove User</button>
     </div>
   </div>
 </div>
@@ -3213,7 +3226,7 @@ const UCOLORS=[
    prototype edits (which is the right tradeoff for prototyping).
 ═══════════════════════════════════════════════════════════ */
 const PERSIST_PREFIX = 'bmh';
-const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'cancellations', 'ticketOverrides', 'productDownloads', 'downloadHistory'];
+const PERSIST_KEYS = ['users', 'ticketCount', 'extraTickets', 'threadReplies', 'extraInvoices', 'invoiceCount', 'autoRenewOverrides', 'cancellations', 'reassignments', 'revocations', 'ticketOverrides', 'productDownloads', 'downloadHistory'];
 
 function _personaKey(){
   // currentRole is defined a few lines below; fall back to 'admin' on first call.
@@ -3261,6 +3274,8 @@ function _seedFingerprint(dataKey){
     if(dataKey === 'invoiceCount')  return _hash('start:1045');
     if(dataKey === 'autoRenewOverrides') return _hash('empty');
     if(dataKey === 'cancellations') return _hash('empty');
+    if(dataKey === 'reassignments') return _hash('empty');
+    if(dataKey === 'revocations')   return _hash('empty');
     if(dataKey === 'ticketOverrides') return _hash('empty');
     if(dataKey === 'productDownloads') return _hash('empty');
     if(dataKey === 'downloadHistory') return _hash('empty');
@@ -3537,6 +3552,42 @@ let autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
 // autoRenew is forced false alongside it, but the two are kept separate so an
 // admin who simply toggled auto-renew off is not treated as having cancelled.
 let cancellations = loadPersisted('cancellations', {});
+
+/* Seat reassignment tracking.
+   Agreements cap how many times a given seat may be handed to a different person,
+   so revoking is not free. Revoking ARMS a reassignment (pending); handing the
+   freed seat to someone else CONSUMES it (used++).
+     reassignments: 'org:Product' -> { period, used, pending }
+     revocations:   audit trail, drives the Recent activity ticks
+
+   OPEN QUESTION: what period the cap is measured over is undecided — calendar
+   year or license period. The revoke dialog therefore states a bare count with
+   no period, so the copy stays correct either way, and every reset decision
+   funnels through _reassignPeriodKey() below so switching is one line. */
+let reassignments = loadPersisted('reassignments', {});
+let revocations   = loadPersisted('revocations', []);
+
+/* The single switch point for the counting period. Returning a different value
+   invalidates the stored count and starts a fresh period.
+     Calendar year (current):  String(new Date().getFullYear())
+     License period (option):  the product's renewal date, so the count resets
+                               with the subscription term, e.g.
+       const org_ = ORG_DATA[org || currentOrg] || {};
+       const p = (org_.products || []).find(x => x.name === product);
+       return p && p.renewal ? p.renewal : 'all-time';
+     No reset at all (option):  'all-time'                                    */
+function _reassignPeriodKey(product, org){
+  return String(new Date().getFullYear());
+}
+
+function _reassignRec(product, org){
+  const k = (org || currentOrg) + ':' + product;
+  const period = _reassignPeriodKey(product, org);
+  let r = reassignments[k];
+  if(!r || r.period !== period){ r = {period:period, used:0, pending:0}; reassignments[k] = r; }
+  return r;
+}
+function reassignmentsUsed(product, org){ return _reassignRec(product, org).used; }
 function _cancelKey(org, productName){ return org + ':' + productName; }
 function isCancelled(productName, org){ return !!cancellations[_cancelKey(org||currentOrg, productName)]; }
 function cancelledOn(productName, org){
@@ -4578,6 +4629,7 @@ function updateDashOrgBanners(){
     }
     // Prepend any downloaded-product ticks the admin has accumulated.
     if(typeof _refreshDownloadActivity === 'function') _refreshDownloadActivity();
+    if(typeof _refreshRevokeActivity === 'function') _refreshRevokeActivity();
   }
 
   // ── Reseller-managed org tweaks to dashboard cards ──────────────────────────
@@ -4709,6 +4761,8 @@ function switchUser(role){
   invoiceCount = loadPersisted('invoiceCount', 1045);
   autoRenewOverrides = loadPersisted('autoRenewOverrides', {});
   cancellations = loadPersisted('cancellations', {});
+  reassignments = loadPersisted('reassignments', {});
+  revocations   = loadPersisted('revocations', []);
   ticketOverrides = loadPersisted('ticketOverrides', {});
   productDownloads = loadPersisted('productDownloads', {});
   downloadHistory = loadPersisted('downloadHistory', []);
@@ -5088,6 +5142,32 @@ function _msProductObj(){
 const TIER_ORDER = ['Global Mapper Essentials','Global Mapper Advanced','Global Mapper Professional'];
 function tierRank(name){ return TIER_ORDER.indexOf(name); }
 
+/* Visual/identity template for a tier the org does not own yet. Upgrade is an
+   upsell path as well as an expansion path: an org on Advanced alone must be
+   able to buy into Professional, which means creating that subscription. (Add
+   seats deliberately cannot do this — it only grows a tier you already hold.) */
+const TIER_TEMPLATE = {
+  'Global Mapper Essentials':   {key:'api',icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb'},
+  'Global Mapper Advanced':     {key:'gma',icon:'ADV',iconBg:'#fce7f3',iconFg:'#9d174d'},
+  'Global Mapper Professional': {key:'pp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd'},
+};
+
+// Subscriptions are co-termed, so any active product's renewal is the org's
+// renewal. Falls back to the org record for an org with no products at all.
+function orgRenewalDate(org){
+  const p = (org.products||[]).find(x => x.status !== 'trial' && x.renewal);
+  return (p && p.renewal) || org.nextRenewal || '\u2014';
+}
+
+// The org's product for a tier, or a synthetic zero-seat stand-in when the org
+// doesn't own it yet. `owned:false` tells the UI to explain it's a new
+// subscription and tells the commit path to create it.
+function tierTarget(org, tierName){
+  const existing = (org.products||[]).find(x => x.name === tierName);
+  if(existing) return {product:existing, owned:true, seats:existing.seats||0, renewal:existing.renewal};
+  return {product:null, owned:false, seats:0, renewal:orgRenewalDate(org)};
+}
+
 /* Fraction of the current term still to run. Because subscriptions are
    co-termed, every product in an org shares a renewal date, so an upgrade is
    charged only for the days between today and that date. */
@@ -5116,62 +5196,85 @@ function renderManageUpgrade(){
   const pane = document.getElementById('ms-pane-upgrade');
   const foot = document.getElementById('ms-foot');
 
-  // Tiers above the one clicked, that the org already owns.
-  const targets = (org.products || []).filter(x => tierRank(x.name) > tierRank(p.name) && x.status !== 'trial');
-  if(tierRank(p.name) === -1 || !targets.length){
+  // Targets come from the TIER LADDER, not from what the org already owns.
+  const targetNames = TIER_ORDER.filter(n => tierRank(n) > tierRank(p.name));
+  if(tierRank(p.name) === -1 || !targetNames.length){
     pane.innerHTML = '<div class="m-note info">'
-      + '<strong>' + p.name + ' is already your highest tier.</strong><br>'
-      + 'There is nothing above it to upgrade to. To move seats up from a lower tier, open Manage on that tier instead.</div>';
+      + '<strong>' + p.name + ' is the highest tier available.</strong><br>'
+      + 'There is nothing above it to upgrade to. To grow this subscription, use Add seats; '
+      + 'to move seats up from a lower tier, open Manage on that tier instead.</div>';
     foot.innerHTML = '<button class="btn" onclick="closeManageSub()">Close</button>';
     return;
   }
-  if(!_msUpgradeTarget || tierRank(_msUpgradeTarget) <= tierRank(p.name)) _msUpgradeTarget = targets[0].name;
+  if(!_msUpgradeTarget || tierRank(_msUpgradeTarget) <= tierRank(p.name)) _msUpgradeTarget = targetNames[0];
 
-  const target  = org.products.find(x => x.name === _msUpgradeTarget);
+  const tgt     = tierTarget(org, _msUpgradeTarget);
   const sources = (org.products || []).filter(x => tierRank(x.name) > -1
                     && tierRank(x.name) < tierRank(_msUpgradeTarget) && x.status !== 'trial');
-  const days = daysRemaining(target.renewal);
+  const days = daysRemaining(tgt.renewal);
+  const frac = termFractionRemaining(tgt.renewal);
 
+  // NB: no credit is ever issued here. Upgrading an existing seat converts it
+  // in place and is charged the difference between the two tier prices; nothing
+  // flows back to the customer. Brand-new seats are charged the full tier price.
+  // Both are pro-rated to the remaining term because subscriptions are co-termed.
   let h = '<div class="m-note info" style="margin-bottom:16px">'
-    + '<strong>Upgrades take effect immediately.</strong> You are charged only for the '
-    + days + ' days left in the current term \u2014 ' + Math.round(termFractionRemaining(target.renewal)*100)
-    + '% of a full year. Moved seats are charged the tier difference; the unused value of the '
-    + 'lower-tier seat is credited automatically.</div>';
+    + '<strong>Upgrades take effect immediately.</strong> You are buying '
+    + _msUpgradeTarget.replace('Global Mapper ','') + ' seats, charged only for the '
+    + days + ' days left in the current term \u2014 ' + Math.round(termFractionRemaining(tgt.renewal)*100)
+    + '% of a full year.<br>New seats are charged the full tier price. Seats you upgrade from a '
+    + 'lower tier are charged the difference between the two tiers.</div>';
+
+  if(!tgt.owned){
+    h += '<div class="m-note warn" style="margin-bottom:16px">'
+      + 'You don\u2019t have a <strong>' + _msUpgradeTarget + '</strong> subscription yet. '
+      + 'Completing this creates one, co-termed to your existing renewal date of ' + tgt.renewal + '.</div>';
+  }
 
   h += '<label class="modal-label">Upgrade to</label>'
      + '<select class="modal-select" id="ms-up-target" onchange="_msSetTarget(this.value)">'
-     + targets.map(t => '<option value="'+t.name+'"'+(t.name===_msUpgradeTarget?' selected':'')+'>'
-         + t.name + ' \u2014 ' + _coMoney(PRICING[t.name]||0) + '/seat/year</option>').join('')
+     + targetNames.map(n => {
+         const t = tierTarget(org, n);
+         return '<option value="'+n+'"'+(n===_msUpgradeTarget?' selected':'')+'>'
+           + n + ' \u2014 ' + _coMoney(PRICING[n]||0) + ' a year per seat'
+           + (t.owned ? ' \u00b7 ' + t.seats + ' seats today' : ' \u00b7 new subscription') + '</option>';
+       }).join('')
      + '</select>';
 
-  h += '<label class="modal-label" style="margin-top:6px">Brand new seats</label>'
+  h += '<label class="modal-label" style="margin-top:6px">New seats to buy \u2014 '
+     + _coMoney(PRICING[_msUpgradeTarget]||0) + ' a year per seat, '
+     + _coMoney(Math.round((PRICING[_msUpgradeTarget]||0)*frac)) + ' per seat today</label>'
      + '<input class="modal-input" type="number" min="0" value="'+_msNetNew+'" id="ms-up-new" oninput="_msRecalc()"/>';
 
-  sources.forEach(src => {
-    const holders = _holdersOf(src.name);
-    const freeSeats = Math.max(0, (src.seats||0) - (src.used||0));
-    const diff = (PRICING[_msUpgradeTarget]||0) - (PRICING[src.name]||0);
-    h += '<div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-top:14px">'
-       + '<div style="font-size:13.5px;font-weight:600;color:var(--text-primary);margin-bottom:2px">Move seats up from '+src.name+'</div>'
-       + '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px">'
-       +   src.seats+' seats \u00b7 '+freeSeats+' unassigned \u00b7 upgrade difference '
-       +   _coMoney(diff)+'/seat/year</div>'
-       + '<label class="modal-label">Unassigned seats to move (max '+freeSeats+')</label>'
-       + '<input class="modal-input" type="number" min="0" max="'+freeSeats+'" value="'+(_msMoves[src.name]||0)+'" '
-       +   'data-src="'+src.name+'" oninput="_msSetMove(this)" style="margin-bottom:10px"/>';
-    if(holders.length){
-      h += '<div class="modal-label">Move assigned users up</div>';
-      holders.forEach(u => {
-        const checked = (_msUsers[src.name]||[]).indexOf(u.email) > -1 ? ' checked' : '';
-        h += '<label class="co-check" style="margin-top:6px">'
-           + '<input type="checkbox" data-src="'+src.name+'" value="'+u.email+'" onchange="_msToggleUser(this)"'+checked+'/>'
-           + '<span>'+u.name+' <span style="color:var(--text-muted)">\u00b7 '+u.email+'</span></span></label>';
-      });
-    } else {
-      h += '<div style="font-size:12px;color:var(--text-muted)">No assigned users on this tier.</div>';
-    }
-    h += '</div>';
-  });
+  if(sources.length){
+    sources.forEach(src => {
+      const holders = _holdersOf(src.name);
+      const freeSeats = Math.max(0, (src.seats||0) - (src.used||0));
+      const diff = (PRICING[_msUpgradeTarget]||0) - (PRICING[src.name]||0);
+      h += '<div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-top:14px">'
+         + '<div style="font-size:13.5px;font-weight:600;color:var(--text-primary);margin-bottom:2px">Upgrade existing '+src.name+' seats</div>'
+         + '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px">'
+         +   src.seats+' seats \u00b7 '+freeSeats+' unassigned<br>'
+         +   _coMoney(PRICING[src.name]||0)+' \u2192 '+_coMoney(PRICING[_msUpgradeTarget]||0)
+         +   ' a year per seat \u00b7 you pay the '+_coMoney(diff)+' difference, '
+         +   _coMoney(Math.round(diff*frac))+' per seat today</div>'
+         + '<label class="modal-label">Unassigned seats to upgrade (max '+freeSeats+')</label>'
+         + '<input class="modal-input" type="number" min="0" max="'+freeSeats+'" value="'+(_msMoves[src.name]||0)+'" '
+         +   'data-src="'+src.name+'" oninput="_msSetMove(this)" style="margin-bottom:10px"/>';
+      if(holders.length){
+        h += '<div class="modal-label">Upgrade these users\u2019 seats</div>';
+        holders.forEach(u => {
+          const checked = (_msUsers[src.name]||[]).indexOf(u.email) > -1 ? ' checked' : '';
+          h += '<label class="co-check" style="margin-top:6px">'
+             + '<input type="checkbox" data-src="'+src.name+'" value="'+u.email+'" onchange="_msToggleUser(this)"'+checked+'/>'
+             + '<span>'+u.name+' <span style="color:var(--text-muted)">\u00b7 '+u.email+'</span></span></label>';
+        });
+      } else {
+        h += '<div style="font-size:12px;color:var(--text-muted)">No assigned users on this tier.</div>';
+      }
+      h += '</div>';
+    });
+  }
 
   h += '<div id="ms-up-total" style="margin-top:18px"></div>';
   pane.innerHTML = h;
@@ -5200,9 +5303,9 @@ function _msToggleUser(el){
    the modal is by construction the number charged. */
 function _msBuildUpgradeOrder(){
   const org = ORG_DATA[currentOrg];
-  const target = org.products.find(x => x.name === _msUpgradeTarget);
-  if(!target) return null;
-  const frac = termFractionRemaining(target.renewal);
+  if(!_msUpgradeTarget) return null;
+  const tgt = tierTarget(org, _msUpgradeTarget);
+  const frac = termFractionRemaining(tgt.renewal);
   const tPrice = PRICING[_msUpgradeTarget] || 0;
   const netNew = Math.max(0, parseInt(_msNetNew,10) || 0);
   const lines = [], moves = [];
@@ -5211,7 +5314,8 @@ function _msBuildUpgradeOrder(){
   if(netNew > 0){
     const amt = Math.round(tPrice * netNew * frac);
     lines.push({ tag:'New seats', name:_msUpgradeTarget,
-      sub:_coMoney(tPrice)+' \u00d7 '+netNew+' new seat'+(netNew!==1?'s':'')+', pro-rated to '+target.renewal,
+      sub:'Full tier price '+_coMoney(tPrice)+' \u00d7 '+netNew+' new seat'+(netNew!==1?'s':'')
+          +', pro-rated to '+tgt.renewal,
       amount:amt });
     total += amt;
   }
@@ -5228,8 +5332,9 @@ function _msBuildUpgradeOrder(){
       ? emails.map(e => (users.find(u=>u.email===e)||{}).name || e).join(', ')
       : '';
     lines.push({ tag:'Tier upgrade', name: src.name + ' \u2192 ' + _msUpgradeTarget,
-      sub: _coMoney(diff)+' difference \u00d7 '+qty+' seat'+(qty!==1?'s':'')+', pro-rated to '+target.renewal,
-      detail: who ? 'Users moving: '+who : (unassigned+' unassigned seat'+(unassigned!==1?'s':'')),
+      sub: 'Tier difference '+_coMoney(diff)+' \u00d7 '+qty+' seat'+(qty!==1?'s':'')
+           +', pro-rated to '+tgt.renewal,
+      detail: who ? 'Users upgraded: '+who : (unassigned+' unassigned seat'+(unassigned!==1?'s':'')),
       amount: amt });
     total += amt;
     movedSeats += qty; movedUsers += emails.length;
@@ -5240,13 +5345,15 @@ function _msBuildUpgradeOrder(){
     kind:'upgrade', orgKey:currentOrg, targetTier:_msUpgradeTarget,
     netNew:netNew, moves:moves, lines:lines, total:total,
     movedSeats:movedSeats, movedUsers:movedUsers,
-    renewal: target.renewal,
-    nextCharge: (target.seats + netNew + movedSeats) * tPrice,
+    renewal: tgt.renewal,
+    newSubscription: !tgt.owned,
+    nextCharge: (tgt.seats + netNew + movedSeats) * tPrice,
     invoiceDesc: 'Upgrade to ' + _msUpgradeTarget + ' \u2013 '
       + (netNew ? netNew + ' new' : '') + (netNew && movedSeats ? ' + ' : '')
       + (movedSeats ? movedSeats + ' upgraded' : '') + ' seat'
       + ((netNew + movedSeats) !== 1 ? 's' : '') + ' (pro-rated)',
-    note: 'Takes effect immediately. Your next renewal on ' + target.renewal
+    note: (tgt.owned ? '' : 'This creates a new ' + _msUpgradeTarget + ' subscription. ')
+      + 'Takes effect immediately. Your next renewal on ' + tgt.renewal
       + ' will bill the full new configuration.',
   };
 }
@@ -5714,13 +5821,18 @@ function renderChunk(rows,tbodyId,spinnerId,colSpan){
   const tbody=document.getElementById(tbodyId);
   if(!tbody) return;
   const emptyRow=`<tr><td colspan="${colSpan}" style="padding:20px 16px;text-align:center;color:var(--text-muted)">No users found.</td></tr>`;
-  const first=rows.slice(0,LAZY_PAGE);
+  // Preserve how many rows were already revealed. renderUsers() re-runs on sort,
+  // search and connectivity-row expansion; without this the table snaps back to
+  // the first chunk, which can hide the very row the operator just clicked on.
+  const prev = _lazyState[tbodyId];
+  const keep = Math.max(LAZY_PAGE, (prev && prev.shown) || 0);
+  const first=rows.slice(0,keep);
   tbody.innerHTML=first.length?first.join(''):emptyRow;
 
   // Generation token: renderUsers() can run again (tab switch, persona switch,
   // sort, search) while a chunk timer is still pending. Without this the stale
   // callback appends its rows onto the freshly rebuilt table, duplicating rows.
-  _lazyState[tbodyId]={rows:rows.slice(LAZY_PAGE),spinnerId:spinnerId,busy:false,gen:++_lazyGen};
+  _lazyState[tbodyId]={rows:rows.slice(keep),spinnerId:spinnerId,busy:false,shown:first.length,gen:++_lazyGen};
   const spinner=document.getElementById(spinnerId);
   if(spinner) spinner.classList.remove('show');
 
@@ -5755,7 +5867,9 @@ function _lazyLoadMore(tbodyId){
     const cur=_lazyState[tbodyId];
     if(!cur || cur.gen!==gen){ if(spinner) spinner.classList.remove('show'); return; }
     const tbody=document.getElementById(tbodyId);
-    if(tbody) tbody.insertAdjacentHTML('beforeend', cur.rows.splice(0,LAZY_PAGE).join(''));
+    const next=cur.rows.splice(0,LAZY_PAGE);
+    if(tbody) tbody.insertAdjacentHTML('beforeend', next.join(''));
+    cur.shown = (cur.shown||0) + next.length;
     if(spinner) spinner.classList.remove('show');
     cur.busy=false;
     _lazyTopUp(tbodyId);
@@ -6055,9 +6169,9 @@ function renderUsers(){
       return '<button class="btn xs" disabled style="opacity:.5;cursor:not-allowed;color:var(--text-muted);background:var(--surface-2);border-color:var(--surface-3)" title="Cannot revoke \u2014 this user has ' + detail + '. Recover offline licenses and end roaming sessions before revoking the seat.">Revoke seat</button>';
     }
     if(seats.length>1&&fromAll){
-      return`<button class="btn xs danger" onclick="openRevokeMulti(${ri})">Revoke seat</button>`;
+      return`<button class="btn xs danger" onclick="openRevokeConfirm(${ri})">Revoke seat</button>`;
     }
-    return`<button class="btn xs danger" onclick="revokeConfirm(${ri},null)">Revoke seat</button>`;
+    return`<button class="btn xs danger" onclick="openRevokeConfirm(${ri})">Revoke seat</button>`;
   }
   // "+ Add product" button shown alongside Revoke on the All Users tab for users
   // who already hold at least one seat but not every product in the org. Named-user
@@ -6378,6 +6492,13 @@ function confirmAssign(){
   }
   u.since = today;
   u.status = 'active';
+  // If a seat of this product was previously revoked and is now going to a
+  // different person, that consumes one of the agreement's reassignments.
+  const _rr = _reassignRec(newProduct);
+  if(_rr.pending > 0){
+    _rr.pending--; _rr.used++;
+    savePersisted('reassignments', reassignments);
+  }
   _stampUserModification(u);
   savePersisted('users', users);
   recomputeOrgCounts(currentOrg);
@@ -6387,7 +6508,7 @@ function confirmAssign(){
   toast('\u2713 ' + newProduct + ' seat assigned to ' + u.name);
 }
 let revokeTargetIdx=null;
-function revokeConfirm(idx,product){
+function revokeConfirm(idx,product,confirmed){
   const u=users[idx];
   // Defensive guard: offline users hold a downloaded license file. Revoking would
   // leave them with a "ghost" license still active on their machine. The Revoke
@@ -6398,7 +6519,11 @@ function revokeConfirm(idx,product){
   }
   const seats=getSeats(u);
   const target=product||(seats.length===1?seats[0]:null);
-  if(!target){openRevokeMulti(idx);return;}
+  // Every revoke goes through the confirmation dialog first, so the reassignment
+  // consequence is stated before access is removed. The dialog also carries the
+  // product picker for users holding more than one seat.
+  if(!confirmed){ openRevokeConfirm(idx, target); return; }
+  if(!target){ openRevokeConfirm(idx, null); return; }
   // Remove the specific seat (and keep the parallel assignedOn / assignedBy arrays
   // in sync if this user holds multiple seats).
   if(u.seats){
@@ -6413,9 +6538,99 @@ function revokeConfirm(idx,product){
     u.seat=null;u.assignedOn=null;u.assignedBy=null;u.status='invited';
   }
   _stampUserModification(u);
-  renderUsers();savePersisted('users', users);recomputeOrgCounts(currentOrg);updateDashOrgBanners();toast('✓ '+target+' seat revoked from '+u.name);
+
+  // Arm a reassignment and record the event for the activity feed.
+  const rr = _reassignRec(target);
+  rr.pending++;
+  savePersisted('reassignments', reassignments);
+  const me = currentUData();
+  revocations.unshift({
+    org: currentOrg, user: u.name, product: target,
+    by: (me && me.name) ? me.name : 'Admin',
+    on: _formatFriendlyDate(new Date()),
+    usedAfter: rr.used,
+  });
+  savePersisted('revocations', revocations);
+
+  renderUsers();savePersisted('users', users);recomputeOrgCounts(currentOrg);updateDashOrgBanners();
+  toast('\u2713 '+target+' seat revoked from '+u.name+' \u00b7 seat returned to the pool');
 }
-function openRevokeMulti(idx){
+
+/* ═══════════════════════
+   REVOKE CONFIRMATION
+═══════════════════════ */
+let _rvkIdx = null;
+
+function openRevokeConfirm(idx, product){
+  const u = users[idx]; if(!u) return;
+  // Same offline guard as the revoke itself — an offline user holds a license
+  // file on their machine, so revoking would leave a ghost license active.
+  if(u.offline){
+    toast('\u26a0 ' + u.name + ' is offline. Recover the license file before revoking.');
+    return;
+  }
+  const seats = getSeats(u);
+  if(!seats.length){ toast(u.name + ' has no seats to revoke.'); return; }
+
+  _rvkIdx = idx;
+  const sel = document.getElementById('rvk-product');
+  sel.innerHTML = seats.map(sn => '<option value="'+sn+'">'+sn+'</option>').join('');
+  if(product && seats.indexOf(product) > -1) sel.value = product;
+  document.getElementById('rvk-product-wrap').style.display = seats.length > 1 ? 'block' : 'none';
+  document.getElementById('rvk-sub').textContent = 'This action will remove access for ' + u.name + '.';
+  _rvkRefresh();
+  document.getElementById('modal-revoke-confirm').classList.add('open');
+}
+
+// Recomputes the reassignment warning, since the count is per product and the
+// picker can change which seat is being revoked.
+function _rvkRefresh(){
+  const sel = document.getElementById('rvk-product');
+  const p = sel ? sel.value : null;
+  const used = p ? reassignmentsUsed(p) : 0;
+  const note = document.getElementById('rvk-note');
+  if(note) note.innerHTML =
+      '<strong>Important:</strong> If this seat is later assigned to another person, it will be '
+    + 'counted as a license reassignment under your agreement. This seat has used <strong>'
+    + used + '</strong> reassignment' + (used !== 1 ? 's' : '') + '.';
+}
+
+function confirmRevokeSeat(){
+  const sel = document.getElementById('rvk-product');
+  const product = sel ? sel.value : null;
+  closeModal();
+  revokeConfirm(_rvkIdx, product, true);
+}
+
+// Recent activity ticks for revocations. Mirrors _refreshDownloadActivity:
+// existing revoke ticks are stripped first so repeated calls don't pile up.
+function _revokeActivityTicks(){
+  const list = (revocations || []).filter(r => r.org === currentOrg).slice(0, 4);
+  if(!list.length) return '';
+  return list.map(r => {
+    const title = r.removal
+      ? r.user + ' removed from the account'
+      : r.product + ' seat revoked from ' + r.user;
+    const meta = r.removal
+      ? r.on + ' \u00b7 by ' + r.by + ' \u00b7 '
+        + (r.seatCount ? r.seatCount + ' seat' + (r.seatCount!==1?'s':'') + ' returned: ' + r.product : 'held no seats')
+      : r.on + ' \u00b7 by ' + r.by + ' \u00b7 seat returned to the pool';
+    return '<div class="tick tick-revoke"><div class="tick-dot" style="background:var(--red)"></div>'
+      + '<div><div class="tick-title">' + title + '</div>'
+      + '<div class="tick-meta">' + meta + '</div></div></div>';
+  }).join('');
+}
+function _refreshRevokeActivity(){
+  const html = _revokeActivityTicks();
+  ['a-dash-activity','u-dash-activity'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.querySelectorAll('.tick-revoke').forEach(n => n.remove());
+    if(html) el.insertAdjacentHTML('afterbegin', html);
+  });
+}
+function openRevokeMulti(idx){ return openRevokeConfirm(idx); }
+function _openRevokeMultiLegacy(idx){
   revokeTargetIdx=idx;
   const u=users[idx];
   const seats=getSeats(u);
@@ -6889,8 +7104,25 @@ function _commitOrder(){
    Net-new seats only grow the target. Returns false if the org data has
    drifted since the order was built (product deleted, user removed). */
 function _commitUpgrade(o, org){
-  const target = org.products.find(p => p.name === o.targetTier);
-  if(!target){ toast('Target tier not found'); _pendingOrder = null; nav('a-licenses'); return false; }
+  let target = org.products.find(p => p.name === o.targetTier);
+  if(!target){
+    // Upsell path: the org is buying into a tier it has never held. Create the
+    // subscription, co-termed to the org's existing renewal date so it stays in
+    // step with everything else.
+    const tpl = TIER_TEMPLATE[o.targetTier];
+    if(!tpl){ toast('Target tier not found'); _pendingOrder = null; nav('a-licenses'); return false; }
+    target = {
+      key: tpl.key, icon: tpl.icon, iconBg: tpl.iconBg, iconFg: tpl.iconFg,
+      name: o.targetTier, type: 'Annual',
+      seats: 0, used: 0,
+      renewal: o.renewal || orgRenewalDate(org),
+      status: 'active', autoRenew: true,
+      amount: '$0',
+      purchasedOn: _formatFriendlyDate(new Date()),
+      purchasedVia: 'direct',
+    };
+    org.products.push(target);
+  }
 
   const me = currentUData();
   const adminName = (me && me.name) ? me.name : 'Admin';
@@ -7670,6 +7902,7 @@ function confirmInstallDownload(){
     if(typeof renderMyProducts === 'function') renderMyProducts(currentRole);
     // Refresh Recent activity widget so the download shows up in the feed.
     if(typeof _refreshDownloadActivity === 'function') _refreshDownloadActivity();
+    if(typeof _refreshRevokeActivity === 'function') _refreshRevokeActivity();
   }
   const picker = document.getElementById('install-product-picker');
   const success = document.getElementById('install-product-success');
@@ -7685,8 +7918,111 @@ function confirmRemoveSeats(){const p=document.getElementById('remove-seats-prod
 /* ═══════════════════════════════════════
    REMOVE USER
 ═══════════════════════════════════════ */
-function openRemoveUser(){document.getElementById('modal-remove-user').classList.add('open');}
-function confirmRemoveUser(){const name=document.getElementById('remove-user-sel').value;const idx=users.findIndex(u=>u.name===name);if(idx>=0){users.splice(idx,1);}savePersisted('users', users);closeModal();renderUsers();toast(`${name} has been removed from the account`);}
+/* ═══════════════════════════════════════
+   REMOVE USER
+   Previously this dropdown was hardcoded to three names that exist in no org
+   (Dana Cruz / Riko Muto / Wei Zhang), so findIndex always returned -1 and the
+   action silently did nothing. It also never recomputed seat counts. Both fixed.
+═══════════════════════════════════════ */
+function openRemoveUser(){
+  _populateRemoveUserDropdown();
+  _rmuRefresh();
+  document.getElementById('modal-remove-user').classList.add('open');
+}
+
+// Real users from the current org. Keyed on email rather than name because names
+// are not guaranteed unique. The signed-in admin is excluded — removing yourself
+// mid-session would leave the prototype without an operator.
+function _populateRemoveUserDropdown(){
+  const sel = document.getElementById('remove-user-sel');
+  if(!sel) return;
+  const me = currentUData();
+  const meEmail = (me && me.email) || '';
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const list = users
+    .filter(u => (!u.org || u.org === currentOrg) && u.email !== meEmail)
+    .slice().sort((a,b) => a.name.localeCompare(b.name));
+  sel.innerHTML = list.length
+    ? list.map(u => '<option value="'+esc(u.email)+'">'+esc(u.name)+' ('+esc(u.email)+')</option>').join('')
+    : '<option value="">No other users in this account</option>';
+}
+
+// Message and warnings are per-user, so they refresh whenever the picker changes.
+function _rmuRefresh(){
+  const sel = document.getElementById('remove-user-sel');
+  const u = sel ? users.find(x => x.email === sel.value) : null;
+  const sub = document.getElementById('rmu-sub');
+  const seatsEl = document.getElementById('rmu-seats');
+  const note = document.getElementById('rmu-note');
+  const off  = document.getElementById('rmu-offline');
+
+  if(!u){
+    if(sub) sub.textContent = 'There are no other users in this account to remove.';
+    if(seatsEl) seatsEl.textContent = '';
+    if(note) note.innerHTML = '';
+    if(off) off.innerHTML = '';
+    return;
+  }
+
+  if(sub) sub.textContent = 'This action will remove ' + u.name + ' and revoke access to the application.';
+
+  const seats = getSeats(u);
+  if(seatsEl) seatsEl.textContent = seats.length
+    ? 'Returns ' + seats.length + ' seat' + (seats.length!==1?'s':'') + ' to the pool: ' + seats.join(', ')
+    : 'This user holds no seats.';
+
+  if(note) note.innerHTML =
+      '<strong>Important:</strong> Removing a user does not reset license reassignment limits. '
+    + 'If any license seat previously assigned to this user is later assigned to another individual, '
+    + 'that assignment will be counted as a license reassignment.';
+
+  // An offline user holds a license file on their machine. Unlike revoke — which
+  // blocks outright — removal is allowed here, because a person who has left the
+  // organisation must still be removable. The admin is warned to recover the file,
+  // since deleting the account does not deactivate a file already on a machine.
+  if(off) off.innerHTML = (u.offline || getConnectivityAggregate(u).offline > 0)
+    ? '<div style="background:var(--red-lt);border:1px solid #fecaca;border-radius:var(--radius-sm);'
+      + 'padding:11px 13px;font-size:12px;color:var(--red);line-height:1.5">'
+      + '<strong>' + u.name + ' has an offline license file issued.</strong> Removing the user does not '
+      + 'deactivate a file already on a machine \u2014 recover it before removing, or that machine keeps working.</div>'
+    : '';
+}
+
+function confirmRemoveUser(){
+  const sel = document.getElementById('remove-user-sel');
+  const email = sel ? sel.value : '';
+  const idx = users.findIndex(u => u.email === email);
+  if(idx < 0){ toast('Pick a user to remove'); return; }
+
+  const u = users[idx];
+  const seats = getSeats(u).slice();
+  const me = currentUData();
+  const by = (me && me.name) ? me.name : 'Admin';
+  const on = _formatFriendlyDate(new Date());
+
+  // Every seat this user held returns to the pool as a PENDING reassignment.
+  // Deleting the person does not reset the limit — handing any of those seats to
+  // someone else still consumes a reassignment under the agreement, which is
+  // exactly what the dialog promises.
+  seats.forEach(p => { _reassignRec(p).pending++; });
+  if(seats.length) savePersisted('reassignments', reassignments);
+
+  revocations.unshift({
+    org: currentOrg, user: u.name, by: by, on: on,
+    removal: true, seatCount: seats.length,
+    product: seats.length ? seats.join(', ') : null,
+  });
+  savePersisted('revocations', revocations);
+
+  users.splice(idx, 1);
+  savePersisted('users', users);
+  closeModal();
+  recomputeOrgCounts(currentOrg);
+  renderUsers();
+  updateDashOrgBanners();
+  toast('\u2713 ' + u.name + ' removed from the account'
+    + (seats.length ? ' \u00b7 ' + seats.length + ' seat' + (seats.length!==1?'s':'') + ' returned to the pool' : ''));
+}
 
 /* ═══════════════════════════════════════
    UNIFIED TICKET FUNCTIONS
