@@ -692,6 +692,10 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
 .my-prod-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .my-prod-icon{width:42px;height:42px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0}
 .my-prod-name{font-size:14px;font-weight:600;color:var(--text-primary)}
+/* Subtext under the product title listing what the SKU actually installs, so a
+   licence recipient knows what is available to them. Italic to read as a note
+   rather than a second title. */
+.my-prod-includes{font-size:11.5px;font-style:italic;color:var(--text-muted);margin-top:2px;line-height:1.4}
 .my-prod-type{font-size:12px;color:var(--text-muted);margin-top:2px}
 .my-prod-detail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding-top:12px;border-top:1px solid var(--surface-3)}
 .my-prod-stat-lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:2px}
@@ -1253,6 +1257,73 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
 
 /* Error state for modal text inputs (used by inline duplicate-email check). */
 .modal-input.error{border-color:var(--red);background:var(--red-lt)}
+/* ─────────────────────────────────────────────
+   USERS TABLE TOOLBAR — column settings, bulk actions, selection banner
+───────────────────────────────────────────── */
+.ut-menu{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:60;
+  min-width:230px;max-height:340px;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-md);box-shadow:0 10px 28px rgba(15,31,53,.16);padding:6px
+}
+.ut-menu.open{display:block}
+/* Column resize / pin. th needs position:relative to host the drag handle.
+   Pinned cells are sticky on the horizontal axis; the header is already sticky
+   vertically, so a pinned header cell is sticky on both and needs the highest
+   z-index of the four combinations. Backgrounds are mandatory — without them
+   the scrolling content shows through the pinned column. */
+.table th{position:relative}
+.ut-resizer{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;user-select:none;touch-action:none}
+.ut-resizer:hover,.ut-resizer.dragging{background:var(--avenza-blue);opacity:.45}
+.ut-pinned{position:sticky;background:var(--surface);z-index:2}
+.table tbody tr:hover td.ut-pinned{background:var(--surface-2)}
+thead th.ut-pinned{z-index:4;background:var(--surface-2)}
+.ut-pin-l{box-shadow:1px 0 0 var(--surface-3)}
+.ut-pin-r{box-shadow:-1px 0 0 var(--surface-3)}
+.ut-colrow{display:flex;align-items:center;gap:2px;padding:2px 0}
+.ut-colrow .ut-mini{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;background:none;border-radius:4px;cursor:pointer;color:var(--text-muted);font-size:11px;padding:0;line-height:1}
+.ut-colrow .ut-mini:hover:not(:disabled){background:var(--surface-3);color:var(--text-primary)}
+.ut-colrow .ut-mini:disabled{opacity:.25;cursor:not-allowed}
+.ut-colrow .ut-mini.on{background:var(--avenza-blue-lt);color:var(--avenza-blue);border-color:#bfdbfe}
+/* Icon-only control on the tab row. Sized to sit level with the tab labels
+   without pushing the row taller. */
+.ut-icon-btn{
+  width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+  background:none;border:1px solid transparent;border-radius:var(--radius-sm);
+  color:var(--text-muted);cursor:pointer;padding:0;transition:background .12s,color .12s,border-color .12s
+}
+.ut-icon-btn:hover:not(:disabled){background:var(--surface-2);border-color:var(--border);color:var(--text-primary)}
+.ut-icon-btn:disabled{opacity:.4;cursor:not-allowed}
+/* The tab row is the flex container the toolbar right-aligns into. */
+.tabs{align-items:flex-end}
+.ut-menu-right{left:auto;right:0}
+.ut-menu-head{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);padding:8px 10px 6px}
+.ut-menu-item{
+  display:block;width:100%;text-align:left;background:none;border:none;
+  padding:8px 10px;font-size:13px;font-family:inherit;color:var(--text-primary);
+  border-radius:var(--radius-sm);cursor:pointer
+}
+.ut-menu-item:hover{background:var(--surface-2)}
+.ut-menu-sep{height:1px;background:var(--surface-3);margin:5px 0}
+.ut-col-row{display:flex;align-items:center;gap:9px;padding:6px 10px;font-size:13px;border-radius:var(--radius-sm);cursor:pointer}
+.ut-col-row:hover{background:var(--surface-2)}
+.ut-col-row input{flex-shrink:0;margin:0}
+.ut-col-row.locked{opacity:.5;cursor:not-allowed}
+
+/* Selection banner. Two states: "N on this page selected" with a link to take
+   in the rest, and "all N selected" with a link to clear. */
+.ut-selbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--avenza-blue-lt);border:1px solid #bfdbfe;
+  border-radius:var(--radius-md);padding:9px 13px;margin-bottom:10px;font-size:12.5px;color:var(--text-secondary)
+}
+.ut-selbar strong{color:var(--text-primary)}
+.ut-sel-link{background:none;border:none;padding:0;font-family:inherit;font-size:12.5px;color:var(--avenza-blue);text-decoration:underline;cursor:pointer}
+
+/* Timestamp cells: date on line 1, time muted on line 2, so the extra
+   precision doesn't widen the column. */
+.ut-ts-time{font-size:10.5px;color:var(--text-muted);margin-top:1px}
+
 
 /* ─────────────────────────────────────────────
    CHECKOUT FLOW (order summary / checkout / confirmation)
@@ -2094,56 +2165,59 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <button class="tab on" id="tab-all"        onclick="switchTab('all')">All users <span id="badge-all" style="background:var(--surface-3);color:var(--text-muted);font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:4px">58</span></button>
           <button class="tab"    id="tab-assigned"   onclick="switchTab('assigned')">Assigned seats <span id="badge-a" style="background:var(--avenza-blue-lt);color:var(--avenza-blue);font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:4px">8</span></button>
           <button class="tab"    id="tab-unassigned" onclick="switchTab('unassigned')">Unassigned / pending <span id="badge-u" style="background:var(--surface-3);color:var(--text-muted);font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:4px">50</span></button>
+
+          <!-- Table controls sit on the tab row itself, right-aligned: gear for
+               column settings, then kebab for bulk actions. Shown only while the
+               All users tab is active, because both act on that table's column
+               model and row selection, neither of which the other two tabs have. -->
+          <div id="ut-toolbar" style="margin-left:auto;display:flex;align-items:center;gap:4px;padding-bottom:4px">
+            <div style="position:relative">
+              <button class="ut-icon-btn" onclick="toggleUserColumnsMenu()" title="Column settings" aria-label="Column settings">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="2.1" stroke="currentColor" stroke-width="1.3"/>
+                  <path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1.05 1.05M11.45 11.45l1.05 1.05M12.5 3.5l-1.05 1.05M4.55 11.45L3.5 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <div class="ut-menu ut-menu-right" id="ut-columns-menu">
+                <div class="ut-menu-head">Visible columns</div>
+                <div id="ut-columns-list"></div>
+                <div class="ut-menu-sep"></div>
+                <button class="ut-menu-item" onclick="resetUserColumns()">Reset to default</button>
+              </div>
+            </div>
+            <div style="position:relative">
+              <button class="ut-icon-btn" id="ut-actions-btn" onclick="toggleUserActionsMenu()" disabled title="Select rows to take an action" aria-label="Actions">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="3" r="1.35"/><circle cx="8" cy="8" r="1.35"/><circle cx="8" cy="13" r="1.35"/>
+                </svg>
+              </button>
+              <div class="ut-menu ut-menu-right" id="ut-actions-menu">
+                <div class="ut-menu-head">Bulk actions</div>
+                <button class="ut-menu-item" onclick="userBulkAssignSeat()">Assign seat</button>
+                <button class="ut-menu-item" onclick="userBulkUpdateRole()">Update role</button>
+                <div class="ut-menu-sep"></div>
+                <button class="ut-menu-item" onclick="userBulkExportCsv()">Export to CSV</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div id="view-all">
           <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-all" placeholder="Search all users…" oninput="setUserSearch('all', this.value)"><button id="users-search-clear-all" class="search-clear" type="button" onclick="clearUserSearch('all')" style="display:none" title="Clear search">×</button></div>
-          <div class="card" style="padding:0;overflow:hidden"><table class="table table-wide"><thead><tr style="background:var(--surface-2)">
-  <th class="sortable" data-key="name" onclick="sortUsers('name')">User <span class="sort-icon"></span></th>
-  <th>Email</th>
-  <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Connectivity status <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="lastLogin" onclick="sortUsers('lastLogin')">Last login <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="modifiedOn" onclick="sortUsers('modifiedOn')">Last modified on / by <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="status" onclick="sortUsers('status')">Status <span class="sort-icon"></span></th>
-  <th></th>
-</tr></thead>
+          <!-- Gmail-style selection banner: appears only when rows are selected. -->
+          <div class="ut-selbar" id="ut-selbar" style="display:none"></div>
+          <div class="card" style="padding:0;overflow:hidden"><table class="table table-wide" id="tbl-all-table"><thead id="thead-all"></thead>
 <tbody id="tbl-all"></tbody>
 <tbody><tr><td colspan="13"><div class="lazy-spinner" id="spinner-all"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-assigned" style="display:none">
           <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-assigned" placeholder="Search assigned users…" oninput="setUserSearch('assigned', this.value)"><button id="users-search-clear-assigned" class="search-clear" type="button" onclick="clearUserSearch('assigned')" style="display:none" title="Clear search">×</button></div>
-          <div class="card" style="padding:0;overflow:hidden"><table class="table table-wide"><thead><tr style="background:var(--surface-2)">
-  <th class="sortable" data-key="name" onclick="sortUsers('name')">User <span class="sort-icon"></span></th>
-  <th>Email</th>
-  <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="seat" onclick="sortUsers('seat')">Assigned product <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="offline" onclick="sortUsers('offline')">Connectivity status <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="assignedOn" onclick="sortUsers('assignedOn')">Assigned on <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="assignedBy" onclick="sortUsers('assignedBy')">Assigned by <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="lastLogin" onclick="sortUsers('lastLogin')">Last login <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="modifiedOn" onclick="sortUsers('modifiedOn')">Last modified on / by <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="status" onclick="sortUsers('status')">Status <span class="sort-icon"></span></th>
-  <th></th>
-</tr></thead>
+          <div class="card" style="padding:0;overflow:hidden"><table class="table table-wide"><thead id="thead-assigned"></thead>
 <tbody id="tbl-assigned"></tbody>
 <tbody><tr><td colspan="13"><div class="lazy-spinner" id="spinner-assigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
         <div id="view-unassigned" style="display:none">
           <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8896ab" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#8896ab" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="users-search-input-unassigned" placeholder="Search unassigned / pending users…" oninput="setUserSearch('unassigned', this.value)"><button id="users-search-clear-unassigned" class="search-clear" type="button" onclick="clearUserSearch('unassigned')" style="display:none" title="Clear search">×</button></div>
-          <div class="card" style="padding:0;overflow:hidden"><table class="table"><thead><tr style="background:var(--surface-2)">
-  <th class="sortable" data-key="name" onclick="sortUsers('name')">User <span class="sort-icon"></span></th>
-  <th>Email</th>
-  <th class="sortable" data-key="role" onclick="sortUsers('role')">Role <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="createdOn" onclick="sortUsers('createdOn')">Created on <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="lastLogin" onclick="sortUsers('lastLogin')">Last login <span class="sort-icon"></span></th>
-  <th class="sortable" data-key="status" onclick="sortUsers('status')">Status <span class="sort-icon"></span></th>
-  <th>Assign seat</th>
-</tr></thead>
+          <div class="card" style="padding:0;overflow:hidden"><table class="table"><thead id="thead-unassigned"></thead>
 <tbody id="tbl-unassigned"></tbody>
 <tbody><tr><td colspan="8"><div class="lazy-spinner" id="spinner-unassigned"><span class="spinner-ring"></span>Loading more users…</div></td></tr></tbody></table></div>
         </div>
@@ -2279,7 +2353,7 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
           <div class="modal-label">Subject <span style="color:var(--red)">*</span></div>
           <input class="modal-input" id="ticket-subject" placeholder="Brief description of your issue"/>
           <div class="modal-label">Priority <span style="color:var(--red)">*</span></div>
-          <select class="modal-select" id="ticket-priority"><option>Normal</option><option>High</option><option>Critical</option></select>
+          <select class="modal-select" id="ticket-priority"></select>
           <div class="modal-label">Description <span style="color:var(--red)">*</span></div>
           <textarea class="modal-input" id="ticket-desc" placeholder="Describe what you're experiencing in detail…" style="resize:vertical;min-height:80px;margin-bottom:14px"></textarea>
           <!-- Optional Attachments — UX-only drop-zone for the prototype; no actual upload runs. -->
@@ -2957,6 +3031,18 @@ th.sortable:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
   </div>
 </div>
 
+<!-- DOWNLOAD HISTORY -->
+<div class="modal-bg" id="modal-download-history">
+  <div class="modal lg">
+    <div class="m-head">
+      <div class="modal-title">Download history</div>
+      <div class="modal-sub" id="dlh-sub" style="margin-bottom:0"></div>
+    </div>
+    <div class="m-body" id="dlh-body"></div>
+    <div class="m-foot" id="dlh-foot"></div>
+  </div>
+</div>
+
 <!-- REVOKE SEAT CONFIRMATION -->
 <div class="modal-bg" id="modal-revoke-confirm">
   <div class="modal">
@@ -3320,7 +3406,7 @@ function resetPrototypeData(){
 /* ───────────────────────────────────────
    TRIAL WINDOW (dynamic)
 ─────────────────────────────────────────
-   Sonya Freeloader's Global Mapper Trial is anchored to the CURRENT date, so the
+   Sonya Freeloader's Global Mapper Professional Trial is anchored to the CURRENT date, so the
    trial persona always demos as freshly started no matter how long after this
    file was written it gets opened. These dates used to be hardcoded
    (Jul 27 → Aug 10, 2026), which meant the window silently decayed and the trial
@@ -3395,7 +3481,7 @@ const DEFAULT_USERS = [
   {name:'Aaron Flores',email:'aaron.flores@acme.com',initials:'AF',role:'Member',seat:null,createdOn:'',invitedOn:'Jan 26, 2025',status:'invited',color:1,lastLogin:''},
   {name:'Beatrice Yamamoto',email:'beatrice.yamamoto@acme.com',initials:'BY',role:'Member',seat:null,createdOn:'',invitedOn:'Feb 27, 2025',status:'invited',color:2,lastLogin:''},
   {name:'Callum OBrien',email:'callum.obrien@acme.com',initials:'CO',role:'Member',seat:null,createdOn:'',invitedOn:'Mar 28, 2025',status:'invited',color:3,lastLogin:''},
-  {name:'Delia Santos',email:'delia.santos@acme.com',initials:'DS',role:'Member',seat:'Global Mapper Professional',createdOn:'May 9, 2025',assignedOn:'May 14, 2025',assignedBy:'Mark Smith',status:'active',offline:true,appConnectivity:{'Global Mapper Desktop':{state:'offline',validUntil:'Sep 13, 2026',issuedOn:'Jul 30, 2026',issuedBy:'Jane Doe',machineId:'WIN-DS-FIELDLAB-07',reason:'Coastal survey \u2014 offline access needed for GM Desktop only, other apps stay online at HQ.'},'Geographic Calculator':{state:'roaming',validUntil:'Aug 29, 2026',issuedOn:'Jul 30, 2026'},'MapPublisher':{state:'online'}},color:4,lastLogin:'May 4, 2025'},
+  {name:'Delia Santos',email:'delia.santos@acme.com',initials:'DS',role:'Member',seat:'Global Mapper Professional',createdOn:'May 9, 2025',assignedOn:'May 14, 2025',assignedBy:'Mark Smith',status:'active',offline:true,appConnectivity:{'Global Mapper Desktop':{state:'offline',validUntil:'Sep 13, 2026',issuedOn:'Jul 30, 2026',issuedBy:'Jane Doe',machineId:'WIN-DS-FIELDLAB-07',reason:'Coastal survey \u2014 offline access needed for GM Desktop only, other apps stay online at HQ.'},'Geographic Calculator':{state:'roaming',validUntil:'Aug 29, 2026',issuedOn:'Jul 30, 2026'},'MAPublisher':{state:'online'}},color:4,lastLogin:'May 4, 2025'},
   {name:'Emeka Eze',email:'emeka.eze@acme.com',initials:'EE',role:'Member',seat:'Global Mapper Professional',createdOn:'May 10, 2025',assignedOn:'May 14, 2025',assignedBy:'Tom Rees',status:'active',offline:true,offlineSource:'self',offlineIssuedOn:'Jul 30, 2026',offlineValidUntil:'Feb 25, 2027',color:5,lastLogin:'May 3, 2025'},
   {name:'Grant Nakamura',email:'grant.nakamura@acme.com',initials:'GN',role:'Member',seat:'Global Mapper Essentials',createdOn:'May 11, 2025',assignedOn:'May 15, 2025',assignedBy:'Jane Doe',status:'active',color:7,lastLogin:'May 2, 2025'},
   {name:'Holly Davies',email:'holly.davies@acme.com',initials:'HD',role:'Member',seat:null,createdOn:'May 11, 2025',invitedOn:'Mar 5, 2025',status:'invited',color:0,lastLogin:'May 1, 2025'},
@@ -3483,7 +3569,7 @@ DEFAULT_USERS.push(...DEFAULT_USERS_VANFRUGAL);
 // No paid products, no other users invited. Represents the "just signed up and
 // evaluating" persona for stakeholders reviewing the trial experience.
 const DEFAULT_USERS_FREELOADER = [
-  {org:'freeloader',name:'Sonya Freeloader',email:'sonya@freeloader.com',initials:'SF',role:'Admin',seat:'Global Mapper Trial',createdOn:TRIAL_START,assignedOn:TRIAL_START,assignedBy:'Sonya Freeloader',status:'active',color:2,lastLogin:'Today, 10:15 AM'},
+  {org:'freeloader',name:'Sonya Freeloader',email:'sonya@freeloader.com',initials:'SF',role:'Admin',seat:'Global Mapper Professional Trial',createdOn:TRIAL_START,assignedOn:TRIAL_START,assignedBy:'Sonya Freeloader',status:'active',color:2,lastLogin:'Today, 10:15 AM'},
 ];
 DEFAULT_USERS.push(...DEFAULT_USERS_FREELOADER);
 
@@ -3784,7 +3870,7 @@ const ORG_DATA={
     avatarBg:'#4f46e5',
     avatarFg:'#e0e7ff',
     domain:'freeloader.com',
-    plan:'Global Mapper Trial (14-day)',
+    plan:'Global Mapper Professional Trial (14-day)',
     accountId:'ZEN-01099-FREELOADER',
     created:TRIAL_START_LONG,
     // Trial ends TRIAL_LENGTH_DAYS after start — both ends move with today's date
@@ -3798,7 +3884,7 @@ const ORG_DATA={
       // Status is 'trial' — non-billable, no invoice line generated on the
       // Billing page (but the Billing sidebar link stays visible since she's
       // still a direct Blue Marble customer, just not currently invoiced).
-      {key:'ft', icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Trial',type:'14-day trial',seats:1,used:1,renewal:TRIAL_END,status:'trial',autoRenew:false,amount:'$0.00',purchasedOn:TRIAL_START,purchasedVia:'direct'},
+      {key:'ft', icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Professional Trial',type:'14-day trial',seats:1,used:1,renewal:TRIAL_END,status:'trial',autoRenew:false,amount:'$0.00',purchasedOn:TRIAL_START,purchasedVia:'direct'},
     ],
   }
 };
@@ -3825,7 +3911,7 @@ const USER_ORG={
           // 14-day trial that preceded Jane's full purchase — kept here as a historical
           // record so the My Products page tells the full story. Rendered with an
           // "Expired" pill and a disabled launch button.
-          {icon:'TRL',iconBg:'#f1f5f9',iconFg:'#64748b',name:'Global Mapper Trial',type:'14-day trial',assignedBy:'Self',since:'Jun 1, 2026',expiredOn:'Jun 14, 2026',renewal:'Expired Jun 14, 2026',status:'expired'},
+          {icon:'TRL',iconBg:'#f1f5f9',iconFg:'#64748b',name:'Global Mapper Professional Trial',type:'14-day trial',assignedBy:'Self',since:'Jun 1, 2026',expiredOn:'Jun 14, 2026',renewal:'Expired Jun 14, 2026',status:'expired'},
         ],
         unassigned:[{icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials'}],
       }
@@ -3908,7 +3994,7 @@ const USER_ORG={
     }
   },
   // Sonya — Primary admin of Freeloader Inc., trial-only user. Signed up for a
-  // 14-day Global Mapper Trial on Jul 30, 2026. No paid products. She's a
+  // 14-day Global Mapper Professional Trial on Jul 30, 2026. No paid products. She's a
   // representative "trialing customer" persona for stakeholders to see what the
   // trial experience looks like before conversion.
   sonya:{
@@ -3923,7 +4009,7 @@ const USER_ORG={
         // the trial license herself — that's the point of a trial, the person
         // signing up is the one evaluating the product.
         seats:[
-          {icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Trial',type:'14-day trial',assignedBy:'Self (Trial signup)',since:TRIAL_START,renewal:TRIAL_END,status:'trial'},
+          {icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Professional Trial',type:'14-day trial',assignedBy:'Self (Trial signup)',since:TRIAL_START,renewal:TRIAL_END,status:'trial'},
         ],
         unassigned:[],
       }
@@ -4271,7 +4357,7 @@ function updateDashOrgBanners(){
   const org=ORG_DATA[currentOrg];
   const u=currentUData();
   const ORG_DASH={'acme':{total:48,seats:14,unassigned:34,renewal:'Jun 14, 2027',days:'69 days away',tickets:2,awaiting:1},'poppins':{total:13,seats:3,unassigned:10,renewal:'Jan 10, 2027',days:'67 days away',tickets:8,awaiting:2},'davis':{total:10,seats:7,unassigned:3,renewal:'Mar 3, 2027',days:'293 days away',tickets:0,awaiting:0},'debuyer':{total:7,seats:0,unassigned:7,renewal:'Jun 1, 2027',days:'320 days away',tickets:0,awaiting:0},'vanfrugal':{total:11,seats:0,unassigned:11,renewal:'May 4, 2027',days:'292 days away',tickets:0,awaiting:0},'freeloader':{total:1,seats:1,unassigned:0,renewal:TRIAL_END,days:TRIAL_LENGTH_DAYS+' days away',tickets:0,awaiting:0}};
-  const USER_SEATS={'admin':{'acme':['Global Mapper Professional','Global Mapper Advanced']},'user':{'acme':['Global Mapper Professional'],'davis':['Global Mapper Essentials']},'penny':{'poppins':[]},'gary':{},'alan':{'snape':[]}};
+  const USER_SEATS={'admin':{'acme':['Global Mapper Professional','Global Mapper Advanced']},'user':{'acme':['Global Mapper Professional'],'davis':['Global Mapper Essentials']},'penny':{'poppins':[]},'sonya':{'freeloader':['Global Mapper Professional Trial']},'gary':{},'alan':{'snape':[]}};
   const dash=currentOrg?ORG_DASH[currentOrg]:null;
   // Overwrite the seeded dash totals/seats/unassigned with live counts derived from the
   // current users array. The seed remains as fallback for renewal/tickets metadata.
@@ -4300,7 +4386,7 @@ function updateDashOrgBanners(){
       'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 16, 2026'
     },
     'freeloader':{
-      'Global Mapper Trial':'Sonya Freeloader / sonya@freeloader.com / ' + TRIAL_START
+      'Global Mapper Professional Trial':'Sonya Freeloader / sonya@freeloader.com / ' + TRIAL_START
     }
   };
 
@@ -4395,12 +4481,12 @@ function updateDashOrgBanners(){
         +'<td style="color:var(--text-muted)">'+(p.nextRenewal||p.renewal||'').replace(/,.*/,'')+'</td>'
         +'<td><span class="pill '+sc+'">'+sl+'</span></td></tr>';
     }).join('');
-    // Acme-only: append the historical Global Mapper Trial row (preceded the full
+    // Acme-only: append the historical Global Mapper Professional Trial row (preceded the full
     // license purchase). It's purely historical so it lives outside ORG_DATA.acme.products
     // and doesn't affect any seat / license counts.
     if(currentOrg==='acme'){
       rows += '<tr style="opacity:.85">'
-        +'<td><div style="display:flex;align-items:center;gap:9px"><div class="prod-icon" style="background:#f1f5f9;color:#64748b">TRL</div>Global Mapper Trial</div></td>'
+        +'<td><div style="display:flex;align-items:center;gap:9px"><div class="prod-icon" style="background:#f1f5f9;color:#64748b">TRL</div>Global Mapper Professional Trial</div></td>'
         +'<td style="font-size:12px;color:var(--text-secondary)">Jane Doe<div style="font-size:11px;color:var(--text-muted);margin-top:2px">Jun 1, 2026</div></td>'
         +'<td>1</td>'
         +'<td style="color:var(--red)">Expired</td>'
@@ -4614,7 +4700,7 @@ function updateDashOrgBanners(){
         '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">8 seats assigned across 3 products</div><div class="tick-meta">Last 30 days · 5 new users onboarded</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">Renewal reminder sent</div><div class="tick-meta">May 14, 2025 · Global Mapper Professional &amp; Advanced</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Support ticket ZD-5081 opened</div><div class="tick-meta">May 12, 2025 · Awaiting reply</div></div></div>'+
-        '<div class="tick"><div class="tick-dot" style="background:var(--red)"></div><div><div class="tick-title">Global Mapper Trial subscription expired</div><div class="tick-meta">Jun 14, 2026 · Converted to full Professional + Advanced licenses</div></div></div>';
+        '<div class="tick"><div class="tick-dot" style="background:var(--red)"></div><div><div class="tick-title">Global Mapper Professional Trial subscription expired</div><div class="tick-meta">Jun 14, 2026 · Converted to full Professional + Advanced licenses</div></div></div>';
     } else if(currentOrg==='debuyer'){
       // Reseller-managed org: only license-purchase activity is shown. No support
       // ticks, no renewal reminders (those flow through the reseller partner).
@@ -4626,6 +4712,17 @@ function updateDashOrgBanners(){
       adminAct.innerHTML=
         '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Purchased Global Mapper Essentials \u2014 10 seats</div><div class="tick-meta">Jun 16, 2026 \u00b7 Reseller: Anna Banana \u00b7 $5,990</div></div></div>'+
         '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Purchased Global Mapper Professional \u2014 1 seat</div><div class="tick-meta">May 4, 2026 \u00b7 Direct purchase (website) \u00b7 $2,199</div></div></div>';
+    } else if(currentOrg==='freeloader'){
+      // Trial account: no purchases, no renewals, no invoices and no other users,
+      // so none of the paid-org ticks apply. Previously there was no branch at
+      // all here, which left Sonya showing whichever org's activity rendered
+      // last. Signup, the self-assigned seat, and the countdown are the only
+      // events a trial actually has.
+      const _tDays = daysRemaining(TRIAL_END);
+      adminAct.innerHTML=
+        '<div class="tick"><div class="tick-dot" style="background:var(--amber)"></div><div><div class="tick-title">Trial expires in '+_tDays+' day'+(_tDays!==1?'s':'')+'</div><div class="tick-meta">'+TRIAL_END+' \u00b7 Upgrade to keep access to your work</div></div></div>'+
+        '<div class="tick"><div class="tick-dot" style="background:var(--avenza-blue)"></div><div><div class="tick-title">Seat assigned to Sonya Freeloader</div><div class="tick-meta">'+TRIAL_START+' \u00b7 Self-assigned at signup \u00b7 1 of 1 seat</div></div></div>'+
+        '<div class="tick"><div class="tick-dot" style="background:var(--green)"></div><div><div class="tick-title">14-day trial started</div><div class="tick-meta">'+TRIAL_START+' \u00b7 Global Mapper Professional Trial \u00b7 No payment method required</div></div></div>';
     }
     // Prepend any downloaded-product ticks the admin has accumulated.
     if(typeof _refreshDownloadActivity === 'function') _refreshDownloadActivity();
@@ -5051,6 +5148,20 @@ function switchTab(tab){
     const viewEl=document.getElementById('view-'+t);
     if(tabEl) tabEl.classList.toggle('on',t===tab);
     if(viewEl) viewEl.style.display=t===tab?'block':'none';
+  });
+  // All three tabs now have a column model and row selection, so the gear and
+  // kebab stay visible and simply retarget. Selection is cleared on the way
+  // across: rows chosen on one tab are not a sensible working set for another.
+  _utTab = tab;
+  if(typeof clearUserSelection === 'function') clearUserSelection();
+  const tb = document.getElementById('ut-toolbar');
+  if(tb) tb.style.display = 'flex';
+  if(typeof renderUsers === 'function') renderUsers();
+  if(typeof renderUserColumnsMenu === 'function') renderUserColumnsMenu();
+  // An open panel would otherwise hang over the newly shown table.
+  ['ut-actions-menu','ut-columns-menu'].forEach(id => {
+    const m = document.getElementById(id);
+    if(m) m.classList.remove('open');
   });
 }
 
@@ -5533,6 +5644,36 @@ function _formatTodayDateTime(){
 // available, falling back to userAgent parsing. Returns a human-friendly label
 // like "Windows 11", "macOS", "Linux", etc. Never throws; returns "your computer"
 // as a last resort so the message still reads naturally.
+/* Download history needs to answer "to where", so records carry a device label
+   and an address alongside the OS. The address matches the value shown in the
+   profile page's Login history block so the two screens agree — session
+   management and download history are the same audit story from two angles. */
+const SESSION_ADDRESS = '192.168.1.42';
+
+function _detectBrowser(){
+  try {
+    const uad = navigator.userAgentData;
+    if(uad && uad.brands && uad.brands.length){
+      const b = uad.brands.find(x => !/Not.?A.?Brand/i.test(x.brand));
+      if(b) return b.brand;
+    }
+    const ua = navigator.userAgent || '';
+    if(/Edg\//.test(ua))                      return 'Edge';
+    if(/OPR\//.test(ua))                      return 'Opera';
+    if(/Chrome\//.test(ua))                   return 'Chrome';
+    if(/Firefox\//.test(ua))                  return 'Firefox';
+    if(/Safari\//.test(ua))                   return 'Safari';
+  } catch(e){}
+  return 'Browser';
+}
+
+// e.g. "Chrome on macOS" — the same shape the profile page uses for sessions.
+function _deviceLabel(){
+  const os = (typeof _detectOS === 'function') ? _detectOS() : '';
+  const br = _detectBrowser();
+  return os ? (br + ' on ' + os) : br;
+}
+
 function _detectOS(){
   try {
     // Modern Client Hints (Chromium-based browsers)
@@ -5603,14 +5744,28 @@ function _toggleConnectivityRow(email){
 // Each subscription product internally bundles one or more apps. Connectivity
 // state (Online / Roaming / Offline) is tracked per-app-per-user because a user
 // can be in different states across apps (e.g. Roaming for Desktop while Online
-// for MapPublisher). Essentials is a single-app product; the two higher tiers
+// for MAPublisher). Essentials is a single-app product; the two higher tiers
 // and Trial all bundle three apps.
 const PRODUCT_BUNDLES = {
-  'Global Mapper Professional': ['Global Mapper Desktop', 'Geographic Calculator', 'MapPublisher'],
-  'Global Mapper Advanced':     ['Global Mapper Desktop', 'Geographic Calculator', 'MapPublisher'],
+  'Global Mapper Professional': ['Global Mapper Desktop', 'Geographic Calculator', 'MAPublisher'],
+  'Global Mapper Advanced':     ['Global Mapper Desktop', 'Geographic Calculator', 'MAPublisher'],
   'Global Mapper Essentials':   ['Global Mapper Desktop'],
-  'Global Mapper Trial':        ['Global Mapper Desktop', 'Geographic Calculator', 'MapPublisher'],
+  'Global Mapper Professional Trial':        ['Global Mapper Desktop', 'Geographic Calculator', 'MAPublisher'],
 };
+
+/* "Includes X, Y and Z" line for the My Products card.
+   Derived from PRODUCT_BUNDLES rather than hardcoded, so the card can never
+   claim something the installer picker won't offer. Only rendered for
+   multi-app SKUs — Essentials ships Global Mapper Desktop alone, and a card
+   reading "Includes Global Mapper Desktop" for a product of that name is noise. */
+function _bundleSubtext(productName){
+  const apps = PRODUCT_BUNDLES[productName];
+  if(!apps || apps.length < 2) return '';
+  const list = apps.length === 1
+    ? apps[0]
+    : apps.slice(0, -1).join(', ') + ' and ' + apps[apps.length - 1];
+  return '<div class="my-prod-includes">Includes ' + list + '</div>';
+}
 
 // Returns the union of all bundled apps across every seat the user holds. Used
 // to render the per-app connectivity breakdown. Deduplicated — if a user holds
@@ -5804,7 +5959,8 @@ function getLastModified(u){
   }
   return {when: u.createdOn || '', who: ''};
 }
-const LAZY_PAGE=8;         // records per chunk
+const LAZY_PAGE=20;        // records per chunk — the first render, and
+                           // therefore the first "select page", is 20 rows
 
 /* Lazy loading for the users tables.
    Was: render 50, then dump the remainder after a fixed 400ms. With a page size
@@ -5872,6 +6028,9 @@ function _lazyLoadMore(tbodyId){
     cur.shown = (cur.shown||0) + next.length;
     if(spinner) spinner.classList.remove('show');
     cur.busy=false;
+    // Newly arrived rows change what "this page" means, and may need ticking if
+    // select-all-matching is active.
+    if(tbodyId === 'tbl-all' && typeof syncUserSelectionUI === 'function') syncUserSelectionUI();
     _lazyTopUp(tbodyId);
   },350);
 }
@@ -5887,9 +6046,15 @@ function _lazyTopUp(tbodyId){
     const tbody=document.getElementById(tbodyId);
     const host=_lazyHost(tbody);
     if(!host) return;
-    // Not laid out (hidden tab) or not tall enough to scroll → append anyway,
-    // otherwise there is no scroll event to drive the rest of the list.
-    if(host.clientHeight===0 || host.scrollHeight <= host.clientHeight + 8) _lazyLoadMore(tbodyId);
+    // clientHeight === 0 means the tab is HIDDEN, not short. Topping up here was
+    // loading the entire list during the boot-time render — before the Users
+    // page had ever been shown — which defeated paging entirely. Leave hidden
+    // tables alone; renderUsers() re-arms the chunk state when the tab is
+    // actually opened, and scrolling takes over from there.
+    if(host.clientHeight === 0) return;
+    // Visible but too short to scroll → there is no scroll event to drive the
+    // rest of the list, so append the next chunk directly.
+    if(host.scrollHeight <= host.clientHeight + 8) _lazyLoadMore(tbodyId);
   },80);
 }
 
@@ -5918,6 +6083,17 @@ function restoreSidebarCollapse(){
     const btn=document.getElementById('sb-collapse-btn');
     if(btn){ btn.title='Expand sidebar'; btn.setAttribute('aria-label','Expand sidebar'); }
   }
+}
+
+/* Re-applies the sort indicator after the header is rebuilt. sortUsers() sets
+   the asc/desc class and then calls renderUsers(), which now regenerates
+   <thead> from the column model — wiping it. Driven from sortKey/sortDir so the
+   indicator survives a rebuild, a column being hidden, or a re-render. */
+function _syncSortIcons(){
+  document.querySelectorAll('#thead-all th.sortable, #thead-assigned th.sortable, #thead-unassigned th.sortable').forEach(th => {
+    th.classList.remove('asc','desc');
+    if(th.dataset.key === sortKey) th.classList.add(sortDir === 1 ? 'asc' : 'desc');
+  });
 }
 
 function sortUsers(key){
@@ -6093,6 +6269,625 @@ function clearUserSearch(tab){
   if(x) x.style.display = 'none';
   renderUsers();
   if(inp) inp.focus();
+}
+
+/* ═══════════════════════════════════════
+   USERS TABLE — timestamps, column model, selection, bulk actions
+
+   The All-users table used to be a static 13-column <thead> plus a positional
+   template string per row. Columns are now DATA (USER_COLUMN_DEFS) and both the
+   header and the cells are generated from it, which is what makes hiding —
+   and, next, resizing / reordering / pinning — possible at all.
+═══════════════════════════════════════ */
+
+/* ── Timestamps ──
+   Seeded dates are date-only ('Apr 22, 2025'), so a time is DERIVED from a hash
+   of the user's email plus the field name. That keeps each value stable across
+   renders and distinct per user without rewriting 86 seed records — but it is
+   synthesised, not real audit data.
+   Rendering uses the signed-in admin's profile timezone when it names a valid
+   IANA zone, otherwise the machine's. */
+function _viewerTimeZone(){
+  try{
+    const p = (typeof PROFILE_DATA !== 'undefined') ? PROFILE_DATA[currentRole] : null;
+    const raw = p && p.timezone ? String(p.timezone).split(' ')[0] : '';
+    if(raw){ new Intl.DateTimeFormat('en-US', {timeZone: raw}); return raw; }
+  }catch(e){}
+  try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }catch(e){ return 'UTC'; }
+}
+
+function _hashStr(str){
+  let h = 0;
+  for(let i=0;i<String(str).length;i++){ h = ((h<<5)-h) + String(str).charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+
+// Business-hours instant for a date-only string, stable per user+field.
+function _instantFor(dateStr, seed){
+  if(!dateStr) return null;
+  const str = String(dateStr).trim();
+
+  // Relative forms ("Today, 9:14 AM" / "Yesterday, 4:02 PM") are not parseable
+  // by Date, and previously fell through to raw text — leaving those rows
+  // without a timezone while every other row had one. Resolve them against the
+  // current date so every timestamp renders consistently.
+  const rel = str.match(/^(Today|Yesterday)(?:,\s*(\d{1,2}):(\d{2})\s*(AM|PM)?)?$/i);
+  if(rel){
+    const d = new Date();
+    if(/yesterday/i.test(rel[1])) d.setDate(d.getDate() - 1);
+    if(rel[2]){
+      let hr = parseInt(rel[2],10) % 12;
+      if(rel[4] && /pm/i.test(rel[4])) hr += 12;
+      d.setHours(hr, parseInt(rel[3],10), 0, 0);
+    } else {
+      const h = _hashStr(seed);
+      d.setHours(8 + (h % 10), (h >> 3) % 60, 0, 0);
+    }
+    return d;
+  }
+
+  const base = new Date(str);
+  if(isNaN(base.getTime())) return null;
+  // Already carries an explicit time? Keep it as given.
+  if(/\d:\d/.test(str)) return base;
+  const h = _hashStr(seed);
+  base.setHours(8 + (h % 10), (h >> 3) % 60, (h >> 7) % 60, 0);
+  return base;
+}
+
+function _fmtDatePart(d){
+  try{
+    return new Intl.DateTimeFormat('en-US',{timeZone:_viewerTimeZone(),month:'short',day:'numeric',year:'numeric'}).format(d);
+  }catch(e){ return d.toDateString(); }
+}
+function _fmtTimePart(d){
+  try{
+    return new Intl.DateTimeFormat('en-US',{timeZone:_viewerTimeZone(),hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(d);
+  }catch(e){ return ''; }
+}
+
+// Two-line cell: date, then a muted time. Falls back to the raw string when the
+// value can't be parsed, so nothing is ever lost.
+function userTimestamp(dateStr, seed){
+  if(!dateStr) return '\u2014';
+  const d = _instantFor(dateStr, seed);
+  if(!d) return dateStr;
+  const t = _fmtTimePart(d);
+  return '<div>' + _fmtDatePart(d) + '</div>'
+       + (t ? '<div class="ut-ts-time">' + t + '</div>' : '');
+}
+function userTimestampPlain(dateStr, seed){
+  const d = _instantFor(dateStr, seed);
+  if(!d) return dateStr || '';
+  return _fmtDatePart(d) + (_fmtTimePart(d) ? ' ' + _fmtTimePart(d) : '');
+}
+
+/* ── Column model ──
+   `locked` columns can't be hidden: selection is the mechanism for bulk actions
+   and User identifies the row, so losing either breaks the table. */
+/* `def:false` columns are OPTIONAL — hidden until switched on from the gear
+   menu. The default set is the eight that answer "who is this, what do they
+   have, and is it working"; the three optional ones are audit detail that
+   makes the table wider than most screens without earning its place there.
+   Order here is the display order. */
+/* Per-tab column models. All three Users tabs now share the same machinery:
+   JS-rendered header, hideable columns, row selection and bulk actions.
+   `def:false` = optional (hidden until enabled from the gear menu).
+   `locked:true` = cannot be hidden (selection, identity, row actions). */
+const USER_COLUMNS_BY_TAB = {
+  all: [
+    {key:'select',      label:'',                     width:34,  locked:true,  def:true},
+    {key:'name',        label:'User',                 width:170, sortable:true, locked:true, def:true},
+    {key:'email',       label:'Email',                width:190, def:true},
+    {key:'role',        label:'Role',                 width:110, sortable:true, def:true},
+    {key:'seat',        label:'Assigned product',     width:170, sortable:true, def:true},
+    {key:'offline',     label:'Connectivity status',  width:175, sortable:true, def:true},
+    {key:'assignedOn',  label:'Assigned on',          width:130, sortable:true, def:true},
+    {key:'assignedBy',  label:'Assigned by',          width:130, sortable:true, def:false},
+    {key:'createdOn',   label:'Created on',           width:130, sortable:true, def:false},
+    {key:'lastLogin',   label:'Last login',           width:140, sortable:true, def:true},
+    {key:'modifiedOn',  label:'Last modified on / by',width:150, sortable:true, def:false},
+    {key:'status',      label:'Status',               width:115, sortable:true, def:true},
+    {key:'actions',     label:'',                     width:150, locked:true, def:true},
+  ],
+  // Assigned seats: optional = Created on, Last modified on / by, Status.
+  assigned: [
+    {key:'select',      label:'',                     width:34,  locked:true,  def:true},
+    {key:'name',        label:'User',                 width:170, sortable:true, locked:true, def:true},
+    {key:'email',       label:'Email',                width:190, def:true},
+    {key:'role',        label:'Role',                 width:110, sortable:true, def:true},
+    {key:'seat',        label:'Assigned product',     width:170, sortable:true, def:true},
+    {key:'offline',     label:'Connectivity status',  width:175, sortable:true, def:true},
+    {key:'assignedOn',  label:'Assigned on',          width:130, sortable:true, def:true},
+    {key:'assignedBy',  label:'Assigned by',          width:130, sortable:true, def:true},
+    {key:'lastLogin',   label:'Last login',           width:140, sortable:true, def:true},
+    {key:'createdOn',   label:'Created on',           width:130, sortable:true, def:false},
+    {key:'modifiedOn',  label:'Last modified on / by',width:150, sortable:true, def:false},
+    {key:'status',      label:'Status',               width:115, sortable:true, def:false},
+    {key:'actions',     label:'',                     width:150, locked:true, def:true},
+  ],
+  // Unassigned / pending: every column visible by default.
+  unassigned: [
+    {key:'select',      label:'',                     width:34,  locked:true,  def:true},
+    {key:'name',        label:'User',                 width:170, sortable:true, locked:true, def:true},
+    {key:'email',       label:'Email',                width:190, def:true},
+    {key:'role',        label:'Role',                 width:110, sortable:true, def:true},
+    {key:'createdOn',   label:'Created on',           width:130, sortable:true, def:true},
+    {key:'lastLogin',   label:'Last login',           width:140, sortable:true, def:true},
+    {key:'status',      label:'Status',               width:115, sortable:true, def:true},
+    {key:'actions',     label:'Assign seat',          width:170, locked:true, def:true},
+  ],
+};
+const UT_TABS = ['all','assigned','unassigned'];
+let _utTab = 'all';   // which tab the gear / kebab currently act on
+
+// Retained name so nothing that referenced the old flat list breaks.
+const USER_COLUMN_DEFS = USER_COLUMNS_BY_TAB.all;
+
+// Column visibility is an operator UI preference, so it lives in localStorage
+// (global, survives persona switches) rather than the persona-scoped store.
+const UT_COLS_KEY = 'bmh:ui:userColumnsHidden';
+function _defaultHidden(tab){
+  return new Set((USER_COLUMNS_BY_TAB[tab]||[]).filter(c => c.def === false).map(c => c.key));
+}
+// One stored object keyed by tab, so each tab remembers its own choices.
+let userHiddenCols = (function(){
+  const out = {};
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(UT_COLS_KEY) || 'null'); }catch(e){}
+  UT_TABS.forEach(t => {
+    out[t] = (saved && Array.isArray(saved[t])) ? new Set(saved[t]) : _defaultHidden(t);
+  });
+  return out;
+})();
+
+function _saveUserCols(){
+  try{
+    const plain = {};
+    UT_TABS.forEach(t => { plain[t] = [...(userHiddenCols[t]||[])]; });
+    localStorage.setItem(UT_COLS_KEY, JSON.stringify(plain));
+  }catch(e){}
+}
+/* ── Column layout: order, width, pin ──
+   Stored per tab alongside the hidden-column set. Order is a list of keys;
+   anything not in it keeps its position from the definition, so adding a new
+   column later doesn't invalidate a saved layout. */
+const UT_LAYOUT_KEY = 'bmh:ui:userColLayout';
+let userColLayout = (function(){
+  let saved=null;
+  try{ saved = JSON.parse(localStorage.getItem(UT_LAYOUT_KEY) || 'null'); }catch(e){}
+  const out={};
+  UT_TABS.forEach(t=>{
+    const s=(saved&&saved[t])||{};
+    out[t]={order:Array.isArray(s.order)?s.order:[], width:s.width||{}, pin:s.pin||{}};
+  });
+  return out;
+})();
+function _saveUserLayout(){
+  try{ localStorage.setItem(UT_LAYOUT_KEY, JSON.stringify(userColLayout)); }catch(e){}
+}
+function _utLayout(tab){
+  const t=tab||_utTab;
+  if(!userColLayout[t]) userColLayout[t]={order:[],width:{},pin:{}};
+  return userColLayout[t];
+}
+function _utColWidth(col, tab){
+  const w=_utLayout(tab).width[col.key];
+  return (typeof w==='number' && w>0) ? w : col.width;
+}
+/* The two locked columns are implicitly pinned: the selection checkbox to the
+   left and the row actions to the right. That is the behaviour the pinned-column
+   pattern exists for — scroll the data horizontally while the checkbox and the
+   controls stay put. User pins layer around them. */
+function _utPinOf(key, tab){
+  if(key === 'select')  return 'left';
+  if(key === 'actions') return 'right';
+  return _utLayout(tab).pin[key] || '';
+}
+
+/* Definition order, overridden by any saved order. Locked columns keep their
+   ends: selection is always first and row actions always last, so a stray
+   reorder can't bury the checkbox in the middle of the table. */
+function _utOrderedDefs(tab){
+  const t=tab||_utTab;
+  const defs=(USER_COLUMNS_BY_TAB[t]||[]).slice();
+  const ord=_utLayout(t).order;
+  if(!ord.length) return defs;
+  const byKey={}; defs.forEach(c=>byKey[c.key]=c);
+  const out=[];
+  ord.forEach(k=>{ if(byKey[k]){ out.push(byKey[k]); delete byKey[k]; } });
+  defs.forEach(c=>{ if(byKey[c.key]) out.push(c); });
+  const first=out.filter(c=>c.key==='select');
+  const last=out.filter(c=>c.key==='actions');
+  const mid=out.filter(c=>c.key!=='select'&&c.key!=='actions');
+  return first.concat(mid, last);
+}
+
+/* Visible columns, grouped so pinned-left sit at the start and pinned-right at
+   the end. Sticky offsets are only computable once the columns are in the order
+   they will actually render. */
+function visibleUserColumns(tab){
+  const t = tab || _utTab;
+  const hid = userHiddenCols[t] || new Set();
+  const vis = _utOrderedDefs(t).filter(c => c.locked || !hid.has(c.key));
+  const L=[],M=[],R=[];
+  vis.forEach(c=>{
+    if(c.key==='select' || c.key==='actions') return;   // placed explicitly below
+    const p=_utPinOf(c.key,t); (p==='left'?L:p==='right'?R:M).push(c);
+  });
+  const sel = vis.filter(c=>c.key==='select');
+  const act = vis.filter(c=>c.key==='actions');
+  // select is always the very first column and actions always the very last,
+  // regardless of what the operator pins in between.
+  return sel.concat(L, M, R, act);
+}
+
+// key -> {side, offset} for every pinned column in this tab's visible set.
+function _utPinPositions(cols, tab){
+  const t=tab||_utTab, map={};
+  let acc=0;
+  cols.forEach(c=>{ if(_utPinOf(c.key,t)==='left'){ map[c.key]={side:'left',off:acc}; acc+=_utColWidth(c,t); } });
+  acc=0;
+  cols.slice().reverse().forEach(c=>{ if(_utPinOf(c.key,t)==='right'){ map[c.key]={side:'right',off:acc}; acc+=_utColWidth(c,t); } });
+  return map;
+}
+
+// Injects width + sticky positioning into a already-built <td>. Cells are
+// produced by per-column renderers that don't know about layout, so the styling
+// is applied here rather than threaded through every case.
+function _utDeco(html, col, pins, tab){
+  const w=_utColWidth(col, tab);
+  let extra='width:'+w+'px;min-width:'+w+'px;max-width:'+w+'px;';
+  let cls='';
+  const p=pins[col.key];
+  if(p){
+    extra += 'position:sticky;'+p.side+':'+p.off+'px;';
+    cls=' ut-pinned ut-pin-'+(p.side==='left'?'l':'r');
+  }
+  if(/<td[^>]*style="/.test(html)) html=html.replace(/(<td[^>]*style=")/, '$1'+extra);
+  else html=html.replace(/<td/, '<td style="'+extra+'"');
+  if(cls) html=html.replace(/<td/, '<td class="'+cls.trim()+'"');
+  return html;
+}
+
+function _utMoveColumn(key, dir){
+  const t=_utTab;
+  const cur=_utOrderedDefs(t).filter(c=>c.key!=='select'&&c.key!=='actions').map(c=>c.key);
+  const i=cur.indexOf(key);
+  const j=i+dir;
+  if(i<0 || j<0 || j>=cur.length) return;
+  cur.splice(j,0,cur.splice(i,1)[0]);
+  _utLayout(t).order=['select'].concat(cur,['actions']);
+  _saveUserLayout();
+  renderUsers(); renderUserColumnsMenu();
+}
+
+function _utPinColumn(key, side){
+  const t=_utTab;
+  const cur=_utPinOf(key,t);
+  if(cur===side) delete _utLayout(t).pin[key];
+  else _utLayout(t).pin[key]=side;
+  _saveUserLayout();
+  renderUsers(); renderUserColumnsMenu();
+}
+
+/* Resize. Width is committed on pointerup so a drag produces one save, not one
+   per mousemove. Clamped so a column can't be dragged to nothing. */
+let _utResize=null;
+function _utStartResize(ev, key){
+  ev.preventDefault(); ev.stopPropagation();
+  const t=_utTab;
+  const col=(USER_COLUMNS_BY_TAB[t]||[]).find(c=>c.key===key);
+  if(!col) return;
+  _utResize={key:key, tab:t, startX:ev.clientX, startW:_utColWidth(col,t)};
+  if(ev.target && ev.target.classList) ev.target.classList.add('dragging');
+  document.addEventListener('pointermove', _utDoResize);
+  document.addEventListener('pointerup', _utEndResize, {once:true});
+}
+function _utDoResize(ev){
+  if(!_utResize) return;
+  const w=Math.max(60, Math.min(600, _utResize.startW + (ev.clientX-_utResize.startX)));
+  _utLayout(_utResize.tab).width[_utResize.key]=w;
+  _utApplyWidthLive(_utResize.tab, _utResize.key, w);
+}
+function _utEndResize(){
+  document.removeEventListener('pointermove', _utDoResize);
+  document.querySelectorAll('.ut-resizer.dragging').forEach(n=>n.classList.remove('dragging'));
+  if(_utResize){ _saveUserLayout(); const t=_utResize.tab; _utResize=null; renderUsers(); }
+}
+// Cheap live feedback while dragging: touch only the affected column's cells
+// instead of re-rendering the whole table on every pointer move.
+function _utApplyWidthLive(tab, key, w){
+  const cols=visibleUserColumns(tab);
+  const i=cols.findIndex(c=>c.key===key);
+  if(i<0) return;
+  const head=document.getElementById(_UT_HEAD_ID[tab]);
+  const body=document.getElementById(_UT_BODY_ID[tab]);
+  const set=el=>{ if(el){ el.style.width=w+'px'; el.style.minWidth=w+'px'; el.style.maxWidth=w+'px'; } };
+  if(head) set(head.querySelectorAll('th')[i]);
+  if(body) body.querySelectorAll('tr').forEach(r=>set(r.children[i]));
+}
+function toggleUserColumn(key){
+  const t = _utTab;
+  const col = (USER_COLUMNS_BY_TAB[t]||[]).find(c => c.key === key);
+  if(!col || col.locked) return;
+  if(!userHiddenCols[t]) userHiddenCols[t] = new Set();
+  if(userHiddenCols[t].has(key)) userHiddenCols[t].delete(key); else userHiddenCols[t].add(key);
+  _saveUserCols();
+  renderUsers();
+  renderUserColumnsMenu();
+}
+function resetUserColumns(){
+  userHiddenCols[_utTab] = _defaultHidden(_utTab);
+  // Reset means the whole layout, not just visibility — width, order and pins
+  // all return to the definition.
+  userColLayout[_utTab] = {order:[], width:{}, pin:{}};
+  _saveUserLayout();
+  _saveUserCols();
+  renderUsers();
+  renderUserColumnsMenu();
+  toast('Columns reset to default');
+}
+function renderUserColumnsMenu(){
+  const box = document.getElementById('ut-columns-list');
+  if(!box) return;
+  const hid = userHiddenCols[_utTab] || new Set();
+  // Movable set excludes the two locked ends, so the arrows can't push the
+  // checkbox or the row actions out of position.
+  const movable = _utOrderedDefs(_utTab).filter(c => c.key!=='select' && c.key!=='actions');
+  box.innerHTML = _utOrderedDefs(_utTab).filter(c => c.label).map(c => {
+    const on = c.locked || !hid.has(c.key);
+    const mi = movable.findIndex(x => x.key === c.key);
+    const pin = _utPinOf(c.key, _utTab);
+    const ctrls = '<span style="margin-left:auto;display:inline-flex;gap:1px" onclick="event.stopPropagation()">'
+      + '<button class="ut-mini" title="Move earlier" onclick="_utMoveColumn(\''+c.key+'\',-1)"'+(mi<=0?' disabled':'')+'>&#8592;</button>'
+      + '<button class="ut-mini" title="Move later"   onclick="_utMoveColumn(\''+c.key+'\',1)"'+((mi<0||mi>=movable.length-1)?' disabled':'')+'>&#8594;</button>'
+      + '<button class="ut-mini'+(pin==='left'?' on':'')+'" title="Pin left"  onclick="_utPinColumn(\''+c.key+'\',\'left\')">L</button>'
+      + '<button class="ut-mini'+(pin==='right'?' on':'')+'" title="Pin right" onclick="_utPinColumn(\''+c.key+'\',\'right\')">R</button>'
+      + '</span>';
+    return '<label class="ut-col-row ut-colrow'+(c.locked?' locked':'')+'">'
+      + '<input type="checkbox"'+(on?' checked':'')+(c.locked?' disabled':'')
+      + ' onchange="toggleUserColumn(\''+c.key+'\')"/>'
+      + '<span>'+c.label+'</span>'
+      + (c.locked?'<span style="margin-left:6px;font-size:10px;color:var(--text-muted)">always on</span>':'')
+      + ctrls
+      + '</label>';
+  }).join('');
+}
+function toggleUserColumnsMenu(){
+  const m = document.getElementById('ut-columns-menu');
+  const a = document.getElementById('ut-actions-menu');
+  if(a) a.classList.remove('open');
+  if(!m) return;
+  renderUserColumnsMenu();
+  m.classList.toggle('open');
+}
+
+/* ── Row selection ──
+   Two distinct states, as in Gmail:
+     page  — the rows currently rendered (lazy loading means that is a subset)
+     all   — every row matching the current filter, loaded or not
+   Held separately because "select all" must survive further lazy chunks
+   arriving, which a set of row indices would not. */
+let userSelection = new Set();
+let userSelectAllMatching = false;
+let _utLastRowKeys = [];      // emails of the rows currently rendered
+let _utTotalMatching = 0;     // rows matching the filter, loaded or not
+
+function _utRowKey(u){ return u.email; }
+
+/* ── Shared table machinery for all three Users tabs ──
+   Each tab has its own <thead>, its own matching-row bookkeeping and its own
+   checkbox id namespace (the same user appears on both All users and Assigned
+   seats, so ids must not collide). Selection itself is a single set scoped to
+   the active tab and cleared on tab change — selecting on one tab then acting
+   from another would be a different working set. */
+const _UT_HEAD_ID = {all:'thead-all', assigned:'thead-assigned', unassigned:'thead-unassigned'};
+const _UT_BODY_ID = {all:'tbl-all', assigned:'tbl-assigned', unassigned:'tbl-unassigned'};
+let _utMatchingByTab = {all:[], assigned:[], unassigned:[]};
+
+function _utSelCell(u, tab){
+  const checked = (userSelection.has(u.email) || userSelectAllMatching) ? ' checked' : '';
+  return '<input type="checkbox" id="utsel-'+tab+'-'+_cssEsc(u.email)+'" data-key="'+u.email+'"'
+    + checked + ' onchange="toggleUserRowSel(\''+u.email+'\',this.checked)" '
+    + 'aria-label="Select '+String(u.name).replace(/"/g,'&quot;')+'"/>';
+}
+
+function _utRenderHead(tab, cols){
+  const thead = document.getElementById(_UT_HEAD_ID[tab]);
+  if(!thead) return;
+  const pins = _utPinPositions(cols, tab);
+  thead.innerHTML = '<tr style="background:var(--surface-2)">'
+    + cols.map(c => {
+        const w = _utColWidth(c, tab);
+        let style = 'width:'+w+'px;min-width:'+w+'px;max-width:'+w+'px;';
+        let cls = '';
+        const p = pins[c.key];
+        if(p){ style += 'position:sticky;'+p.side+':'+p.off+'px;'; cls = ' ut-pinned ut-pin-'+(p.side==='left'?'l':'r'); }
+        // Locked columns aren't resizable — a checkbox and a button group have
+        // no meaningful width to choose.
+        const grip = c.locked ? ''
+          : '<div class="ut-resizer" title="Drag to resize" onpointerdown="_utStartResize(event,\''+c.key+'\')"></div>';
+        if(c.key === 'select'){
+          return '<th class="'+cls.trim()+'" style="'+style+'"><input type="checkbox" id="ut-head-sel-'+tab+'" '
+            + 'onchange="toggleUserPageSel(this.checked)" title="Select all loaded rows" '
+            + 'aria-label="Select all loaded rows"/></th>';
+        }
+        if(!c.label) return '<th class="'+cls.trim()+'" style="'+style+'">'+grip+'</th>';
+        return c.sortable
+          ? '<th class="sortable'+cls+'" data-key="'+c.key+'" style="'+style+'" onclick="sortUsers(\''+c.key+'\')">'
+            + c.label + ' <span class="sort-icon"></span>' + grip + '</th>'
+          : '<th class="'+cls.trim()+'" style="'+style+'">' + c.label + grip + '</th>';
+      }).join('')
+    + '</tr>';
+}
+
+function _utNoteMatching(tab, matching){
+  _utMatchingByTab[tab] = matching.map(_utRowKey);
+  if(tab === _utTab){
+    _utTotalMatching   = matching.length;
+    _utAllMatchingKeys = new Set(_utMatchingByTab[tab]);
+  }
+}
+
+
+function toggleUserRowSel(email, checked){
+  if(checked) userSelection.add(email); else { userSelection.delete(email); userSelectAllMatching = false; }
+  syncUserSelectionUI();
+}
+function toggleUserPageSel(checked){
+  if(checked) _utLastRowKeys.forEach(k => userSelection.add(k));
+  else { _utLastRowKeys.forEach(k => userSelection.delete(k)); userSelectAllMatching = false; }
+  const box = document.getElementById('ut-head-sel-'+_utTab);
+  if(box) box.checked = checked;
+  _utLastRowKeys.forEach(k => {
+    const cb = document.getElementById('utsel-' + _utTab + '-' + _cssEsc(k));
+    if(cb) cb.checked = checked;
+  });
+  syncUserSelectionUI();
+}
+function selectAllMatchingUsers(){
+  userSelectAllMatching = true;
+  syncUserSelectionUI();
+}
+function clearUserSelection(){
+  userSelection = new Set();
+  userSelectAllMatching = false;
+  UT_TABS.forEach(t => {
+    const box = document.getElementById('ut-head-sel-'+t);
+    if(box){ box.checked = false; box.indeterminate = false; }
+  });
+  document.querySelectorAll('input[id^="utsel-"]').forEach(cb => { cb.checked = false; });
+  syncUserSelectionUI();
+}
+function selectedUserCount(){
+  return userSelectAllMatching ? _utTotalMatching : userSelection.size;
+}
+function _cssEsc(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_'); }
+
+/* The rows actually rendered right now. Lazy loading appends chunks, so this is
+   read from the DOM at sync time rather than captured once at render — that is
+   what keeps "selected on this page" distinct from "all N matching". */
+function _utRefreshPageKeys(){
+  const body = _UT_BODY_ID[_utTab] || 'tbl-all';
+  _utLastRowKeys = [...document.querySelectorAll('#'+body+' input[id^="utsel-"]')]
+    .map(cb => cb.dataset.key)
+    .filter(Boolean);
+}
+
+function syncUserSelectionUI(){
+  _utRefreshPageKeys();
+  // Lazy chunks are pre-rendered HTML, so rows that arrive AFTER "Select all"
+  // was clicked carry a stale unchecked box. Reconcile the DOM to the selection
+  // state rather than trusting what the chunk was built with.
+  if(userSelectAllMatching){
+    document.querySelectorAll('#'+(_UT_BODY_ID[_utTab]||'tbl-all')+' input[id^="utsel-"]').forEach(cb => { cb.checked = true; });
+  }
+  const n = selectedUserCount();
+  const bar = document.getElementById('ut-selbar');
+  const btn = document.getElementById('ut-actions-btn');
+  if(btn) btn.disabled = n === 0;
+  const head = document.getElementById('ut-head-sel-'+_utTab);
+  if(head){
+    const onPage = _utLastRowKeys.filter(k => userSelection.has(k)).length;
+    head.checked = _utLastRowKeys.length > 0 && onPage === _utLastRowKeys.length;
+    head.indeterminate = onPage > 0 && onPage < _utLastRowKeys.length;
+  }
+  if(!bar) return;
+  if(!n){ bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = 'flex';
+  const more = _utTotalMatching - userSelection.size;
+  bar.innerHTML = userSelectAllMatching
+    ? '<span>All <strong>' + _utTotalMatching + '</strong> users matching this view are selected.</span>'
+      + '<button class="ut-sel-link" onclick="clearUserSelection()">Clear selection</button>'
+    : '<span><strong>' + userSelection.size + '</strong> selected on this page.</span>'
+      + (more > 0
+          ? '<button class="ut-sel-link" onclick="selectAllMatchingUsers()">Select all ' + _utTotalMatching + ' users</button>'
+          : '')
+      + '<button class="ut-sel-link" onclick="clearUserSelection()">Clear selection</button>';
+}
+
+/* ── Bulk actions ── */
+function toggleUserActionsMenu(){
+  const m = document.getElementById('ut-actions-menu');
+  const c = document.getElementById('ut-columns-menu');
+  if(c) c.classList.remove('open');
+  if(m) m.classList.toggle('open');
+}
+function _closeUserMenus(){
+  ['ut-actions-menu','ut-columns-menu'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.classList.remove('open');
+  });
+}
+
+// Resolves the selection to actual user objects. When "select all matching" is
+// on, that means every filtered row — including ones lazy loading hasn't drawn.
+function selectedUsers(){
+  const orgUsers = users.filter(u => !u.org || u.org === currentOrg);
+  if(userSelectAllMatching) return orgUsers.filter(u => _utAllMatchingKeys.has(_utRowKey(u)));
+  return orgUsers.filter(u => userSelection.has(_utRowKey(u)));
+}
+let _utAllMatchingKeys = new Set();
+
+function userBulkAssignSeat(){
+  _closeUserMenus();
+  const sel = selectedUsers();
+  const invited = sel.filter(u => u.status === 'invited');
+  toast('Assign seat \u2014 placeholder. ' + sel.length + ' user' + (sel.length!==1?'s':'') + ' selected'
+    + (invited.length ? ', ' + invited.length + ' of them invited and awaiting a seat.' : '.'));
+}
+function userBulkUpdateRole(){
+  _closeUserMenus();
+  const sel = selectedUsers();
+  toast('Update role \u2014 placeholder. Would change the role for ' + sel.length
+    + ' user' + (sel.length!==1?'s':'') + '.');
+}
+
+// Export is real: builds a CSV from the VISIBLE columns so what you download
+// matches what you configured on screen.
+function userBulkExportCsv(){
+  _closeUserMenus();
+  const sel = selectedUsers();
+  if(!sel.length){ toast('Nothing selected to export'); return; }
+  const cols = visibleUserColumns().filter(c => c.key !== 'select' && c.key !== 'actions');
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
+  const head = cols.map(c => esc(c.label)).join(',');
+  const rows = sel.map(u => cols.map(c => esc(_userCsvValue(u, c.key))).join(','));
+  const csv = [head].concat(rows).join('\r\n');
+  try{
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'users-' + currentOrg + '-' + _isoDate(new Date()) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }catch(e){}
+  toast('\u2713 Exported ' + sel.length + ' user' + (sel.length!==1?'s':'') + ' to CSV ('
+    + cols.length + ' columns)');
+}
+
+// Plain-text value per column for CSV — deliberately separate from the HTML
+// cell renderers, which emit markup, pills and buttons.
+function _userCsvValue(u, key){
+  const seats = getSeats(u);
+  switch(key){
+    case 'name':       return u.name;
+    case 'email':      return u.email;
+    case 'role':       return u.role || '';
+    case 'seat':       return seats.join('; ') || 'No seat';
+    case 'offline':    { const a = getConnectivityAggregate(u);
+                         if(!seats.length) return '';
+                         if(a.offline) return 'Offline (' + a.offline + ')';
+                         if(a.roaming) return 'Roaming (' + a.roaming + ')';
+                         return 'Online'; }
+    case 'assignedOn': return getAssignedOn(u).join('; ');
+    case 'assignedBy': return getAssignedBy(u).join('; ');
+    case 'createdOn':  return userTimestampPlain(u.createdOn, u.email + 'createdOn');
+    case 'lastLogin':  return userTimestampPlain(u.lastLogin, u.email + 'lastLogin');
+    case 'modifiedOn': return (u.modifiedOn ? userTimestampPlain(u.modifiedOn, u.email + 'modifiedOn') : '')
+                              + (u.modifiedBy ? ' by ' + u.modifiedBy : '');
+    case 'status':     return u.status || '';
+    default:           return '';
+  }
 }
 
 function renderUsers(){
@@ -6325,68 +7120,116 @@ function renderUsers(){
   }
 
   // ── All users (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Action)
+  const _pinsAll = _utPinPositions(visibleUserColumns('all'), 'all');
   const allRows=sortedUsers(orgUsers.filter(filtAll)).map(u=>{
     const ri=users.indexOf(u);const fc=free;const isAss=hasSeat(u);
     const st=statusLabel(u);
     // For invited (accepted) users show createdOn and lastLogin even without a seat
     const showDates=isAss||(u.status==='invited');
     const rowStyle = isPrimaryAdmin(u) ? ' style="background:var(--avenza-blue-lt)"' : '';
-    return`<tr${rowStyle}>
-      <td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>
-      <td style="${PM}">${u.email}</td>
-      <td style="${P}">${roleCell(u, ri)}</td>
-      <td style="${P};font-size:12.5px">${seatCell(u)}</td>
-      <td style="${PS}">${offlineCell(u)}</td>
-      <td style="${PS}">${assignedOnCell(u)}</td>
-      <td style="${PS}">${assignedByCell(u)}</td>
-      <td style="${PS}">${showDates?(u.createdOn||'\u2014'):'\u2014'}</td>
-      <td style="${PS}">${showDates?(u.lastLogin||'\u2014'):'\u2014'}</td>
-      <td style="${PS}">${lastModifiedCell(u)}</td>
-      <td style="${P}">${statusPillCell(u, ri)}</td>
-      <td style="${P};text-align:right">${isAss?('<div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+addProductBtn(u,ri)+revokeBtn(u,ri,true)+'</div>'):assignCell(u,ri,fc,'No seats')}</td>
-    </tr>`;
+    // Cells are emitted per VISIBLE column, in column order, so hiding a column
+    // drops its header and its cells together and nothing shifts out of line.
+    const cellFor = (key) => {
+      switch(key){
+        case 'select':     return `<td style="${P}">${_utSelCell(u,'all')}</td>`;
+        case 'name':       return `<td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>`;
+        case 'email':      return `<td style="${PM}">${u.email}</td>`;
+        case 'role':       return `<td style="${P}">${roleCell(u, ri)}</td>`;
+        case 'seat':       return `<td style="${P};font-size:12.5px">${seatCell(u)}</td>`;
+        case 'offline':    return `<td style="${PS}">${offlineCell(u)}</td>`;
+        case 'assignedOn': return `<td style="${PS}">${assignedOnCell(u)}</td>`;
+        case 'assignedBy': return `<td style="${PS}">${assignedByCell(u)}</td>`;
+        case 'createdOn':  return `<td style="${PS}">${showDates?userTimestamp(u.createdOn, u.email+'createdOn'):'\u2014'}</td>`;
+        case 'lastLogin':  return `<td style="${PS}">${showDates?userTimestamp(u.lastLogin, u.email+'lastLogin'):'\u2014'}</td>`;
+        case 'modifiedOn': return `<td style="${PS}">${lastModifiedCell(u)}</td>`;
+        case 'status':     return `<td style="${P}">${statusPillCell(u, ri)}</td>`;
+        case 'actions':    return `<td style="${P};text-align:right">${isAss?('<div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+addProductBtn(u,ri)+revokeBtn(u,ri,true)+'</div>'):assignCell(u, ri, fc, 'No seats available')}</td>`;
+        default:           return '<td></td>';
+      }
+    };
+    return`<tr${rowStyle}>${visibleUserColumns().map(c => _utDeco(cellFor(c.key), c, _pinsAll, 'all')).join('')}</tr>`;
   });
-  renderChunk(allRows,'tbl-all','spinner-all',12);
+
+  // Header is generated from the same column list as the cells, so the two can
+  // never disagree about order or count.
+  const cols = visibleUserColumns();
+  _utRenderHead('all', cols);
+
+  // Selection bookkeeping: which rows are on screen, and how many match the
+  // filter overall (the "Select all N" figure).
+  _utNoteMatching('all', sortedUsers(orgUsers.filter(filtAll)));
+  // _utLastRowKeys is refreshed from the DOM by _utRefreshPageKeys(), because
+  // only the rendered chunk counts as "this page".
+
+  renderChunk(allRows,'tbl-all','spinner-all',cols.length);
+  _syncSortIcons();
+  syncUserSelectionUI();
 
   // ── Assigned seats (cols: User Email Role | Product AssignedOn | CreatedOn LastLogin | Status | Revoke)
-  const assRows=sortedUsers(assigned.filter(filtAssigned)).map(u=>{
+  const assCols = visibleUserColumns('assigned');
+  const assMatching = sortedUsers(assigned.filter(filtAssigned));
+  const _pinsAss = _utPinPositions(assCols, 'assigned');
+  const assRows=assMatching.map(u=>{
     const ri=users.indexOf(u);
     const rowStyle = isPrimaryAdmin(u) ? ' style="background:var(--avenza-blue-lt)"' : '';
-    return`<tr${rowStyle}>
-      <td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>
-      <td style="${PM}">${u.email}</td>
-      <td style="${P}">${roleCell(u, ri)}</td>
-      <td style="${P};font-size:12.5px">${seatCell(u)}</td>
-      <td style="${PS}">${offlineCell(u)}</td>
-      <td style="${PS}">${assignedOnCell(u)}</td>
-      <td style="${PS}">${assignedByCell(u)}</td>
-      <td style="${PS}">${u.createdOn||'\u2014'}</td>
-      <td style="${PS}">${u.lastLogin||'\u2014'}</td>
-      <td style="${PS}">${lastModifiedCell(u)}</td>
-      <td style="${P}"><span class="pill active">Active</span></td>
-      <td style="${P};text-align:right"><div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${addProductBtn(u,ri)}${revokeBtn(u,ri,false)}</div></td>
-    </tr>`;
+    const cellFor = (key) => {
+      switch(key){
+        case 'select':     return `<td style="${P}">${_utSelCell(u,'assigned')}</td>`;
+        case 'name':       return `<td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>`;
+        case 'email':      return `<td style="${PM}">${u.email}</td>`;
+        case 'role':       return `<td style="${P}">${roleCell(u, ri)}</td>`;
+        case 'seat':       return `<td style="${P};font-size:12.5px">${seatCell(u)}</td>`;
+        case 'offline':    return `<td style="${PS}">${offlineCell(u)}</td>`;
+        case 'assignedOn': return `<td style="${PS}">${assignedOnCell(u)}</td>`;
+        case 'assignedBy': return `<td style="${PS}">${assignedByCell(u)}</td>`;
+        case 'createdOn':  return `<td style="${PS}">${userTimestamp(u.createdOn, u.email+'createdOn')}</td>`;
+        case 'lastLogin':  return `<td style="${PS}">${userTimestamp(u.lastLogin, u.email+'lastLogin')}</td>`;
+        case 'modifiedOn': return `<td style="${PS}">${lastModifiedCell(u)}</td>`;
+        case 'status':     return `<td style="${P}"><span class="pill active">Active</span></td>`;
+        case 'actions':    return `<td style="${P};text-align:right"><div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${addProductBtn(u,ri)}${revokeBtn(u,ri,false)}</div></td>`;
+        default:           return '<td></td>';
+      }
+    };
+    return`<tr${rowStyle}>${assCols.map(c => _utDeco(cellFor(c.key), c, _pinsAss, 'assigned')).join('')}</tr>`;
   });
-  renderChunk(assRows,'tbl-assigned','spinner-assigned',12);
+  _utRenderHead('assigned', assCols);
+  _utNoteMatching('assigned', assMatching);
+  renderChunk(assRows,'tbl-assigned','spinner-assigned',assCols.length);
 
   // ── Unassigned / pending (cols: User Email Role | CreatedOn LastLogin | Status | Assign)
-  const unaRows=sortedUsers(unassigned.filter(filtUnassigned)).map(u=>{
+  const unaCols = visibleUserColumns('unassigned');
+  const unaMatching = sortedUsers(unassigned.filter(filtUnassigned));
+  const _pinsUna = _utPinPositions(unaCols, 'unassigned');
+  const unaRows=unaMatching.map(u=>{
     const ri=users.indexOf(u);const fc=free;
-    const st=statusLabel(u);
-    // Last login: show for invited users only (they've logged in)
-    const loginDisplay=(u.status==='invited'&&u.lastLogin)?u.lastLogin:'\u2014';
     const rowStyle = isPrimaryAdmin(u) ? ' style="background:var(--avenza-blue-lt)"' : '';
-    return`<tr${rowStyle}>
-      <td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>
-      <td style="${PM}">${u.email}</td>
-      <td style="${P}">${roleCell(u, ri)}</td>
-      <td style="${PS}">${u.createdOn||'\u2014'}</td>
-      <td style="${PS}">${loginDisplay}</td>
-      <td style="${P}">${statusPillCell(u, ri)}</td>
-      <td style="${P}">${assignCell(u,ri,fc,'No seats available')}</td>
-    </tr>`;
+    // Last login only means something for invited users — a pending invite has
+    // never signed in.
+    const loginShown=(u.status==='invited'&&u.lastLogin)
+      ? userTimestamp(u.lastLogin, u.email+'lastLogin') : '\u2014';
+    const cellFor = (key) => {
+      switch(key){
+        case 'select':     return `<td style="${P}">${_utSelCell(u,'unassigned')}</td>`;
+        case 'name':       return `<td style="${P}"><div style="display:flex;align-items:center;gap:9px">${av(u)}<span>${u.name}</span></div></td>`;
+        case 'email':      return `<td style="${PM}">${u.email}</td>`;
+        case 'role':       return `<td style="${P}">${roleCell(u, ri)}</td>`;
+        case 'createdOn':  return `<td style="${PS}">${userTimestamp(u.createdOn, u.email+'createdOn')}</td>`;
+        case 'lastLogin':  return `<td style="${PS}">${loginShown}</td>`;
+        case 'status':     return `<td style="${P}">${statusPillCell(u, ri)}</td>`;
+        case 'actions':    return `<td style="${P}">${assignCell(u,ri,fc,'No seats available')}</td>`;
+        default:           return '<td></td>';
+      }
+    };
+    return`<tr${rowStyle}>${unaCols.map(c => _utDeco(cellFor(c.key), c, _pinsUna, 'unassigned')).join('')}</tr>`;
   });
-  renderChunk(unaRows,'tbl-unassigned','spinner-unassigned',7);
+  _utRenderHead('unassigned', unaCols);
+  _utNoteMatching('unassigned', unaMatching);
+  renderChunk(unaRows,'tbl-unassigned','spinner-unassigned',unaCols.length);
+
+  // Every tab's header is rebuilt on each render, so the sort indicator has to
+  // be re-applied after the last one exists.
+  _syncSortIcons();
+  syncUserSelectionUI();
 }
 
 /* ═══════════════════════════════════════
@@ -7783,6 +8626,67 @@ function _downloadActivityTicks(){
   ).join('');
 }
 
+/* ═══════════════════════════════════════
+   DOWNLOAD HISTORY
+   Same data as the Recent activity download ticks, shown in full with the
+   who/where columns the ticks have no room for. Deliberately read-only: this is
+   an audit trail, and the counterpart to Active sessions on the profile page.
+═══════════════════════════════════════ */
+function openDownloadHistory(product){
+  const all = (downloadHistory || []).filter(e => e && e.installer);
+  const entries = (product ? all.filter(e => e.product === product) : all)
+                    .slice().sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+  const sub  = document.getElementById('dlh-sub');
+  const body = document.getElementById('dlh-body');
+  const foot = document.getElementById('dlh-foot');
+  const title = document.querySelector('#modal-download-history .modal-title');
+  if(title) title.textContent = product ? ('Download history \u2014 ' + product) : 'Download history';
+
+  if(sub) sub.textContent = entries.length
+    ? entries.length + ' download' + (entries.length!==1?'s':'')
+      + (product ? ' of this product.' : ' recorded on this account.')
+    : (product ? 'No downloads recorded for this product yet.' : 'No downloads recorded yet.');
+
+  if(body){
+    body.innerHTML = entries.length
+      ? '<table class="co-rc"><thead><tr>'
+        + (product ? '' : '<th>Product</th>')
+        + '<th>Installer</th><th>When</th><th>By</th><th>To</th>'
+        + '</tr></thead><tbody>'
+        + entries.map(e =>
+            '<tr>'
+          + (product ? '' : '<td style="color:var(--text-primary);font-weight:600">' + (e.product || '\u2014') + '</td>')
+          + '<td style="color:var(--text-primary);font-weight:600">' + e.installer + '</td>'
+          + '<td style="white-space:nowrap">' + (e.datetime || '\u2014') + '</td>'
+          + '<td>' + (e.by || '\u2014')
+          +   (e.byEmail ? '<div style="font-size:11.5px;color:var(--text-muted)">'+e.byEmail+'</div>' : '')
+          + '</td>'
+          + '<td>' + (e.device || e.os || '\u2014')
+          +   (e.address ? '<div style="font-size:11.5px;color:var(--text-muted);font-family:ui-monospace,monospace">'+e.address+'</div>' : '')
+          + '</td>'
+          + '</tr>').join('')
+        + '</tbody></table>'
+        + '<div style="font-size:12px;color:var(--text-muted);margin-top:14px;line-height:1.6">'
+        + 'Records are kept for the most recent ' + MAX_DOWNLOAD_HISTORY + ' downloads. '
+        + 'To review or end the sessions these machines are signed in from, see Active sessions on '
+        + '<button class="co-link" style="font-size:12px" onclick="closeDownloadHistory();nav(\'u-profile\')">My profile</button>.</div>'
+      : '<div class="m-stub">Nothing downloaded yet.<br>'
+        + 'Installers you download from My Products are logged here with the date, '
+        + 'who downloaded them and which machine they went to.</div>';
+  }
+  // When scoped to one product, offer the account-wide view rather than losing it.
+  if(foot) foot.innerHTML =
+      '<button class="btn" onclick="closeDownloadHistory()">Close</button>'
+    + (product && all.length > entries.length
+        ? '<button class="btn" onclick="openDownloadHistory()">View all downloads ('+all.length+')</button>'
+        : '');
+  document.getElementById('modal-download-history').classList.add('open');
+}
+
+function closeDownloadHistory(){
+  document.getElementById('modal-download-history').classList.remove('open');
+}
+
 // Inserts (or refreshes) the download ticks at the top of whichever Recent activity
 // widget is currently in view. Safe to call multiple times — existing download ticks
 // are removed first so they don't pile up. Targets both admin and user activity divs
@@ -7800,7 +8704,7 @@ function _refreshDownloadActivity(){
 
 // The install picker options. The base list (Global Mapper installers in every
 // supported language) applies to every product tier. Bundled add-on products —
-// Geographic Calculator and MapPublisher — ship only with the higher tiers
+// Geographic Calculator and MAPublisher — ship only with the higher tiers
 // (Professional and Advanced), so they're conditionally inserted right after
 // Global Mapper : English - msi when the target product qualifies.
 const _INSTALLER_BASE_OPTIONS = [
@@ -7819,8 +8723,8 @@ const _INSTALLER_BASE_OPTIONS = [
 const _INSTALLER_TIER_EXTRAS = [
   { value: 'Geographic Calculator - English', label: 'Geographic Calculator - English' },
   { value: 'Geographic Calculator - msi',     label: 'Geographic Calculator - msi' },
-  { value: 'MapPublisher - Windows',          label: 'MapPublisher - Windows' },
-  { value: 'MapPublisher - macOS',            label: 'MapPublisher - macOS' },
+  { value: 'MAPublisher - Windows',          label: 'MAPublisher - Windows' },
+  { value: 'MAPublisher - macOS',            label: 'MAPublisher - macOS' },
 ];
 
 // Returns the ordered installer option list for a given product name. For higher
@@ -7828,7 +8732,7 @@ const _INSTALLER_TIER_EXTRAS = [
 // so they read as a natural extension of the primary language list.
 // Trial subscribers internally map to the Professional tier, so the trial
 // installer also gets the Pro/Advanced-only add-ons (Geographic Calculator,
-// MapPublisher). Otherwise the trial would give a smaller feature preview
+// MAPublisher). Otherwise the trial would give a smaller feature preview
 // than what conversion to paid delivers.
 function _installerOptionsFor(productName){
   const isHigherTier = /Professional|Advanced|Trial/i.test(productName || '');
@@ -7854,7 +8758,7 @@ function openInstallProduct(productName){
   if(picker) picker.style.display = '';
   if(success) success.style.display = 'none';
   // Rebuild the option list from the tier-aware source so higher-tier products
-  // see the Geographic Calculator + MapPublisher add-ons and lower tiers don't.
+  // see the Geographic Calculator + MAPublisher add-ons and lower tiers don't.
   const sel = document.getElementById('install-installer-sel');
   if(sel){
     const opts = _installerOptionsFor(_currentInstallProduct);
@@ -7879,12 +8783,18 @@ function confirmInstallDownload(){
     const formatted = _formatTodayDateTime();
     const os = _detectOS();
     // Append to history, cap the list so it doesn't grow unbounded over many tests.
+    const _me = currentUData();
     downloadHistory.push({
       product: _currentInstallProduct,
       installer: choice,
       datetime: formatted,
       timestamp: now,
       os: os,
+      // Who and where, so the history can stand alone as an audit record.
+      by: (_me && _me.name) ? _me.name : 'Unknown',
+      byEmail: (_me && _me.email) ? _me.email : '',
+      device: _deviceLabel(),
+      address: SESSION_ADDRESS,
     });
     if(downloadHistory.length > MAX_DOWNLOAD_HISTORY){
       downloadHistory = downloadHistory.slice(-MAX_DOWNLOAD_HISTORY);
@@ -8058,8 +8968,12 @@ function _ticketDisplayId(id){
 }
 
 // Renders the small priority chip used on ticket cards. Color-coded by level:
-// High/Critical → red, Medium/Normal → amber, Low → blue. Falls back to a muted
-// chip if the priority is missing.
+// High → red, Normal → amber. The seed data now uses only those two levels,
+// matching the downstream system one-to-one (Low and Medium were both mapped to
+// Normal; High was unchanged). The Critical / Low branches below are retained
+// purely as tolerance: a tester's browser may still hold tickets created before
+// the mapping, and a blank chip would look like a bug.
+// Falls back to a muted chip if the priority is missing.
 function _priorityChip(priority){
   if(!priority) return '';
   const p = String(priority).toLowerCase();
@@ -8114,6 +9028,21 @@ function openNewTicket(){
   // Re-populate the behalf dropdown when the form opens so any seat changes made
   // since the page loaded are reflected (e.g. a newly-assigned user appearing).
   _populateBehalfDropdown();
+  _populatePriorityDropdown();
+}
+
+/* Ticket priority is deliberately limited to Normal and High for EVERY account,
+   not just trials. The downstream ticketing system we integrate with supports
+   only those two levels, so the Hub mirrors it one-to-one rather than offering a
+   Critical option that has nowhere to map to.
+   Kept as a single source list so the two systems can't drift apart. */
+const TICKET_PRIORITIES = ['Normal','High'];
+
+function _populatePriorityDropdown(){
+  const pri = document.getElementById('ticket-priority');
+  if(!pri) return;
+  pri.innerHTML = TICKET_PRIORITIES.map(o => '<option>' + o + '</option>').join('');
+  pri.title = '';
 }
 function closeNewTicket(){document.getElementById('new-ticket-form').classList.remove('open');}
 function submitTicket(){
@@ -8394,17 +9323,28 @@ function renderMyProducts(role){
     // below them on narrow ones thanks to flex-wrap.
     let downloadNote = '';
     const dl = productDownloads[s.name];
+    // Download history is scoped to THIS product and lives on the card, next to
+    // the latest-download note, so the link sits with the pane the downloads
+    // were made from. Only shown once this product has actually been downloaded
+    // — an empty history link on a never-installed product is just noise.
+    const prodDlCount = (downloadHistory || [])
+      .filter(e => e && e.installer && e.product === s.name).length;
+    let noteInner = '';
     if(dl && dl.installer){
-      downloadNote = `<div style="margin-left:auto;font-size:11.5px;color:var(--text-muted);line-height:1.45;text-align:right;max-width:280px">
-        Downloaded <strong style="color:var(--text-secondary);font-weight:600">Global Mapper : ${dl.installer}</strong>
-        <br>on ${dl.datetime||''}${dl.os?(' to '+dl.os):''}
-      </div>`;
+      noteInner += `Downloaded <strong style="color:var(--text-secondary);font-weight:600">Global Mapper : ${dl.installer}</strong>
+        <br>on ${dl.datetime||''}${dl.os?(' to '+dl.os):''}`;
+    }
+    if(prodDlCount){
+      noteInner += `<div style="margin-top:${noteInner?'5':'0'}px"><button class="co-link" style="font-size:11.5px" onclick="openDownloadHistory('${safeName}')">Download history (${prodDlCount})</button></div>`;
+    }
+    if(noteInner){
+      downloadNote = `<div style="margin-left:auto;font-size:11.5px;color:var(--text-muted);line-height:1.45;text-align:right;max-width:280px">${noteInner}</div>`;
     }
     return `
     <div class="my-prod-card"${isExpired ? ' style="opacity:.85"' : ''}>
       <div class="my-prod-head">
         <div class="my-prod-icon" style="background:${s.iconBg};color:${s.iconFg}">${s.icon}</div>
-        <div style="flex:1"><div class="my-prod-name">${s.name}</div><div class="my-prod-type">${s.type}${org?' \u00b7 '+org.name:''}</div></div>
+        <div style="flex:1"><div class="my-prod-name">${s.name}</div>${_bundleSubtext(s.name)}<div class="my-prod-type">${s.type}${org?' \u00b7 '+org.name:''}</div></div>
         <span class="pill ${pillCls}">${pillLbl}</span>
       </div>
       <div class="my-prod-detail">
@@ -8854,7 +9794,7 @@ const TICKETS = [
        msg:"Thanks Penny. We've flagged Niko's seat for re-provisioning. He should retry activation in 4-6 hours. Please confirm if the issue persists."},
     ],
   },
-  {id:'4019', ownerRole:'penny', subject:'Bulk user import error', product:'Global Mapper Advanced', priority:'Medium',
+  {id:'4019', ownerRole:'penny', subject:'Bulk user import error', product:'Global Mapper Advanced', priority:'Normal',
    status:'awaiting', opened:'May 6, 2026', updated:'May 9, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'May 6, 2026 2:48 pm',side:'user',
@@ -8862,25 +9802,25 @@ const TICKETS = [
      {from:'Zenith Support',initials:'ZS',time:'May 9, 2026 9:30 am',side:'agent',
       msg:"Could you share the file? It usually means a malformed email column. We'll trace it for you."},
    ]},
-  {id:'4017', ownerRole:'penny', subject:'Seat reassignment request', priority:'Low',
+  {id:'4017', ownerRole:'penny', subject:'Seat reassignment request', priority:'Normal',
    status:'pending', opened:'May 5, 2026', updated:'May 8, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'May 5, 2026 10:11 am',side:'user',
       msg:"Need to move Rita's seat to a new hire next month — what's the recommended flow?"},
    ]},
-  {id:'4012', ownerRole:'penny', subject:'Platform Essentials onboarding help', priority:'Low',
+  {id:'4012', ownerRole:'penny', subject:'Platform Essentials onboarding help', priority:'Normal',
    status:'pending', opened:'May 1, 2026', updated:'May 6, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'May 1, 2026 3:22 pm',side:'user',
       msg:"Looking for the recommended onboarding videos to share with new team members."},
    ]},
-  {id:'4008', ownerRole:'penny', subject:'SSO setup assistance', priority:'Medium',
+  {id:'4008', ownerRole:'penny', subject:'SSO setup assistance', priority:'Normal',
    status:'pending', opened:'Apr 28, 2026', updated:'May 5, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'Apr 28, 2026 11:00 am',side:'user',
       msg:"Trying to configure Okta SSO for our org. Looking for the right metadata URL."},
    ]},
-  {id:'4003', ownerRole:'penny', subject:'Account creation walkthrough', priority:'Low',
+  {id:'4003', ownerRole:'penny', subject:'Account creation walkthrough', priority:'Normal',
    status:'resolved', opened:'Apr 20, 2026', resolved:'Apr 25, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'Apr 20, 2026 4:05 pm',side:'user',
@@ -8890,7 +9830,7 @@ const TICKETS = [
      {from:'Penny Purchaser',initials:'PP',time:'Apr 25, 2026 9:30 am',side:'user',
       msg:"All set, thanks!"},
    ]},
-  {id:'3998', ownerRole:'penny', subject:'Billing address update', priority:'Low',
+  {id:'3998', ownerRole:'penny', subject:'Billing address update', priority:'Normal',
    status:'resolved', opened:'Apr 15, 2026', resolved:'Apr 18, 2026',
    thread:[
      {from:'Penny Purchaser',initials:'PP',time:'Apr 15, 2026 11:24 am',side:'user',
@@ -8910,7 +9850,7 @@ const TICKETS = [
    ]},
   // 5079 — Jane created on behalf of Mary; visible to both
   {id:'5079', ownerRole:'admin', behalfOf:'Mary Beth', sharedWith:['user'],
-   subject:'Intermittent License Error', product:'Global Mapper Professional', priority:'Medium',
+   subject:'Intermittent License Error', product:'Global Mapper Professional', priority:'Normal',
    status:'pending', opened:'Mar 30, 2026', updated:'Apr 2, 2026',
    thread:[
      {from:'Jane Doe',initials:'JD',time:'Mar 30, 2026 1:22 pm',side:'user',
@@ -8918,7 +9858,7 @@ const TICKETS = [
      {from:'Zenith Support',initials:'ZS',time:'Apr 2, 2026 10:08 am',side:'agent',
       msg:"Thanks Jane. We've seen this pattern before — usually relates to the license daemon timing out at boot. Could Mary share her client logs from one of the failure occurrences?"},
    ]},
-  {id:'5071', ownerRole:'admin', subject:'User provisioning help', priority:'Medium',
+  {id:'5071', ownerRole:'admin', subject:'User provisioning help', priority:'Normal',
    status:'resolved', opened:'Mar 22, 2026', resolved:'Apr 1, 2026',
    thread:[
      {from:'Jane Doe',initials:'JD',time:'Mar 22, 2026 9:00 am',side:'user',
@@ -8928,7 +9868,7 @@ const TICKETS = [
      {from:'Jane Doe',initials:'JD',time:'Apr 1, 2026 4:30 pm',side:'user',
       msg:"Worked great — all 25 users imported cleanly."},
    ]},
-  {id:'5060', ownerRole:'admin', subject:'Bulk user import failing', priority:'Medium',
+  {id:'5060', ownerRole:'admin', subject:'Bulk user import failing', priority:'Normal',
    status:'resolved', opened:'Mar 10, 2026', resolved:'Mar 14, 2026',
    thread:[
      {from:'Jane Doe',initials:'JD',time:'Mar 10, 2026 11:18 am',side:'user',
