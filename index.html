@@ -2257,7 +2257,7 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
         </div>
         <div class="card" style="background:var(--surface-2);border-style:dashed;text-align:center;padding:22px">
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Looking to expand your plan?</div>
-          <button class="btn primary" onclick="toast('Opening Blue Marble Hub catalogue…')">Browse Blue Marble Hub catalogue</button>
+          <button class="btn primary" onclick="openBlueMarbleCatalogue()">Browse the Blue Marble catalogue</button>
         </div>
       </div>
     </div>
@@ -2377,6 +2377,15 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
           <!-- populated by renderSupportTickets() -->
         </div>
         <div style="margin-top:14px;padding:13px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:12.5px;color:var(--text-muted);text-align:center" id="supp-footer-note">Cases are linked to your active product licenses only.</div>
+
+        <!-- Training & professional services. Generic contact details, so this
+             is shown to every persona regardless of role, org or whether they
+             hold a licence — unlike the note above, which is per-user. -->
+        <div style="margin-top:10px;padding:13px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:12.5px;color:var(--text-muted);text-align:center;line-height:1.75" id="supp-training-note">
+          <!-- Line 1 is entirely about training, line 2 about professional services. -->
+          Explore our online classroom on <a href="https://training.bluemarblegeo.com" target="_blank" rel="noopener" style="color:var(--avenza-blue);text-decoration:underline">training.bluemarblegeo.com</a>. For special training requests, contact <a href="mailto:training@bluemarblegeo.com" style="color:var(--avenza-blue);text-decoration:underline">training@bluemarblegeo.com</a>.<br>
+          For Professional service requests, email <a href="mailto:sales@bluemarblegeo.com" style="color:var(--avenza-blue);text-decoration:underline">sales@bluemarblegeo.com</a>.
+        </div>
       </div>
     </div>
 
@@ -4818,8 +4827,14 @@ function updateDashOrgBanners(){
                ? '<span style="color:var(--red);font-weight:600">Cancelled '+cancelledOn(p.name)+'</span>'
                  +'<span>Access until <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
                  +'<span><button class="co-link" style="font-size:12px" onclick="openManageSub(\''+p.name.replace(/'/g,"\\'")+'\')">Undo</button></span>'
-               : '<span>Renews <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
-                 +'<span style="'+daysColor+'">'+daysText+'</span>')
+               : auto
+                  ? '<span>Renews <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
+                    +'<span style="'+daysColor+'">'+daysText+'</span>'
+                  // Auto-renew off but not cancelled: the subscription still
+                  // runs to this date, it just won't roll over — so the date is
+                  // when access ends, not when anything renews.
+                  : '<span>Access until <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
+                    +'<span style="'+daysColor+'">'+daysText+'</span>')
           +'</div>'
         +'</div>'
         +'<div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
@@ -5693,7 +5708,7 @@ function renderManageDowngrade(){
   // An existing scheduled change is shown as-is with an undo, rather than
   // silently replaced by whatever the admin types next.
   const existing = pendingChangeFor(p.name);
-  if(existing){
+  if(existing && !_msDownEditing){
     pane.innerHTML = '<div class="m-note warn" style="margin-bottom:16px">'
       + '<strong>A change is already scheduled for this subscription.</strong><br>'
       + 'From ' + existing.effectiveOn + ', ' + existing.seats + ' seat' + (existing.seats!==1?'s':'')
@@ -5706,18 +5721,35 @@ function renderManageDowngrade(){
             ? existing.userEmails.map(e => (users.find(u=>u.email===e)||{}).name || e).join(', ')
             : 'None \u2014 unassigned seats only') + '</strong></div>'
       + '<div style="font-size:12.5px;color:var(--text-muted);margin-top:16px;line-height:1.6">'
-      + 'Replacing it means undoing this one first, so there is only ever one scheduled change per subscription.</div>';
+      + 'Edit it to change the tier, the number of seats or who moves \u2014 there is only ever one '
+      + 'scheduled change per subscription, so saving replaces this one rather than stacking on top of it.</div>';
     foot.innerHTML = '<button class="btn" onclick="closeManageSub()">Close</button>'
-      + '<button class="btn primary" onclick="undoScheduledChange(\''+p.name.replace(/'/g,"\\'")+'\')">Undo scheduled change</button>';
+      + '<button class="btn" onclick="undoScheduledChange(\''+p.name.replace(/'/g,"\\'")+'\')">Undo</button>'
+      + '<button class="btn primary" onclick="_msEditScheduledChange()">Edit change</button>';
     return;
   }
 
+  // Editing starts from the existing change rather than a blank form, so the
+  // admin adjusts what is scheduled instead of re-entering it.
+  if(_msDownEditing && existing && !_msDownPrefilled){
+    _msDownTarget = existing.toTier;
+    _msDownUsers  = (existing.userEmails || []).slice();
+    _msDownFree   = Math.max(0, existing.seats - _msDownUsers.length);
+    _msDownPrefilled = true;
+  }
   if(!_msDownTarget || tierRank(_msDownTarget) >= tierRank(p.name)) _msDownTarget = targets[targets.length-1];
   const holders = _holdersOf(p.name);
   const freeSeats = Math.max(0, (p.seats||0) - (p.used||0));
   const tgt = tierTarget(org, _msDownTarget);
 
-  let h = '<div class="m-note warn" style="margin-bottom:16px">'
+  let h = '';
+  if(_msDownEditing && existing){
+    h += '<div class="m-note info" style="margin-bottom:16px">'
+      + '<strong>Editing the change scheduled on ' + existing.createdOn + '.</strong> '
+      + 'Saving replaces it \u2014 it does not add a second one. '
+      + '<button class="co-link" style="font-size:12px" onclick="_msCancelEditScheduled()">Cancel edit</button></div>';
+  }
+  h += '<div class="m-note warn" style="margin-bottom:16px">'
     + '<strong>Downgrades take effect at your next renewal.</strong> Nothing changes today and nothing is '
     + 'charged \u2014 your team keeps ' + p.name + ' until ' + p.renewal + '. From that date the subscription '
     + 'renews at the new configuration.</div>';
@@ -5765,7 +5797,21 @@ function renderManageDowngrade(){
 let _msDownTarget = null;
 let _msDownFree = 0;
 let _msDownUsers = [];
-function _msResetDowngrade(){ _msDownTarget=null; _msDownFree=0; _msDownUsers=[]; }
+let _msDownEditing = false;    // editing an existing scheduled change
+let _msDownPrefilled = false;  // guards the one-time prefill from that change
+function _msResetDowngrade(){
+  _msDownTarget=null; _msDownFree=0; _msDownUsers=[];
+  _msDownEditing=false; _msDownPrefilled=false;
+}
+function _msEditScheduledChange(){
+  _msDownEditing = true; _msDownPrefilled = false;
+  renderManageDowngrade();
+}
+function _msCancelEditScheduled(){
+  _msDownEditing = false; _msDownPrefilled = false;
+  _msDownTarget=null; _msDownFree=0; _msDownUsers=[];
+  renderManageDowngrade();
+}
 function _msSetDownTarget(v){ _msDownTarget=v; renderManageDowngrade(); }
 function _msToggleDownUser(el){
   const i=_msDownUsers.indexOf(el.value);
@@ -5814,7 +5860,10 @@ function _msDownRecalc(){
     : '<div class="m-stub">Choose seats to move down to see the new renewal.</div>';
   if(foot) foot.innerHTML = '<button class="btn" onclick="closeManageSub()">Close</button>'
     + '<button class="btn primary"'+(o.seats?'':' disabled')+' onclick="confirmScheduledDowngrade()">'
-    + (o.seats ? 'Schedule change \u00b7 '+o.seats+' seat'+(o.seats!==1?'s':'') : 'Schedule change') + '</button>';
+    + (o.seats
+        ? (_msDownEditing ? 'Update scheduled change \u00b7 ' : 'Schedule change \u00b7 ')
+          + o.seats + ' seat' + (o.seats!==1?'s':'')
+        : (_msDownEditing ? 'Update scheduled change' : 'Schedule change')) + '</button>';
 }
 
 function confirmScheduledDowngrade(){
@@ -6104,6 +6153,19 @@ function _seatRenewalLabel(seat, isExpired){
   const willRenew = prod ? (prod.autoRenew !== false) : true;
   const cancelled = (typeof isCancelled === 'function') && isCancelled(seat.name);
   return (willRenew && !cancelled) ? 'Renewal' : 'Expires on';
+}
+
+/* The catalogue lives on the public website, outside the Hub, so this leaves
+   the app rather than navigating within it. Opened in a new tab so a demo
+   doesn't lose its place — the prototype's state is all in memory, and
+   navigating away in the same tab would reset it. */
+const BLUE_MARBLE_SITE = 'https://www.bluemarblegeo.com/';
+function openBlueMarbleCatalogue(){
+  try {
+    window.open(BLUE_MARBLE_SITE, '_blank', 'noopener');
+  } catch(e) {
+    window.location.href = BLUE_MARBLE_SITE;
+  }
 }
 
 function _bundleSubtext(productName){
