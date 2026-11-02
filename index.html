@@ -2319,7 +2319,6 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dn4')"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 5 5v2l1.5 2.5h-13L3 9V7a5 5 0 0 1 5-5Z" stroke="#4a5568" stroke-width="1.3"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="#4a5568" stroke-width="1.3"/></svg><div class="icon-btn-dot"></div></button><div class="dropdown" id="dn4" style="min-width:220px"><div class="dd-header" style="font-size:12px;font-weight:600">Notifications</div><button class="dd-item">⚠️ 2 licenses expiring soon</button></div></div>
           <div class="dd-wrap"><button class="icon-btn" onclick="toggleDrop('dh4')" title="Help"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4a5568" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="#4a5568" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="#4a5568"/></svg></button><div class="dropdown" id="dh4"><button class="dd-item">📄 Documentation</button><button class="dd-item" onclick="nav('a-support');closeDrop()">💬 Contact support</button><div class="dd-sep"></div><button class="dd-item">✨ What's new</button></div></div>
           <div class="dd-wrap"><button class="profile-btn" onclick="toggleDrop('dp4')"><div class="profile-av" id="adpav4" style="background:#0d6efd">JD</div><span class="profile-name" id="adpbtn4-name">Jane Doe</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dropdown" id="dp4"><div class="dd-header"><div style="font-size:12.5px;font-weight:600" id="adp4-name">Jane Doe</div><div style="font-size:11px;color:var(--text-muted);margin-top:1px" id="adp4-email">jane@acme.com</div></div><button class="dd-item" onclick="nav('u-profile');closeDrop()">My profile</button><div class="dd-sep"></div><button class="dd-item" style="color:var(--red)" onclick="signOut()">Sign out</button></div></div>
-          <button class="btn" onclick="toast('Opening billing settings…')">Update billing</button>
         </div>
       </div>
       <div class="page-body">
@@ -5296,8 +5295,15 @@ function updateDashOrgBanners(){
                  : '<div style="font-size:16px;font-weight:700;color:var(--text-primary);text-align:right">'+productAmount(p)+'</div>')
               +'<div style="font-size:11px;color:var(--text-muted);text-align:right">'+(cancelled?'will not be charged':auto?'will be charged':'requires renewal')+'</div>'
             +'</div>'
-            +(cancelled
-               ? '<button class="btn primary sm" disabled style="opacity:.45;cursor:not-allowed" title="This subscription is cancelled and will not renew">Pay now</button>'
+            /* Pay now is for a renewal the customer must action themselves.
+               Auto-renew ON  -> charged automatically, nothing to pay
+               Auto-renew OFF -> they must pay to continue, so this is the action
+               Cancelled      -> there is no next term to pay for              */
+            +((cancelled || auto)
+               ? '<button class="btn primary sm" disabled style="opacity:.45;cursor:not-allowed" title="'
+                 + (cancelled ? 'This subscription is cancelled and will not renew'
+                              : 'Auto-renew is on \u2014 this renews automatically on ' + p.renewal)
+                 + '">Pay now</button>'
                : '<button class="btn primary sm" onclick="payNow(\''+p.name.replace(/\'/g,"\\\'")+'\',\''+productAmount(p)+'\')">Pay now</button>')
           +'</div>'
         +'</div>'
