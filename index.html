@@ -136,6 +136,10 @@ html,body{min-height:100%;font-family:'DM Sans',system-ui,sans-serif;background:
   padding:2px 6px;border-radius:20px;
   background:rgba(217,119,6,.3);color:#fbbf24
 }
+/* Neutral count, distinct from the amber warning badge used for expiring
+   licences — this one is informational, not a call to action. */
+.sb-badge-count{background:rgba(255,255,255,.16);color:rgba(255,255,255,.9)}
+.sidebar.collapsed .sb-badge-count{display:none !important}
 .sb-badge.red{background:rgba(220,38,38,.3);color:#fca5a5}
 
 /* ─────────────────────────────────────────────
@@ -1982,6 +1986,7 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
         <button class="sb-item" id="si-u-products" onclick="nav('u-products');closeSidebar()">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="5" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 5V3.5A2.5 2.5 0 0 1 11 3.5V5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           My products
+          <span class="sb-badge sb-badge-count" id="prod-badge" style="display:none"></span>
         </button>
         <button class="sb-item" id="si-u-support" onclick="nav('u-support');closeSidebar()">
           <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M6 6.2C6.2 5.3 7 4.5 8 4.5c1.1 0 2 .9 2 2 0 1-.7 1.5-1.3 1.9C8.3 8.7 8 9.1 8 9.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".65" fill="currentColor"/></svg>
@@ -2336,6 +2341,8 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
           <div style="display:flex;padding:0 0 8px;border-bottom:1px solid var(--surface-3)">
             <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;width:68px">Invoice</span>
             <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;flex:1">Description</span>
+            <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;width:150px">Purchased by</span>
+            <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;width:112px">Purchase mode</span>
             <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;width:90px">Date</span>
             <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;width:80px;text-align:right">Amount</span>
             <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);letter-spacing:.07em;text-transform:uppercase;width:68px;text-align:center">Status</span>
@@ -3122,10 +3129,19 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
 <div class="modal-bg" id="modal-airgap-bundle">
   <div class="modal lg" style="width:900px">
     <div class="m-head">
-      <div class="modal-title">Manage offline licenses</div>
+      <div class="modal-title" id="airgap-title">Manage Air-gapped licenses</div>
       <div class="modal-sub" id="airgap-sub" style="margin-bottom:0"></div>
+      <!-- Air-gapped is a sales-managed SKU: no upgrade or downgrade path, so
+           the only commercial action offered here is Cancel. -->
+      <div class="m-tabs" style="margin-top:14px">
+        <button class="tab on" id="airgap-tab-licenses" onclick="switchAirgapTab('licenses')">Generate Air-gapped Licenses</button>
+        <button class="tab danger" id="airgap-tab-cancel" onclick="switchAirgapTab('cancel')">Cancel subscription</button>
+      </div>
     </div>
-    <div class="m-body" id="airgap-body"></div>
+    <div class="m-body">
+      <div id="airgap-body"></div>
+      <div id="airgap-cancel-pane" style="display:none"></div>
+    </div>
     <div class="m-foot" id="airgap-foot"></div>
   </div>
 </div>
@@ -3464,11 +3480,20 @@ function _personaKey(){
   // currentRole is defined a few lines below; fall back to 'admin' on first call.
   return (typeof currentRole !== 'undefined' && currentRole) ? currentRole : 'admin';
 }
+/* Most persisted data is scoped per persona, so each demo account starts clean.
+   `users` is the exception: it is the ORGANISATION's directory, shared by
+   everyone in it. Scoping it per persona meant an admin revoking a seat saved
+   into their own namespace, and the affected person reloaded an untouched copy
+   from theirs — so "Jane revokes Mary's licence" was invisible to Mary. */
+const SHARED_KEYS = new Set(['users']);
+function _scopeFor(dataKey){
+  return SHARED_KEYS.has(dataKey) ? 'shared' : _personaKey();
+}
 function _storageKey(dataKey){
-  return `${PERSIST_PREFIX}:${_personaKey()}:${dataKey}`;
+  return `${PERSIST_PREFIX}:${_scopeFor(dataKey)}:${dataKey}`;
 }
 function _fpKey(dataKey){
-  return `${PERSIST_PREFIX}:${_personaKey()}:${dataKey}:__fp`;
+  return `${PERSIST_PREFIX}:${_scopeFor(dataKey)}:${dataKey}:__fp`;
 }
 
 // Cheap, deterministic string hash (DJB2). Used only for change detection,
@@ -3955,7 +3980,7 @@ function orgAnnualSpend(orgKey){
   if(!org || !org.products) return '$0';
   // When the org is billed for direct purchases only (hybrid customers whose
   // reseller items appear on the reseller's invoice, not ours), exclude any
-  // product tagged purchasedVia:'reseller' from the annual total.
+  // product tagged purchasedVia:'partner' from the annual total.
   const bp = billableProductsFor(org);
   const total = bp.reduce((s,p) => s + ((p.seats||0) * (PRICING[p.name]||0)), 0);
   return _formatMoney(total);
@@ -3967,11 +3992,121 @@ function orgAnnualSpend(orgKey){
 //     (billed by the reseller partner directly, not on our invoice).
 //   • Trial products are always excluded — trials are free, produce no invoice,
 //     and shouldn't appear as a billing line item anywhere.
+/* Hoisted to module scope: this was declared inside
+   updateDashOrgBanners(), so purchaseInfoFor() — which renders the
+   "Purchased by" cell — could not see it from the top level. */
+const PURCHASED={
+  'acme':{
+    'Global Mapper Professional':'Jane Doe / jane@acme.com / Jun 14, 2026',
+    'Global Mapper Advanced':'Jane Doe / jane@acme.com / Jun 14, 2026',
+    'Global Mapper Essentials':'Jane Doe / jane@acme.com / May 1, 2026',
+    'Global Mapper Professional Air-gapped':'Jane Doe / jane@acme.com / Jun 14, 2026'
+  },
+  'tenure':{'Global Mapper Professional - Academic':'ProfMax Tenure / max@tenure.edu / Sep 30, 2026'},
+  'poppins':{'Global Mapper Advanced':'Penny Purchaser / penny@poppins.com / Jan 10, 2026'},
+  'davis':{'Global Mapper Essentials':'Davis Admin / admin@davislane.com / Mar 3, 2026'},
+  'debuyer':{
+    'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 1, 2026',
+    'Global Mapper Advanced':'Ginger Grainger (Reseller) / ginger@grainger.com / Jul 9, 2026'
+  },
+  'vanfrugal':{
+    'Global Mapper Professional':'Freya VanFrugal / freya@vanfrugal.com / May 4, 2026',
+    'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 16, 2026'
+  },
+  'freeloader':{
+    'Global Mapper Professional Trial':'Sonya Freeloader / sonya@freeloader.com / ' + TRIAL_START
+  }
+};
+
+/* Who bought a subscription, and when.
+   Every subscription has a payer — even one sold by a sales manager rather than
+   through the website or a reseller — so this never returns blank. An explicit
+   PURCHASED entry wins; otherwise fall back to the account's primary admin and
+   the product's own purchase date, which is what a sales-assisted order would be
+   invoiced against anyway. Previously a product with no PURCHASED entry (the
+   air-gapped and academic SKUs) rendered an empty cell. */
+function _orgPrimaryAdmin(orgKey){
+  const u = users.find(x => x.org === orgKey && x.role === 'Admin');
+  if(u) return u;
+  const k = Object.keys(USER_ORG).find(p => USER_ORG[p].defaultOrg === orgKey
+            && USER_ORG[p].byOrg && USER_ORG[p].byOrg[orgKey]
+            && USER_ORG[p].byOrg[orgKey].role === 'admin');
+  return k ? {name:USER_ORG[k].name, email:USER_ORG[k].email} : null;
+}
+
+/* Who to credit an invoice to.
+   Runtime purchases (Add seats, Upgrade) record the signed-in admin at the time.
+   Seeded invoices have no such record, so fall back to the same attribution the
+   Licenses page uses for that product — which already handles reseller-sold and
+   sales-assisted orders, and never comes back blank. */
+/* Purchase mode — how a given order was placed.
+     Website  bought on bluemarblegeo.com
+     Hub      bought self-serve in this app (Add seats, Upgrade checkout)
+     Direct   quoted and invoiced by a sales representative
+     Partner  sold through a reseller or procurement channel
+   Partner never appears in invoice history by construction: those accounts do
+   not see the Billing page at all, because the Hub has no invoice amount for a
+   sale it did not transact. It is in the vocabulary so every mode is covered. */
+const PURCHASE_MODES = { website:'Website', hub:'Hub', direct:'Direct', partner:'Partner' };
+function purchaseModeLabel(v){
+  return PURCHASE_MODES[String(v || '').toLowerCase()] || 'Website';
+}
+
+function invoicePurchaser(inv){
+  if(inv && inv.by) return inv.by;
+  const key = (inv && inv.org) || currentOrg;
+  const org = ORG_DATA[key];
+  const prod = (org && org.products ? org.products : [])
+                 .find(p => inv && inv.desc && inv.desc.indexOf(p.name) === 0);
+  if(prod) return purchaseInfoFor(prod, key).by || '\u2014';
+  const admin = _orgPrimaryAdmin(key);
+  return admin ? admin.name : '\u2014';
+}
+
+/* Subscription grouping.
+   A subscription can carry several products, which is why they co-term: Acme's
+   four products all renew Jun 14, 2027 under one subscription. Accounts that
+   bought more than once — Bob and Freya, from different sources — hold several
+   subscriptions, each with its own ID and renewal date.
+   Auto-renew is a property of the SUBSCRIPTION, not of a product within it. */
+function subIdOf(p){ return (p && p.subId) ? p.subId : ''; }
+
+function productsInSubscription(subId, orgKey){
+  const org = ORG_DATA[orgKey || currentOrg];
+  if(!org || !subId) return [];
+  return (org.products || []).filter(x => x.subId === subId);
+}
+
+// "ID: 6okucVWGtP1w3ds" — rendered wherever a subscription is identified.
+function subIdLabel(p){
+  const id = subIdOf(p);
+  return id ? ('ID: <span style="font-family:\'DM Mono\',monospace;font-size:11.5px">' + id + '</span>') : '';
+}
+
+function purchaseInfoFor(p, orgKey){
+  const o = orgKey || currentOrg;
+  const raw = ((PURCHASED[o] || {})[p.name] || '').split('/');
+  let by = raw[0] ? raw[0].trim() : '';
+  let mail = raw[1] ? raw[1].trim() : '';
+  const third = raw[2] ? raw[2].trim() : '';
+  // Legacy two-part entries are "Name / Date" — emails contain "@".
+  const realEmail = mail.indexOf('@') > -1;
+  let date = realEmail ? third : mail;
+  if(!realEmail) mail = '';
+
+  if(!by){
+    const admin = _orgPrimaryAdmin(o);
+    if(admin){ by = admin.name; mail = admin.email || ''; }
+  }
+  if(!date) date = p.purchasedOn || (ORG_DATA[o] && ORG_DATA[o].created) || '';
+  return { by: by, email: mail, date: date };
+}
+
 function billableProductsFor(org){
   if(!org || !org.products) return [];
   let list = org.products.filter(p => p.status !== 'trial');
   if(org.billingDirectPurchasesOnly){
-    list = list.filter(p => p.purchasedVia !== 'reseller');
+    list = list.filter(p => p.purchasedVia !== 'partner');
   }
   return list;
 }
@@ -4011,15 +4146,15 @@ const ORG_DATA={
     // amount is computed live from seats × PRICING via productAmount() — the inline
     // value here is just a fallback / initial display.
     products:[
-      {key:'pp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional', type:'Annual',seats:25,used:8, renewal:'Jun 14, 2027',status:'active',autoRenew:true, amount:'$54,975', purchasedOn:'Jun 14, 2026'},
-      {key:'an', icon:'ADV',iconBg:'#e8f7ef',iconFg:'#1ba461',name:'Global Mapper Advanced',     type:'Annual',seats:15,used:3, renewal:'Jun 14, 2027',status:'active',autoRenew:false,amount:'$17,985', purchasedOn:'Jun 14, 2026'},
+      {key:'pp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional', subId:'6okucVWGtP1w3ds',purchasedVia:'website',type:'Annual',seats:25,used:8, renewal:'Jun 14, 2027',status:'active',autoRenew:true, amount:'$54,975', purchasedOn:'Jun 14, 2026'},
+      {key:'an', icon:'ADV',iconBg:'#e8f7ef',iconFg:'#1ba461',name:'Global Mapper Advanced',     subId:'6okucVWGtP1w3ds',purchasedVia:'website',type:'Annual',seats:15,used:3, renewal:'Jun 14, 2027',status:'active',autoRenew:true,amount:'$17,985', purchasedOn:'Jun 14, 2026'},
       // Co-termed: bought May 1, 2026 but aligned to Acme's common renewal date
       // so every Acme subscription renews together on Jun 14. The first term is
       // the pro-rated stub from purchase to that shared date.
-      {key:'api',icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials',   type:'Annual',seats:8, used:3, renewal:'Jun 14, 2027', status:'active',autoRenew:true, amount:'$4,792',  purchasedOn:'May 1, 2026'},
+      {key:'api',icon:'ESS',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Essentials',   subId:'6okucVWGtP1w3ds',purchasedVia:'website',type:'Annual',seats:8, used:3, renewal:'Jun 14, 2027', status:'active',autoRenew:true, amount:'$4,792',  purchasedOn:'May 1, 2026'},
       // AIR-GAPPED BRANCH. Separate SKU, not a tier — deliberately absent from
       // TIER_ORDER so it never appears as an upgrade/downgrade target or source.
-      {key:'gmag',icon:'AIR',iconBg:'#f1f5f9',iconFg:'#334155',name:'Global Mapper Professional Air-gapped',type:'Annual',seats:10, used:6, renewal:'Jun 14, 2027', status:'active',autoRenew:true, amount:'$27,990', purchasedOn:'Jun 14, 2026',purchasedVia:'direct'},
+      {key:'gmag',icon:'AIR',iconBg:'#f1f5f9',iconFg:'#334155',name:'Global Mapper Professional Air-gapped',subId:'6okucVWGtP1w3ds',type:'Annual',seats:10, used:6, renewal:'Jun 14, 2027', status:'active',autoRenew:true, amount:'$27,990', purchasedOn:'Jun 14, 2026',purchasedVia:'direct'},
     ],
   },
   /* Tenure University — academic account.
@@ -4041,7 +4176,7 @@ const ORG_DATA={
     annualSpend:'$3,843',
     salesAssistedAddSeats:true,
     products:[
-      {key:'gmpa',icon:'ACA',iconBg:'#ede9fe',iconFg:'#7c3aed',name:'Global Mapper Professional - Academic',type:'Annual',seats:7,used:3,renewal:'Sep 30, 2027',nextRenewal:'Sep 30, 2027',status:'active',autoRenew:true,amount:'$3,843',purchasedOn:'Sep 30, 2026',purchasedVia:'direct'},
+      {key:'gmpa',icon:'ACA',iconBg:'#ede9fe',iconFg:'#7c3aed',name:'Global Mapper Professional - Academic',subId:'7pqEdZ4rNm2k9bt',type:'Annual',seats:7,used:3,renewal:'Sep 30, 2027',nextRenewal:'Sep 30, 2027',status:'active',autoRenew:true,amount:'$3,843',purchasedOn:'Sep 30, 2026',purchasedVia:'direct'},
     ],
   },
   poppins:{
@@ -4057,7 +4192,7 @@ const ORG_DATA={
     nextRenewal:'Jan 10, 2027',
     annualSpend:'$15,587',
     products:[
-      {key:'gma',icon:'ADV',iconBg:'#fce7f3',iconFg:'#9d174d',name:'Global Mapper Advanced',type:'Annual',seats:13,used:3,renewal:'Jan 10, 2027',nextRenewal:'Jan 10, 2027',status:'active',autoRenew:true,amount:'$15,587',purchasedOn:'Jan 10, 2026'},
+      {key:'gma',icon:'ADV',iconBg:'#fce7f3',iconFg:'#9d174d',name:'Global Mapper Advanced',subId:'5nhLxQ8vTc6j2wr',purchasedVia:'website',type:'Annual',seats:13,used:3,renewal:'Jan 10, 2027',nextRenewal:'Jan 10, 2027',status:'active',autoRenew:true,amount:'$15,587',purchasedOn:'Jan 10, 2026'},
     ],
   },
   snape:{
@@ -4087,7 +4222,7 @@ const ORG_DATA={
     nextRenewal:'Mar 3, 2027',
     annualSpend:'$5,990',
     products:[
-      {key:'ae', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual',seats:10,used:7,renewal:'Mar 3, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Mar 3, 2026'},
+      {key:'ae', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',subId:'4mgKwP7uSb5h1vq',purchasedVia:'website',type:'Annual',seats:10,used:7,renewal:'Mar 3, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Mar 3, 2026'},
     ],
   },
   debuyer:{
@@ -4110,8 +4245,8 @@ const ORG_DATA={
     resellerAddSeats:true,
     products:[
       // Anna Banana sold Bob the Essentials seats first (Jun 1). Ginger sold him Advanced later (Jul 9).
-      {key:'de', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',type:'Annual',seats:5,used:0,renewal:'Jun 1, 2027',status:'active',autoRenew:true,amount:'$2,995',purchasedOn:'Jun 1, 2026',purchasedVia:'reseller'},
-      {key:'da', icon:'ADV',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Advanced',   type:'Annual',seats:2,used:0,renewal:'Jul 9, 2027',status:'active',autoRenew:true,amount:'$2,398',purchasedOn:'Jul 9, 2026',purchasedVia:'reseller'},
+      {key:'de', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',subId:'3lfJvN6tRa4g0up',type:'Annual',seats:5,used:0,renewal:'Jun 1, 2027',status:'active',autoRenew:true,amount:'$2,995',purchasedOn:'Jun 1, 2026',purchasedVia:'partner'},
+      {key:'da', icon:'ADV',iconBg:'#eff6ff',iconFg:'#2563eb',name:'Global Mapper Advanced',subId:'9sxYbH2mWe8n5zc',   type:'Annual',seats:2,used:0,renewal:'Jul 9, 2027',status:'active',autoRenew:true,amount:'$2,398',purchasedOn:'Jul 9, 2026',purchasedVia:'partner'},
     ],
   },
   vanfrugal:{
@@ -4137,8 +4272,8 @@ const ORG_DATA={
     resellerAddSeats:true,
     billingDirectPurchasesOnly:true,
     products:[
-      {key:'vp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',type:'Annual',seats:1,used:0,renewal:'May 4, 2027',status:'active',autoRenew:true,amount:'$2,199',purchasedOn:'May 4, 2026',purchasedVia:'direct'},
-      {key:'ve', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',   type:'Annual',seats:10,used:0,renewal:'Jun 16, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Jun 16, 2026',purchasedVia:'reseller'},
+      {key:'vp', icon:'PRO',iconBg:'#e8f1fe',iconFg:'#0d6efd',name:'Global Mapper Professional',subId:'8rwXaG1lVd7m4yb',type:'Annual',seats:1,used:0,renewal:'May 4, 2027',status:'active',autoRenew:true,amount:'$2,199',purchasedOn:'May 4, 2026',purchasedVia:'direct'},
+      {key:'ve', icon:'ESS',iconBg:'#ecfdf5',iconFg:'#059669',name:'Global Mapper Essentials',subId:'2kdIuM5sQz3f9to',   type:'Annual',seats:10,used:0,renewal:'Jun 16, 2027',status:'active',autoRenew:true,amount:'$5,990',purchasedOn:'Jun 16, 2026',purchasedVia:'partner'},
     ],
   },
   freeloader:{
@@ -4162,7 +4297,7 @@ const ORG_DATA={
       // Status is 'trial' — non-billable, no invoice line generated on the
       // Billing page (but the Billing sidebar link stays visible since she's
       // still a direct Blue Marble customer, just not currently invoiced).
-      {key:'ft', icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Professional Trial',type:'14-day trial',seats:1,used:1,renewal:TRIAL_END,status:'trial',autoRenew:false,amount:'$0.00',purchasedOn:TRIAL_START,purchasedVia:'direct'},
+      {key:'ft', icon:'TRL',iconBg:'#eef2ff',iconFg:'#4f46e5',name:'Global Mapper Professional Trial',subId:'1jcHtL4rPy2e8sn',type:'14-day trial',seats:1,used:1,renewal:TRIAL_END,status:'trial',autoRenew:false,amount:'$0.00',purchasedOn:TRIAL_START,purchasedVia:'direct'},
     ],
   }
 };
@@ -4358,6 +4493,61 @@ function currentUserOrg(){
   return u.byOrg[currentOrg];
 }
 // Helper — get current USERS_DATA-style object (seats etc) for compat
+/* The signed-in person's own record in the live `users` array.
+   USER_ORG is seed data that nothing writes back to, so on its own it cannot
+   see an admin's actions. */
+function _liveSelf(){
+  const u = USER_ORG[currentRole];
+  if(!u || !u.email) return null;
+  return users.find(x => x.email === u.email) || null;
+}
+
+/* Builds a My Products card for a seat the live record holds but USER_ORG has
+   no template for — a product assigned by an admin after load. Visual details
+   come from the org's product record so a new card looks like the others. */
+function _seatCardFor(name, self){
+  const org = ORG_DATA[currentOrg] || {};
+  const p = (org.products || []).find(x => x.name === name) || {};
+  const held = self ? getSeats(self) : [];
+  const idx = held.indexOf(name);
+  const on = self ? getAssignedOn(self) : [];
+  const by = self ? getAssignedBy(self) : [];
+  return {
+    icon:   p.icon   || 'GM',
+    iconBg: p.iconBg || '#eef2ff',
+    iconFg: p.iconFg || '#4f46e5',
+    name:   name,
+    type:   p.status === 'trial' ? '14-day trial' : ((p.type || 'Annual') + ' plan'),
+    assignedBy: (idx > -1 && by[idx]) ? by[idx] : 'Admin',
+    since:      (idx > -1 && on[idx]) ? on[idx] : (p.purchasedOn || ''),
+    renewal:    p.renewal || '',
+    status:     p.status === 'trial' ? 'trial' : 'active',
+  };
+}
+
+/* Seats shown on My Products are reconciled against the live `users` record, so
+   an admin revoking or assigning a seat is reflected in that person's own view.
+   USER_ORG entries survive only as presentation templates and as history:
+   an expired entry (Acme's lapsed trial) is a record of something that happened
+   and is kept even though it is no longer a held seat. */
+function _reconciledSeats(uo){
+  const tmpl = (uo && uo.seats) ? uo.seats : [];
+  const self = _liveSelf();
+  if(!self) return tmpl;                       // persona with no directory record
+  const held = getSeats(self);
+  const out = [];
+  held.forEach(name => {
+    const t = tmpl.find(x => x.name === name);
+    out.push(t || _seatCardFor(name, self));
+  });
+  // Keep ended entries: they are history, not entitlements.
+  tmpl.forEach(t => {
+    const st = String(t.status || '').toLowerCase();
+    if((st === 'expired' || st === 'ended') && !out.some(x => x.name === t.name)) out.push(t);
+  });
+  return out;
+}
+
 function currentUData(){
   const u=USER_ORG[currentRole];
   const uo=(currentOrg&&u.byOrg)?u.byOrg[currentOrg]:null;
@@ -4365,7 +4555,7 @@ function currentUData(){
     initials:u.initials,avatarBg:u.avatarBg,
     name:u.name,email:u.email,
     roleLabel:uo?uo.roleLabel:'No account',
-    seats:uo?uo.seats:[],
+    seats:_reconciledSeats(uo),
     unassigned:uo?uo.unassigned:[],
   };
 }
@@ -4450,7 +4640,7 @@ function switchOrg(orgKey){
   if(isAdmin) _populateBehalfDropdown();
 
   // Re-render products and tickets
-  renderMyProducts(currentRole);
+  renderMyProducts(currentRole); updateProductBadge();
   renderSupportTickets(currentRole);
 
   // Update recent activity to reflect the current org
@@ -4530,6 +4720,9 @@ function seedInvoicesFor(orgKey){
     id: 1041 + i,
     desc: p.name + ' \u2013 Annual (' + p.seats + ' seats)',
     date: p.purchasedOn || org.created || 'Today',
+    mode:    p.purchasedVia || 'website',
+    by:      purchaseInfoFor(p, orgKey).by,
+    byEmail: purchaseInfoFor(p, orgKey).email,
     amount: productAmount(p),
     status: 'Paid',
     seed: true,
@@ -4559,6 +4752,11 @@ function renderInvoiceHistory(){
     return '<div class="invoice-row">'
       + '<span style="font-weight:600;color:var(--avenza-blue);width:68px;font-family:\'DM Mono\',monospace;font-size:12px">#' + inv.id + '</span>'
       + '<span style="flex:1;color:var(--text-secondary)">' + inv.desc + '</span>'
+      + '<span style="width:150px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"'
+      +   (inv.byEmail ? ' title="' + _esc(inv.byEmail) + '"' : '') + '>'
+      +   _esc(invoicePurchaser(inv)) + '</span>'
+      + '<span style="width:112px"><span class="pill" style="background:var(--surface-2);color:var(--text-secondary);'
+      +   'border:1px solid var(--border);font-size:10px">' + purchaseModeLabel(inv.mode) + '</span></span>'
       + '<span style="width:90px;color:var(--text-muted)">' + inv.date + '</span>'
       + '<span style="width:80px;text-align:right;font-weight:500">' + inv.amount + '</span>'
       + '<span style="width:68px;text-align:center"><span class="pill active">' + (inv.status||'Paid') + '</span></span>'
@@ -4635,14 +4833,40 @@ function toggleAutoRenew(productName, nowOn){
     updateDashOrgBanners();
     return;
   }
-  product.autoRenew = !!nowOn;
-  autoRenewOverrides[currentOrg + ':' + productName] = !!nowOn;
+  /* Auto-renew belongs to the SUBSCRIPTION, not to one product inside it.
+     Acme's four products share subscription 6okucVWGtP1w3ds and co-term on one
+     date, so switching the toggle on any of them switches all four — a
+     subscription cannot half-renew. Accounts that bought separately (Bob,
+     Freya) hold several subscriptions and toggle independently. */
+  const sid = subIdOf(product);
+  const siblings = sid ? productsInSubscription(sid, currentOrg) : [product];
+
+  /* Cancelling a product is a deliberate act with its own dialog, reason and
+     Undo. Switching the subscription back on must not quietly reverse it, so
+     cancelled products are skipped when the toggle fans out — only their own
+     Undo restores them. Without this a cancelled product could end up
+     cancelled AND auto-renewing at the same time. */
+  const skipped = nowOn ? siblings.filter(x => isCancelled(x.name)) : [];
+  const affected = siblings.filter(x => skipped.indexOf(x) === -1);
+
+  affected.forEach(x => {
+    x.autoRenew = !!nowOn;
+    autoRenewOverrides[currentOrg + ':' + x.name] = !!nowOn;
+  });
   savePersisted('autoRenewOverrides', autoRenewOverrides);
   // Re-render the renewals widget. It's part of updateDashOrgBanners,
   // which also refreshes the dashboard cards — cheap to just call.
   updateDashOrgBanners();
-  if(typeof renderMyProducts === 'function') renderMyProducts(currentRole);
-  toast('Auto-renew ' + (nowOn ? 'enabled' : 'disabled') + ' for ' + productName);
+  if(typeof renderMyProducts === 'function') renderMyProducts(currentRole); updateProductBadge();
+  toast('Auto-renew ' + (nowOn ? 'enabled' : 'disabled')
+    + (affected.length > 1
+        ? ' for subscription ' + sid + ' \u00b7 ' + affected.length + ' products'
+        : ' for ' + (affected.length ? affected[0].name : productName))
+    // Name what was left alone, so a skipped product is never a silent omission.
+    + (skipped.length
+        ? ' \u00b7 ' + skipped.map(x => x.name).join(', ')
+          + (skipped.length > 1 ? ' remain cancelled' : ' remains cancelled')
+        : ''));
 }
 
 function recomputeOrgCounts(orgKey){
@@ -4731,26 +4955,7 @@ function updateDashOrgBanners(){
   }
   const ICONS={'Global Mapper Professional':{code:'PRO',bg:'var(--avenza-blue-lt)',fg:'var(--avenza-blue)'},'Global Mapper Advanced':{code:'ADV',bg:'var(--green-lt)',fg:'var(--green)'},'Global Mapper Essentials':{code:'ESS',bg:'#eff6ff',fg:'#2563eb'}};
   // Purchaser info per org/product
-  const PURCHASED={
-    'acme':{
-      'Global Mapper Professional':'Jane Doe / jane@acme.com / Jun 14, 2026',
-      'Global Mapper Advanced':'Jane Doe / jane@acme.com / Jun 14, 2026',
-      'Global Mapper Essentials':'Jane Doe / jane@acme.com / May 1, 2026'
-    },
-    'poppins':{'Global Mapper Advanced':'Penny Purchaser / penny@poppins.com / Jan 10, 2026'},
-    'davis':{'Global Mapper Essentials':'Davis Admin / admin@davislane.com / Mar 3, 2026'},
-    'debuyer':{
-      'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 1, 2026',
-      'Global Mapper Advanced':'Ginger Grainger (Reseller) / ginger@grainger.com / Jul 9, 2026'
-    },
-    'vanfrugal':{
-      'Global Mapper Professional':'Freya VanFrugal / freya@vanfrugal.com / May 4, 2026',
-      'Global Mapper Essentials':'Anna Banana (Reseller) / anna@banana.com / Jun 16, 2026'
-    },
-    'freeloader':{
-      'Global Mapper Professional Trial':'Sonya Freeloader / sonya@freeloader.com / ' + TRIAL_START
-    }
-  };
+
 
   // ── Admin greeting ──
   const grEl=document.getElementById('a-dash-greeting');
@@ -4842,15 +5047,8 @@ function updateDashOrgBanners(){
       const ic=ICONS[p.name]||{code:p.icon||'?',bg:p.iconBg||'#eee',fg:p.iconFg||'#333'};
       const sc=p.status==='expiring'?'warn':'active';
       const sl=p.status==='expiring'?'Expiring soon':'Active';
-      const pinfo=(purc[p.name]||'').split('/');
-      const pby=pinfo[0]?pinfo[0].trim():'';
-      const pmail=pinfo[1]?pinfo[1].trim():'';
-      const pon=pinfo[2]?pinfo[2].trim():(pinfo[1]?pinfo[1].trim():''); // graceful for legacy 2-slash entries
-      // If pinfo has only 2 parts (old shape: Name/Date), pmail will actually hold the date.
-      // Detect: emails contain "@". If pmail lacks "@", it's the date field from legacy data.
-      const emailLooksReal = pmail.indexOf('@') > -1;
-      const pmailStr = emailLooksReal ? pmail : '';
-      const pdate = emailLooksReal ? pon : pmail;
+      const _pi = purchaseInfoFor(p, currentOrg);
+      const pby = _pi.by, pmailStr = _pi.email, pdate = _pi.date;
       const purchaserLabel = pby + (pmailStr ? (' <span style="color:var(--text-muted);font-weight:400">[' + pmailStr + ']</span>') : '');
       return '<tr><td><div style="display:flex;align-items:center;gap:9px"><div class="prod-icon" style="background:'+ic.bg+';color:'+ic.fg+'">'+ic.code+'</div>'+p.name+'</div></td>'
         +'<td style="font-size:12px;color:var(--text-secondary)">'+purchaserLabel+(pdate?'<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+pdate+'</div>':'')+'</td>'
@@ -4919,13 +5117,8 @@ function updateDashOrgBanners(){
       const bc=pct>=90?'amber':'blue';
       const sc=p.status==='expiring'?'warn':'active';
       const sl=p.status==='expiring'?'Expiring soon':'Active';
-      const pinfo=(purc[p.name]||'').split('/');
-      const pby=pinfo[0]?pinfo[0].trim():'';
-      const pmail=pinfo[1]?pinfo[1].trim():'';
-      // Handle both new 3-part (Name/Email/Date) and legacy 2-part (Name/Date) shapes.
-      const emailLooksReal = pmail.indexOf('@') > -1;
-      const pmailStr = emailLooksReal ? pmail : '';
-      const pon = emailLooksReal ? (pinfo[2]?pinfo[2].trim():'') : pmail;
+      const _pi = purchaseInfoFor(p, currentOrg);
+      const pby = _pi.by, pmailStr = _pi.email, pon = _pi.date;
       // Reseller-purchased products don't have in-Hub auto-renew — that's between
       // the customer and the reseller. Show a clearer hint instead of the direct-
       // purchase auto-renew/expires wording.
@@ -4950,6 +5143,7 @@ function updateDashOrgBanners(){
         +'<div class="prod-icon" style="background:'+p.iconBg+';color:'+p.iconFg+';width:40px;height:40px;border-radius:var(--radius-sm);font-size:11px">'+p.icon+'</div>'
         +'<div class="prod-info"><div class="prod-name">'+p.name+'</div>'
         +'<div class="prod-type">'
+        +(subIdOf(p) ? subIdLabel(p)+' \u00b7 ' : '')
         +'Purchased by '+purchaserLabel+(pon?' \u00b7 '+pon:'')
         +renewalHint
         +'</div></div>'
@@ -4977,7 +5171,7 @@ function updateDashOrgBanners(){
         +'<button class="btn sm" style="margin-right:6px" onclick="viewAssignedSeats()">Assigned seats</button>'
         // Manage opens the tabbed subscription modal (upgrade / downgrade / cancel).
         +(_isAirgapped(p.name)
-          ? '<button class="btn sm" onclick="openAirgapBundle()">Manage</button>'
+          ? '<button class="btn sm" onclick="openAirgapBundle(true)">Manage</button>'
           : '<button class="btn sm" onclick="openManageSub(\''+p.name.replace(/'/g,"\\'")+'\')">Manage</button>')
         +'</div>';
     }).join('');
@@ -5071,7 +5265,10 @@ function updateDashOrgBanners(){
           +'<div style="font-size:12px;color:var(--text-muted);display:flex;gap:14px;flex-wrap:wrap">'
             +'<span><strong style="color:var(--text-secondary)">'+p.seats+' seats</strong></span>'
             +schedLine
-            +'<span>'+p.type+' subscription</span>'
+            // The subscription ID replaces the generic "Annual subscription"
+            // label: several products can sit under one subscription, and the
+            // ID is what tells the admin which rows renew and bill together.
+            +'<span>'+(subIdOf(p) ? subIdLabel(p) : p.type+' subscription')+'</span>'
             +(cancelled
                ? '<span style="color:var(--red);font-weight:600">Cancelled '+cancelledOn(p.name)+'</span>'
                  +'<span>Access until <strong style="color:var(--text-secondary)">'+p.renewal+'</strong></span>'
@@ -5513,7 +5710,7 @@ function switchUser(role){
 
   // Render support tickets and products
   renderSupportTickets(role);
-  renderMyProducts(role);
+  renderMyProducts(role); updateProductBadge();
   updateDashOrgBanners();
 
   navDash();
@@ -5549,7 +5746,7 @@ function nav(p){
   // My Products shows renewal wording derived from subscription state, which
   // is changed on the Licenses and Billing pages — so re-render on arrival
   // rather than relying on the boot-time render.
-  if(p==='u-products') renderMyProducts(currentRole);
+  if(p==='u-products') renderMyProducts(currentRole); updateProductBadge();
   // Purchase flow: hide the app chrome and render the step from _pendingOrder.
   const _shell = document.querySelector('.app');
   if(_shell) _shell.classList.toggle('checkout-flow', CHECKOUT_PAGES.has(p));
@@ -6166,10 +6363,27 @@ function undoScheduledChange(productName){
 let _lastScheduled = null;
 
 // ── Cancel tab (fully implemented) ──
-function renderManageCancel(){
+/* Shared by the Manage-subscription modal and the air-gapped modal's Cancel
+   tab. Parameterised rather than cloned: the reason requirement, the undo path
+   and the cancelled-state copy must stay identical wherever cancellation is
+   offered, and a second copy would drift. */
+/* After a cancel or undo, re-render the surface the operator is actually
+   looking at. Both modals offer the action, and writing to the hidden one
+   would leave the visible pane stale. */
+function _rerenderCancelSurface(){
+  const ag = document.getElementById('modal-airgap-bundle');
+  if(ag && ag.classList.contains('open') && _agTab === 'cancel'){
+    renderAirgapCancel();
+  } else {
+    renderManageCancel();
+  }
+}
+
+function renderManageCancel(paneId, footId, extraNote){
   const p = _msProductObj(); if(!p) return;
-  const pane = document.getElementById('ms-pane-cancel');
-  const foot = document.getElementById('ms-foot');
+  const pane = document.getElementById(paneId || 'ms-pane-cancel');
+  const foot = document.getElementById(footId || 'ms-foot');
+  if(!pane || !foot) return;
   const done = isCancelled(_msProduct);
 
   if(done){
@@ -6203,6 +6417,7 @@ function renderManageCancel(){
       // Mandatory reason. Self-serve cancellation otherwise tells us nothing
       // about WHY, which is the one thing worth capturing at this moment — the
       // admin is never more informative than right before they leave.
+      + (extraNote || '')
       + '<label class="modal-label" style="margin-top:18px" for="ms-cancel-reason">'
       +   'Why are you cancelling? <span style="color:var(--red)">*</span></label>'
       + '<textarea class="modal-input" id="ms-cancel-reason" rows="3" '
@@ -6279,7 +6494,7 @@ function confirmCancelSub(){
   savePersisted('autoRenewOverrides', autoRenewOverrides);
 
   _refreshAfterSubChange();
-  renderManageCancel();
+  _rerenderCancelSurface();
   toast('\u2713 ' + p.name + ' cancelled \u00b7 access continues until ' + p.renewal);
 }
 
@@ -6293,7 +6508,7 @@ function undoCancelSub(){
   savePersisted('autoRenewOverrides', autoRenewOverrides);
 
   _refreshAfterSubChange();
-  renderManageCancel();
+  _rerenderCancelSurface();
   toast('\u2713 Cancellation undone \u00b7 ' + p.name + ' renews on ' + p.renewal);
 }
 
@@ -6307,7 +6522,7 @@ function _refreshAfterSubChange(){
   updateDashOrgBanners();
   renderInvoiceHistory();
   // The My Products card's date label depends on auto-renew / cancelled state.
-  if(typeof renderMyProducts === 'function') renderMyProducts(currentRole);
+  if(typeof renderMyProducts === 'function') renderMyProducts(currentRole); updateProductBadge();
 }
 
 function av(u){const c=UCOLORS[u.color];return`<div class="user-av" style="background:${c.bg};color:${c.fg}">${u.initials}</div>`;}
@@ -9190,7 +9405,68 @@ function _airgapLicenceRows(){
 }
 
 
-function openAirgapBundle(){
+/* Air-gapped Manage is a two-tab modal: the licence bundle view it has always
+   been, plus Cancel. There is deliberately no Upgrade or Downgrade — the SKU is
+   sales-managed and has no tier ladder to move along. */
+let _agTab = 'licenses';
+
+function switchAirgapTab(tab){
+  _agTab = (tab === 'cancel') ? 'cancel' : 'licenses';
+  const lt = document.getElementById('airgap-tab-licenses');
+  const ct = document.getElementById('airgap-tab-cancel');
+  if(lt) lt.classList.toggle('on', _agTab === 'licenses');
+  if(ct) ct.classList.toggle('on', _agTab === 'cancel');
+  const body = document.getElementById('airgap-body');
+  const pane = document.getElementById('airgap-cancel-pane');
+  if(body) body.style.display = (_agTab === 'licenses') ? '' : 'none';
+  if(pane) pane.style.display = (_agTab === 'cancel') ? '' : 'none';
+  if(_agTab === 'cancel') renderAirgapCancel(); else openAirgapBundle();
+}
+
+// The air-gapped product for the current org, whatever its exact name.
+function _airgapProduct(){
+  const org = ORG_DATA[currentOrg];
+  return (org && org.products ? org.products : []).find(p => _isAirgapped(p.name)) || null;
+}
+
+function renderAirgapCancel(){
+  const p = _airgapProduct();
+  if(!p) return;
+  const sub = document.getElementById('airgap-sub');
+  if(sub) sub.textContent = p.name;
+  // renderManageCancel reads _msProduct, so point it at this SKU.
+  _msProduct = p.name;
+  /* Cancelling cannot reach a machine that has no network. Issued .lic files
+     keep working to their own expiry date, which is materially different from
+     cancelling a connected product and is the one thing an admin here needs
+     told. */
+  const note = '<div class="m-note warn" style="margin-top:16px">'
+    + '<strong>Offline licenses already issued will keep working.</strong> '
+    + 'An air-gapped machine has no connection for the Hub to revoke over, so any '
+    + '.lic file you have downloaded stays valid until the date it was issued for. '
+    + 'Cancelling stops the subscription renewing \u2014 it does not disable installed software.</div>';
+  renderManageCancel('airgap-cancel-pane', 'airgap-foot', note);
+}
+
+function openAirgapBundle(fresh){
+  // Fresh opens (the Manage button) land on the licences tab; the eight
+  // internal re-opens that follow an inline edit must preserve the active tab,
+  // and must not overwrite the footer while Cancel is showing.
+  if(fresh){
+    _agTab = 'licenses';
+    const lt = document.getElementById('airgap-tab-licenses');
+    const ct = document.getElementById('airgap-tab-cancel');
+    if(lt) lt.classList.add('on');
+    if(ct) ct.classList.remove('on');
+    const body = document.getElementById('airgap-body');
+    const pane = document.getElementById('airgap-cancel-pane');
+    if(body) body.style.display = '';
+    if(pane) pane.style.display = 'none';
+  } else if(_agTab === 'cancel'){
+    renderAirgapCancel();
+    document.getElementById('modal-airgap-bundle').classList.add('open');
+    return;
+  }
   const data = _airgapLicenceRows();
   const sub  = document.getElementById('airgap-sub');
   const body = document.getElementById('airgap-body');
@@ -9337,7 +9613,7 @@ function openAirgapBundle(){
 }
 
 
-/* Row selection in the Manage offline licenses view.
+/* Row selection in the Generate Air-gapped Licenses view.
    Previously the CTA generated every not-yet-downloaded bundle in one go with
    no way to pick. Selection is session-only (a Set of indices into `users`):
    it is a transient UI choice, not account data, and should not survive a
@@ -9477,6 +9753,7 @@ function _commitOrder(){
   }
 
   invoiceCount += 1;
+  const _invMe = currentUData();
   const todayLabel = _formatFriendlyDate(new Date());
   extraInvoices.unshift({
     id:     invoiceCount,
@@ -9485,6 +9762,12 @@ function _commitOrder(){
     date:   todayLabel,
     amount: _formatMoney(o.total),
     status: 'Paid',
+    // Credit the admin who actually placed the order — the whole point of the
+    // column is that additional purchases are made by whoever was signed in.
+    // Anything bought through this app is Hub, by definition.
+    mode:    'hub',
+    by:      (_invMe && _invMe.name)  ? _invMe.name  : '',
+    byEmail: (_invMe && _invMe.email) ? _invMe.email : '',
   });
   savePersisted('extraInvoices', extraInvoices);
   savePersisted('invoiceCount', invoiceCount);
@@ -10459,7 +10742,7 @@ function confirmInstallDownload(){
     savePersisted('downloadHistory', downloadHistory);
     savePersisted('productDownloads', productDownloads);
     // Re-render My Products so the new note appears immediately when the user closes the modal.
-    if(typeof renderMyProducts === 'function') renderMyProducts(currentRole);
+    if(typeof renderMyProducts === 'function') renderMyProducts(currentRole); updateProductBadge();
     // Refresh Recent activity widget so the download shows up in the feed.
     if(typeof _refreshDownloadActivity === 'function') _refreshDownloadActivity();
     if(typeof _refreshRevokeActivity === 'function') _refreshRevokeActivity();
@@ -10916,6 +11199,28 @@ function reopenTicket(){
 /* ═══════════════════════════════════════
    MY PRODUCTS (user page)
 ═══════════════════════════════════════ */
+/* Count of products currently assigned to the signed-in user, shown on the
+   My products nav item. Active only: an expired trial still appears on the
+   page as history but is not something they can use, so counting it would
+   overstate what they have. Active trials DO count — the user can run them. */
+function activeSeatCountForUser(){
+  const u = currentUData();
+  const seats = (u && u.seats) ? u.seats : [];
+  return seats.filter(s => {
+    const st = String(s.status || 'active').toLowerCase();
+    return st !== 'expired' && st !== 'cancelled';
+  }).length;
+}
+
+function updateProductBadge(){
+  const el = document.getElementById('prod-badge');
+  if(!el) return;
+  const n = activeSeatCountForUser();
+  el.textContent = n;
+  el.style.display = n ? '' : 'none';
+  el.title = n + ' active product' + (n !== 1 ? 's' : '') + ' assigned to you';
+}
+
 function renderMyProducts(role){
   const ud=currentUData();
   const org=ORG_DATA[currentOrg];
