@@ -6117,7 +6117,7 @@ function _msBuildUpgradeOrder(){
     kind:'upgrade', orgKey:currentOrg, targetTier:_msUpgradeTarget,
     netNew:netNew, moves:moves, lines:lines, total:total,
     movedSeats:movedSeats, movedUsers:movedUsers,
-    renewal: tgt.renewal,
+    renewal: (_upgradeAnchor(org, moves) || {}).renewal || tgt.renewal,
     newSubscription: !tgt.owned,
     nextCharge: (tgt.seats + netNew + movedSeats) * tPrice,
     invoiceDesc: 'Upgrade to ' + _msUpgradeTarget + ' \u2013 '
@@ -9804,6 +9804,22 @@ function _commitOrder(){
      - `used` counts track the assignments on both sides
    Net-new seats only grow the target. Returns false if the org data has
    drifted since the order was built (product deleted, user removed). */
+/* The subscription a newly-created tier joins.
+   An upgrade moves seats OUT of an existing tier, so the new tier belongs to
+   that tier's subscription: same id, same renewal date, same renew/expire
+   state. Deriving it from orgRenewalDate() instead picked whichever non-trial
+   product happened to come first, which is wrong for any account holding more
+   than one subscription (Bob, Freya) and lost the auto-renew state entirely. */
+function _upgradeAnchor(org, moves){
+  const byMove = (moves || [])
+    .map(mv => (org.products || []).find(p => p.name === mv.from))
+    .find(Boolean);
+  if(byMove) return byMove;
+  // Net-new seats only, with no source tier: fall back to the account's
+  // principal subscription.
+  return (org.products || []).find(p => p.status !== 'trial') || null;
+}
+
 function _commitUpgrade(o, org){
   let target = org.products.find(p => p.name === o.targetTier);
   if(!target){
@@ -9812,16 +9828,25 @@ function _commitUpgrade(o, org){
     // step with everything else.
     const tpl = TIER_TEMPLATE[o.targetTier];
     if(!tpl){ toast('Target tier not found'); _pendingOrder = null; nav('a-licenses'); return false; }
+    // Inherit the subscription being upgraded from: one subscription, one
+    // renewal schedule, one renew/expire state.
+    const anchor = _upgradeAnchor(org, o.moves);
     target = {
       key: tpl.key, icon: tpl.icon, iconBg: tpl.iconBg, iconFg: tpl.iconFg,
-      name: o.targetTier, type: 'Annual',
+      name: o.targetTier, type: (anchor && anchor.type) || 'Annual',
+      subId: anchor ? anchor.subId : undefined,
       seats: 0, used: 0,
-      renewal: o.renewal || orgRenewalDate(org),
-      status: 'active', autoRenew: true,
+      renewal: (anchor && anchor.renewal) || o.renewal || orgRenewalDate(org),
+      status: 'active',
+      autoRenew: anchor ? (anchor.autoRenew !== false) : true,
       amount: '$0',
       purchasedOn: _formatFriendlyDate(new Date()),
-      purchasedVia: 'direct',
+      purchasedVia: (anchor && anchor.purchasedVia) || 'direct',
     };
+    // Keep the persisted auto-renew override in step, or the next render would
+    // reset the new tier to renewing.
+    autoRenewOverrides[currentOrg + ':' + target.name] = target.autoRenew;
+    savePersisted('autoRenewOverrides', autoRenewOverrides);
     org.products.push(target);
   }
 
