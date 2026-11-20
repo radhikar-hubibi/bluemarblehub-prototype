@@ -3141,6 +3141,7 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
       <div id="airgap-body"></div>
       <div id="airgap-cancel-pane" style="display:none"></div>
     </div>
+    <div class="m-note warn" id="airgap-warn" style="display:none;margin:0 22px 12px"></div>
     <div class="m-foot" id="airgap-foot"></div>
   </div>
 </div>
@@ -3295,7 +3296,7 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
     <div id="rmu-offline" style="margin-top:10px"></div>
     <label class="modal-label" style="margin-top:14px" for="rmu-reason">Reason <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
     <textarea class="modal-input" id="rmu-reason" rows="2" placeholder="e.g. left the company, duplicate account, contractor finished&#8230;" style="resize:vertical;font-family:inherit"></textarea>
-    <div style="display:flex;gap:10px;margin-top:18px">
+      <div style="display:flex;gap:10px;margin-top:18px">
       <button class="btn" style="flex:1" onclick="closeModal()">Cancel</button>
       <button class="btn danger" style="flex:1" onclick="confirmRemoveUser()">Remove User</button>
     </div>
@@ -3330,11 +3331,9 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
          from this user's bundled apps, pre-checked to their current selection. -->
     <div class="modal-label">Applications to include</div>
     <div id="offline-app-checklist" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:4px"></div>
+      <div id="offline-uuid-hint" style="font-size:11px;color:var(--text-muted);margin-top:8px;margin-bottom:4px">The target machine's 128-bit hardware UUID (SMBIOS System UUID) &mdash; this is what the license is validated against. Users can retrieve it from our software after installation, or by querying it from the machine.</div>
     <div style="font-size:11px;color:var(--text-muted);margin-top:-4px;margin-bottom:12px">Each selected app gets its own signed token inside the license file &mdash; Global Mapper reads whichever token matches the app that's running.</div>
 
-    <div class="modal-label">System UUID</div>
-    <input class="modal-select" id="offline-machine-id" type="text" placeholder="e.g. 4C4C4544-0046-4310-8058-C2C04F435A31" style="font-family:'DM Mono',monospace"/>
-    <div id="offline-machine-hint" style="font-size:11px;color:var(--text-muted);margin-top:-4px;margin-bottom:4px">The target machine's 128-bit hardware UUID (SMBIOS System UUID) &mdash; this is what the license is validated against. Users can retrieve it from our software after installation, or by querying it from the machine.</div>
 
     <!-- Validity picker: admin chooses a date, capped at license end. Presets
          are quick-set buttons; the date input is the source of truth. -->
@@ -3354,8 +3353,14 @@ thead th.ut-pinned{z-index:4;background:var(--surface-2)}
       <strong>&#9888; Cannot issue offline license.</strong> <span id="offline-error-msg"></span>
     </div>
 
+    <!-- Single-download warning, shown on the first click of Download. -->
+    <div class="m-note warn" id="offline-warn" style="display:none;margin:12px 0 4px"></div>
     <div class="modal-row">
       <button class="btn primary" style="flex:1" id="offline-confirm-btn" onclick="confirmOfflineLicense()">Download license</button>
+      <!-- Save the System UUIDs without issuing the licence: an admin may have the
+           machine IDs before they are ready to hand the file over, and re-typing
+           them later is needless. Matches the per-row save in the bulk view. -->
+      <button class="btn" id="offline-save-btn" onclick="saveOfflineUuids()">Save UUIDs</button>
       <button class="btn" onclick="closeModal()">Cancel</button>
     </div>
   </div>
@@ -8019,7 +8024,7 @@ function renderUsers(){
         const safeApp = app.replace(/'/g,"\\'");
         actionHtml = '<a href="#" style="color:var(--avenza-blue);text-decoration:underline;font-size:11px;margin-left:8px" '
           + 'onclick="openOfflineLicense('+ri+',\''+safeApp+"'"+');return false;" '
-          + 'title="Re-download the offline license file for '+app+'">Download</a>';
+          + 'title="View the offline license issued for '+app+'">View</a>';
       }
       return '<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11px">'
         + '<span style="width:8px;height:8px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></span>'
@@ -8876,6 +8881,61 @@ const _AIRGAP_BUILD_OPTIONS = [
   { value: 'macOS (Apple Silicon)', app: 'MAPublisher',           label: 'MAPublisher (Air-gapped) - macOS (Apple Silicon)' },
 ];
 
+/* Per-app System UUID editor used inside the bulk view.
+   Each application is licensed to the machine it runs on, which need not be
+   the same machine for all three. "Same machine for all" is on by default
+   because that is the common case; unticking reveals a field per app. */
+function _agUuidEditor(r, current){
+  const apps = r.bundledApps || [];
+  const conn = (a) => {
+    const u = users[r.idx];
+    return (u && getAppConnectivity(u, a).machineId) || current || '';
+  };
+  const vals = apps.map(conn);
+  const same = !vals.filter(Boolean).length || vals.every(v => v === vals[0]);
+  const rows = apps.map((a, i) =>
+      '<div class="ag-peruuid-' + r.idx + '" style="margin-top:5px;'+(same?'display:none':'')+'">'
+    + '<div style="font-size:10px;color:var(--text-muted)">' + a + '</div>'
+    + '<input type="text" id="uuid-input-' + r.idx + '-' + i + '" class="ag-uuid-' + r.idx + '" '
+    +   'data-app="' + a.replace(/"/g,'&quot;') + '" value="' + (vals[i]||'').replace(/"/g,'&quot;') + '" '
+    +   'placeholder="4C4C4544-0046-4310-8058-C2C04F435A31" '
+    +   'style="font-family:ui-monospace,monospace;font-size:11.5px;padding:4px 7px;width:210px;'
+    +   'border:1px solid var(--border);border-radius:var(--radius-sm)"/></div>').join('');
+  return '<span style="display:inline-block;text-align:left;vertical-align:top">'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer">'
+    +   '<input type="checkbox" id="uuid-same-' + r.idx + '"' + (same?' checked':'')
+    +     ' onchange="_agSameUuidToggled(' + r.idx + ')" style="width:13px;height:13px"/>'
+    +   'Same machine for all applications</label>'
+    + '<div id="uuid-shared-' + r.idx + '" style="margin-top:5px;'+(same?'':'display:none')+'">'
+    +   '<input type="text" id="uuid-input-' + r.idx + '" value="' + (same?(vals[0]||''):'').replace(/"/g,'&quot;') + '" '
+    +   'placeholder="4C4C4544-0046-4310-8058-C2C04F435A31" oninput="_agSyncSharedUuid(' + r.idx + ')" '
+    +   'style="font-family:ui-monospace,monospace;font-size:11.5px;padding:4px 7px;width:210px;'
+    +   'border:1px solid var(--border);border-radius:var(--radius-sm)"/></div>'
+    + rows + '</span>';
+}
+
+function _agSameUuidToggled(idx){
+  const on = document.getElementById('uuid-same-' + idx);
+  const shared = document.getElementById('uuid-shared-' + idx);
+  if(shared) shared.style.display = (on && on.checked) ? '' : 'none';
+  document.querySelectorAll('.ag-peruuid-' + idx).forEach(el => {
+    el.style.display = (on && on.checked) ? 'none' : '';
+  });
+  if(on && on.checked) _agSyncSharedUuid(idx);
+}
+
+function _agSyncSharedUuid(idx){
+  const src = document.getElementById('uuid-input-' + idx);
+  if(!src) return;
+  document.querySelectorAll('.ag-uuid-' + idx).forEach(f => { f.value = src.value.trim(); });
+}
+
+// [{app, uuid}] for this row, whichever mode the editor is in.
+function _agUuidsFor(idx){
+  return Array.prototype.slice.call(document.querySelectorAll('.ag-uuid-' + idx))
+    .map(f => ({app: f.dataset.app, uuid: f.value.trim()}));
+}
+
 function _airgapEditIconBtn(idx, safeName, startFn, fieldLabel){
   startFn = startFn || '_startAirgapUuidEdit';
   fieldLabel = fieldLabel || 'System UUID';
@@ -8903,7 +8963,17 @@ function _saveAirgapUuidEdit(idx){
   // Only touch apps actually included in this license (each has its own
   // signed JWT) — not every app in the user's bundle.
   const selectedApps = bundledApps.filter(a => getAppConnectivity(u, a).state === 'offline');
-  if(!newId){
+  const _rows = _agUuidsFor(idx);
+  const _sameBox = document.getElementById('uuid-same-' + idx);
+  const _perAppMode = _sameBox && !_sameBox.checked;
+  if(_perAppMode){
+    const miss = _rows.filter(x => !x.uuid);
+    if(miss.length){
+      toast('A System UUID is required for ' + miss.map(x => x.app).join(', '));
+      return;
+    }
+  }
+  if(!_perAppMode && !newId){
     // Don't allow clearing it here — a blank System UUID would silently drop
     // this user out of future bundles, and on a never-issued user there is
     // nothing to revert to.
@@ -8930,14 +9000,22 @@ function _saveAirgapUuidEdit(idx){
   const endDate = _licenseEndDateFor(u);
   const validStr = endDate ? _formatFriendlyDate(endDate) : '\u2014';
 
+  /* Each application is bound to the machine it runs on, which may differ per
+     app. _agUuidsFor() returns whatever the editor holds in either mode: with
+     "same machine" ticked every entry already carries the shared value. */
+  const perApp = _agUuidsFor(idx);
+  const uuidFor = (app) => {
+    const hit = perApp.find(x => x.app === app);
+    return (hit && hit.uuid) ? hit.uuid : newId;
+  };
   targetApps.forEach(app => {
     const existing = u.appConnectivity[app] || getAppConnectivity(u, app);
     u.appConnectivity[app] = issuing
       ? Object.assign({}, existing, {
           state: 'offline', offlineSource: 'admin',
-          machineId: newId, issuedOn: todayStr, validUntil: validStr,
+          machineId: uuidFor(app), issuedOn: todayStr, validUntil: validStr,
         })
-      : Object.assign({}, existing, { machineId: newId });
+      : Object.assign({}, existing, { machineId: uuidFor(app) });
   });
   _stampUserModification(u);
   savePersisted('users', users);
@@ -9459,6 +9537,7 @@ function openAirgapBundle(fresh){
   // internal re-opens that follow an inline edit must preserve the active tab,
   // and must not overwrite the footer while Cancel is showing.
   if(fresh){
+    _resetAgBulkWarning();
     _agTab = 'licenses';
     const lt = document.getElementById('airgap-tab-licenses');
     const ct = document.getElementById('airgap-tab-cancel');
@@ -9519,9 +9598,7 @@ function openAirgapBundle(fresh){
                + _airgapEditIconBtn(r.idx, safeName)
                + '</span>'
                + '<span id="uuid-edit-'+r.idx+'" style="display:none;white-space:nowrap">'
-               + '<input type="text" id="uuid-input-'+r.idx+'" value="" placeholder="4C4C4544-0046-4310-8058-C2C04F435A31" '
-               + 'style="font-family:ui-monospace,monospace;font-size:11.5px;padding:5px 8px;width:150px;margin:0;border:1px solid var(--border);border-radius:var(--radius-sm)" '
-               + 'aria-label="System UUID for '+safeName+'"/> '
+               + _agUuidEditor(r, '') + ' '
                + '<button class="btn xs primary" onclick="_saveAirgapUuidEdit('+r.idx+')">Save</button> '
                + '<button class="btn xs" onclick="_cancelAirgapUuidEdit('+r.idx+')">Cancel</button>'
                + '</span>'
@@ -9532,9 +9609,7 @@ function openAirgapBundle(fresh){
                + _airgapEditIconBtn(r.idx, safeName)
                + '</span>'
                + '<span id="uuid-edit-'+r.idx+'" style="display:none;white-space:nowrap">'
-               + '<input type="text" id="uuid-input-'+r.idx+'" value="'+r.machineId.replace(/"/g,'&quot;')+'" '
-               + 'style="font-family:ui-monospace,monospace;font-size:11.5px;padding:5px 8px;width:150px;margin:0;border:1px solid var(--border);border-radius:var(--radius-sm)" '
-               + 'aria-label="System UUID for '+safeName+'"/> '
+               + _agUuidEditor(r, r.machineId) + ' '
                + '<button class="btn xs primary" onclick="_saveAirgapUuidEdit('+r.idx+')">Save</button> '
                + '<button class="btn xs" onclick="_cancelAirgapUuidEdit('+r.idx+')">Cancel</button>'
                + '</span>';
@@ -9596,7 +9671,13 @@ function openAirgapBundle(fresh){
            return '<tr>'
              + '<td style="vertical-align:top"><input type="checkbox" id="agsel-'+r.idx+'" '
              +   (_airgapSel && _airgapSel.has(r.idx) ? 'checked ' : '')
-             +   (r.issued ? '' : 'disabled title="Set a System UUID before downloading" ')
+             +   (!r.issued
+                    ? 'disabled title="Set a System UUID before downloading" '
+                    // A licence file is issued once. Once downloaded the row is
+                    // locked: a lost file is revoked and reissued, not reprinted.
+                    : (r.alreadyDownloaded
+                        ? 'disabled title="Already downloaded on ' + (r.downloadedOn || '') + ' \u2014 revoke and reissue if the file was lost" '
+                        : ''))
              +   'onchange="_airgapToggleSel('+r.idx+',this.checked)" '
              +   'aria-label="Select '+safeName+'"/></td>'
              + '<td><div style="color:var(--text-primary);font-weight:600">'+r.name
@@ -9626,14 +9707,43 @@ function openAirgapBundle(fresh){
    reload or a persona switch. */
 let _airgapSel = null;
 
+/* The bulk download hands over credentials, one per selected user, and each can
+   only be issued once. Warn before generating so the admin knows to store the
+   files securely rather than leaving them in Downloads. */
+let _agBulkWarned = false;
+function _resetAgBulkWarning(){
+  _agBulkWarned = false;
+  const w = document.getElementById('airgap-warn');
+  if(w){ w.style.display = 'none'; w.innerHTML = ''; }
+}
+function _agBulkWarnFirst(count){
+  if(_agBulkWarned) return true;
+  _agBulkWarned = true;
+  const w = document.getElementById('airgap-warn');
+  if(w){
+    w.innerHTML = '<strong>These files can only be downloaded once.</strong><br>'
+      + 'You are generating ' + count + ' license file' + (count!==1?'s':'')
+      + '. Each is a credential tied to the machine it was issued for \u2014 store them '
+      + 'securely and transfer them to the air-gapped machines directly. They cannot be '
+      + 'downloaded again; a lost file has to be revoked and reissued.';
+    w.style.display = '';
+  }
+  _airgapSyncBundleFoot();
+  return false;
+}
+
 function _airgapToggleSel(idx, checked){
+  // Guard the data path as well as the disabled attribute.
+  const row = _airgapLicenceRows().offline.find(r => r.idx === idx);
+  if(checked && row && row.alreadyDownloaded) return;
   if(!_airgapSel) _airgapSel = new Set();
   if(checked) _airgapSel.add(idx); else _airgapSel.delete(idx);
   _airgapSyncBundleFoot();
 }
 
 function _airgapToggleAll(checked){
-  const rows = _airgapLicenceRows().offline.filter(r => r.issued);
+  // Downloaded rows are out of scope: a licence is issued once.
+  const rows = _airgapLicenceRows().offline.filter(r => r.issued && !r.alreadyDownloaded);
   _airgapSel = new Set(checked ? rows.map(r => r.idx) : []);
   rows.forEach(r => {
     const cb = document.getElementById('agsel-' + r.idx);
@@ -9648,24 +9758,27 @@ function _airgapToggleAll(checked){
 function _airgapSyncBundleFoot(){
   // Selectable rows are the issued ones; a user awaiting a System UUID has no
   // license to download, so they don't count toward select-all state either.
-  const rows = _airgapLicenceRows().offline.filter(r => r.issued);
+  const rows = _airgapLicenceRows().offline.filter(r => r.issued && !r.alreadyDownloaded);
   const sel  = rows.filter(r => _airgapSel && _airgapSel.has(r.idx));
-  const redl = sel.filter(r => r.alreadyDownloaded).length;
   const all  = document.getElementById('agsel-all');
   if(all){
     all.checked = rows.length > 0 && sel.length === rows.length;
     all.indeterminate = sel.length > 0 && sel.length < rows.length;
+    // Nothing selectable once every issued licence has been downloaded.
+    all.disabled = rows.length === 0;
+    all.title = rows.length ? 'Select all' : 'No licences left to download';
   }
   const foot = document.getElementById('airgap-foot');
   if(!foot) return;
   const n = sel.length;
   const plural = n !== 1 ? 's' : '';
   let label, dis = '';
-  if(!rows.length){ label = 'Nothing to download'; dis = ' disabled'; }
+  // Re-download is no longer offered, so there is no re-issue wording: a row is
+  // either awaiting its one download or already spent.
+  if(!rows.length){ label = 'Nothing left to download'; dis = ' disabled'; }
   else if(!n){ label = 'Select users to download'; dis = ' disabled'; }
-  else if(redl === n){ label = 'Re-download ' + n + ' license bundle' + plural; }
-  else if(redl){ label = 'Generate &amp; download ' + n + ' license bundle' + plural + ' (' + redl + ' re-issue)'; }
-  else { label = 'Generate &amp; download ' + n + ' license bundle' + plural; }
+  else { label = (_agBulkWarned ? 'I understand \u2014 download ' : 'Generate &amp; download ')
+                 + n + ' license bundle' + plural; }
   foot.innerHTML = '<button class="btn" onclick="closeAirgapBundle()">Close</button>'
     + '<button class="btn primary"' + dis + ' onclick="confirmAirgapBundle()">' + label + '</button>';
 }
@@ -9676,11 +9789,12 @@ function closeAirgapBundle(){ document.getElementById('modal-airgap-bundle').cla
 function confirmAirgapBundle(){
   // Acts on the current selection, which may include already-downloaded rows
   // being deliberately re-issued. Un-issued rows can't be selected.
-  const rows = _airgapLicenceRows().offline.filter(r => r.issued);
+  const rows = _airgapLicenceRows().offline.filter(r => r.issued && !r.alreadyDownloaded);
   const picked = rows.filter(r => _airgapSel && _airgapSel.has(r.idx));
   const count = picked.length;
   if(!count) return;
-  const redl = picked.filter(r => r.alreadyDownloaded).length;
+  // Warn before the first (and only) download of these files.
+  if(!_agBulkWarnFirst(count)) return;
   const todayStr = _formatFriendlyDate(new Date());
   picked.forEach(r => {
     const u = users[r.idx];
@@ -9698,8 +9812,7 @@ function confirmAirgapBundle(){
   const _me = currentUData();
   downloadHistory.push({
     product: 'Global Mapper Professional Air-gapped',
-    installer: count + ' offline license bundle' + (count!==1?'s':'') + ' (.lic bundle)'
-             + (redl ? ' \u00b7 ' + redl + ' re-issued' : ''),
+    installer: count + ' offline license bundle' + (count!==1?'s':'') + ' (.lic bundle)',
     datetime: _formatTodayDateTime(),
     timestamp: Date.now(),
     os: _detectOS(),
@@ -9710,7 +9823,7 @@ function confirmAirgapBundle(){
   });
   savePersisted('downloadHistory', downloadHistory);
   closeAirgapBundle();
-  toast('\u2713 ' + (redl === count ? 'Re-downloaded ' : 'Generated and downloaded ') + count
+  toast('\u2713 Generated and downloaded ' + count
     + ' offline license bundle' + (count!==1?'s':'') + ' as air-gapped-licenses.zip');
 }
 
@@ -10102,12 +10215,13 @@ function _onOfflineDateChange(){
 }
 
 function openOfflineLicense(idx){
+  _resetOfflineWarning();
   _offlineTargetIdx = idx;
   const u = users[idx];
   if(!u) return;
 
   // AIR-GAPPED BRANCH GUARD. Blocks requests from users without an air-gapped
-  // seat regardless of entry point. Re-downloads are still allowed: if a
+  // seat regardless of entry point. Re-downloads are NOT allowed: a licence
   // license has already been issued for the bundle, the files exist on a
   // machine and the admin must be able to retrieve them.
   if(!_canRequestOffline(u)){
@@ -10143,23 +10257,63 @@ function openOfflineLicense(idx){
     const st = getAppConnectivity(u, a).state;
     return st === 'offline' || st === 'roaming';
   });
+  /* One row per application, each with its OWN System UUID.
+     A licence is bound to the machine it is issued for, and the three bundled
+     apps are not necessarily installed on the same machine — Geographic
+     Calculator might sit on a different workstation to Global Mapper. Issuing
+     one UUID for the whole bundle would lock them all to one box. The UUID is
+     mandatory for any app that is ticked. */
   const checklist = document.getElementById('offline-app-checklist');
   if(checklist){
-    checklist.innerHTML = bundledApps.map((app, i) => {
+    /* Most of the time all three apps sit on one machine, so offer that as a
+       single field rather than making the admin paste the same UUID three
+       times. Unticking it reveals the per-app fields. */
+    const sameRow = '<label for="offline-same-uuid" style="display:flex;align-items:center;gap:8px;'
+      + 'padding:0 0 9px;font-size:12.5px;color:var(--text-secondary);cursor:pointer">'
+      + '<input type="checkbox" id="offline-same-uuid" checked onchange="_offlineSameUuidToggled(this)" '
+      +   'style="width:15px;height:15px;cursor:pointer"/>'
+      + 'All applications run on the same machine</label>'
+      + '<div id="offline-shared-uuid-wrap" style="padding:0 0 10px">'
+      +   '<label for="offline-shared-uuid" style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:3px">'
+      +     'System UUID <span style="color:var(--red)">*</span></label>'
+      +   '<input type="text" id="offline-shared-uuid" oninput="_offlineSyncSharedUuid()" '
+      +     'placeholder="e.g. 4C4C4544-0046-4310-8058-C2C04F435A31" '
+      +     'style="width:100%;font-family:ui-monospace,monospace;font-size:11.5px;padding:7px 9px;'
+      +     'border:1px solid var(--border);border-radius:var(--radius-sm)"/>'
+      + '</div>';
+    checklist.innerHTML = sameRow + bundledApps.map((app, i) => {
       const checkedByDefault = displayOffline ? currentlyOffGrid.indexOf(app) !== -1 : true;
-      const cbId = 'offline-app-cb-' + i;
-      return '<label for="'+cbId+'" style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;color:var(--text-primary);cursor:pointer">'
-        + '<input type="checkbox" id="'+cbId+'" class="offline-app-cb" value="'+app.replace(/"/g,'&quot;')+'" '+(checkedByDefault?'checked':'')+' style="width:15px;height:15px;cursor:pointer"/>'
-        + app + '</label>';
+      const cbId  = 'offline-app-cb-' + i;
+      const uuId  = 'offline-app-uuid-' + i;
+      const conn  = getAppConnectivity(u, app) || {};
+      const known = conn.machineId || '';
+      const esc   = app.replace(/"/g,'&quot;');
+      return '<div class="offline-app-row" style="padding:9px 0;border-top:'+(i?'1px solid var(--border)':'0')+'">'
+        + '<label for="'+cbId+'" style="display:flex;align-items:center;gap:8px;font-size:13px;'
+        +   'font-weight:600;color:var(--text-primary);cursor:pointer">'
+        +   '<input type="checkbox" id="'+cbId+'" class="offline-app-cb" value="'+esc+'" '
+        +     (checkedByDefault?'checked':'') + ' onchange="_offlineAppToggled(this,'+i+')" '
+        +     'style="width:15px;height:15px;cursor:pointer"/>'
+        +   app + '</label>'
+        + '<div id="offline-app-wrap-'+i+'" class="offline-per-app" style="margin:6px 0 0 23px;display:none">'
+        +   '<label for="'+uuId+'" style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:3px">'
+        +     'System UUID for ' + app + ' <span style="color:var(--red)">*</span></label>'
+        +   '<input type="text" id="'+uuId+'" class="offline-app-uuid" data-app="'+esc+'" '
+        +     'value="'+known.replace(/"/g,'&quot;')+'" placeholder="e.g. 4C4C4544-0046-4310-8058-C2C04F435A31" '
+        +     'style="width:100%;font-family:ui-monospace,monospace;font-size:11.5px;padding:7px 9px;'
+        +     'border:1px solid var(--border);border-radius:var(--radius-sm)"/>'
+        + '</div></div>';
     }).join('');
   }
 
+  _offlineSeedSharedUuid();
   const modal = document.getElementById('modal-offline-license');
   const title = document.getElementById('offline-modal-title');
   const sub = document.getElementById('offline-modal-sub');
   const summary = document.getElementById('offline-existing-summary');
-  const machineInput = document.getElementById('offline-machine-id');
-  const machineHint = document.getElementById('offline-machine-hint');
+  // The standalone System UUID field was removed: every application now carries
+  // its own, with a shared field when they sit on one machine.
+  const machineInput = null, machineHint = null;
   const validityBlock = document.getElementById('offline-validity-block');
   const dateInput = document.getElementById('offline-valid-until');
   const capNote = document.getElementById('offline-validity-cap');
@@ -10216,7 +10370,7 @@ function openOfflineLicense(idx){
     if(sub){
       sub.textContent = isExpired
         ? 'The offline license has expired. Issue a new one below.'
-        : 'This offline license is still valid. Re-download the file, or update the System UUID if it has changed.';
+        : 'This offline license is still valid and has already been issued. It cannot be downloaded again \u2014 revoke it and issue a new one if the file has been lost.';
     }
     if(summary){
       summary.style.display = '';
@@ -10281,7 +10435,7 @@ function openOfflineLicense(idx){
     if(capNote){
       capNote.textContent = isExpired
         ? (licenseEnd ? ('Cannot exceed license end date (' + _formatFriendlyDate(licenseEnd) + ').') : '')
-        : 'Validity is fixed to the date the license was originally issued. Re-downloading does not extend it.';
+        : 'Validity is fixed to the date the license was originally issued and cannot be extended.';
     }
     if(confirmBtn){
       confirmBtn.disabled = false;
@@ -10362,16 +10516,144 @@ function openOfflineLicense(idx){
 }
 
 
+// Showing the UUID field only for ticked apps keeps the dialog honest: an
+// unticked app is not being licensed, so it has no machine to bind to.
+/* "Same machine for all applications" is on by default: one field, mirrored to
+   every per-app input behind the scenes so the submit path stays identical
+   whichever mode the admin is in. */
+function _offlineSameUuidToggled(cb){
+  const shared = document.getElementById('offline-shared-uuid-wrap');
+  if(shared) shared.style.display = cb.checked ? '' : 'none';
+  document.querySelectorAll('.offline-per-app').forEach((el, i) => {
+    const box = document.getElementById('offline-app-cb-' + i);
+    el.style.display = (!cb.checked && box && box.checked) ? '' : 'none';
+  });
+  if(cb.checked) _offlineSyncSharedUuid();
+}
+
+function _offlineSyncSharedUuid(){
+  const same = document.getElementById('offline-same-uuid');
+  const src  = document.getElementById('offline-shared-uuid');
+  if(!same || !same.checked || !src) return;
+  document.querySelectorAll('.offline-app-uuid').forEach(f => { f.value = src.value.trim(); });
+}
+
+// Seed the shared field from whatever is already known, so an admin editing an
+// existing licence isn't shown a blank box.
+function _offlineSeedSharedUuid(){
+  const src = document.getElementById('offline-shared-uuid');
+  if(!src) return;
+  const vals = Array.prototype.slice.call(document.querySelectorAll('.offline-app-uuid'))
+    .map(f => f.value.trim()).filter(Boolean);
+  const same = vals.length && vals.every(v => v === vals[0]);
+  const box  = document.getElementById('offline-same-uuid');
+  if(vals.length && !same && box){ box.checked = false; }
+  src.value = same ? vals[0] : '';
+  if(box) _offlineSameUuidToggled(box);
+}
+
+function _offlineAppToggled(cb, i){
+  const same = document.getElementById('offline-same-uuid');
+  const wrap = document.getElementById('offline-app-wrap-' + i);
+  if(wrap) wrap.style.display = (cb.checked && !(same && same.checked)) ? '' : 'none';
+  if(same && same.checked) _offlineSyncSharedUuid();
+}
+
+/* Per-app UUIDs from the dialog: [{app, uuid}] for every TICKED app. */
+function _offlineAppUuids(){
+  return Array.prototype.slice.call(document.querySelectorAll('.offline-app-cb'))
+    .map((cb, i) => ({
+      app: cb.value,
+      checked: cb.checked,
+      uuid: (function(){ const f = document.getElementById('offline-app-uuid-' + i);
+                         return f ? f.value.trim() : ''; })(),
+    }))
+    .filter(x => x.checked);
+}
+
+// The UUID entered for one app, falling back to the single top-level field for
+// a user with no bundled apps.
+function _uuidForApp(app, rows, fallback){
+  const r = (rows || []).find(x => x.app === app);
+  return (r && r.uuid) ? r.uuid : fallback;
+}
+
+/* A licence file is a credential, and it is issued once. The admin is warned
+   before it is generated so they know to store it safely rather than leaving
+   it in Downloads. Two-step: the first click shows the warning, the second
+   proceeds. */
+let _offlineWarned = false;
+/* Persist the System UUIDs without issuing or downloading anything.
+   Written to each app's connectivity record, so reopening this dialog — or the
+   bulk view on the Licenses page — shows them already filled in. */
+function saveOfflineUuids(){
+  const u = users[_offlineTargetIdx];
+  if(!u) return;
+  /* Every field with a value, not just the ticked apps: a System UUID is a
+     fact about a machine, so it is worth keeping even for an app the admin
+     isn't licensing in this pass. Issuing still uses the ticked set only. */
+  const rows = Array.prototype.slice.call(document.querySelectorAll('.offline-app-uuid'))
+    .map(f => ({app: f.dataset.app, uuid: f.value.trim()}))
+    .filter(r => r.app && r.uuid);
+  if(!rows.length){
+    toast('Enter at least one System UUID to save.');
+    return;
+  }
+  if(!u.appConnectivity) u.appConnectivity = {};
+  rows.forEach(r => {
+    const existing = u.appConnectivity[r.app] || getAppConnectivity(u, r.app);
+    // Only the machine id is written: state, issue date and validity belong to
+    // a licence, and none has been issued yet.
+    u.appConnectivity[r.app] = Object.assign({}, existing, { machineId: r.uuid });
+  });
+  _stampUserModification(u);
+  savePersisted('users', users);
+  renderUsers();
+  toast('\u2713 System UUID saved for ' + rows.length + ' application'
+    + (rows.length !== 1 ? 's' : '') + ' \u00b7 no license issued yet');
+}
+
+function _resetOfflineWarning(){
+  _offlineWarned = false;
+  const w = document.getElementById('offline-warn');
+  const b = document.getElementById('offline-confirm-btn');
+  if(w) w.style.display = 'none';
+  if(b) b.textContent = 'Download license';
+}
+function _offlineWarnFirst(){
+  if(_offlineWarned) return true;
+  _offlineWarned = true;
+  const w = document.getElementById('offline-warn');
+  const b = document.getElementById('offline-confirm-btn');
+  if(w){
+    w.innerHTML = '<strong>This file can only be downloaded once.</strong><br>'
+      + 'It is a credential: anyone holding it can activate the software on the machine '
+      + 'it is bound to. Save it somewhere secure and transfer it to the air-gapped machine '
+      + 'directly \u2014 do not leave it in Downloads or send it by email. If it is lost you '
+      + 'will need to revoke the license and issue a new one.';
+    w.style.display = '';
+  }
+  if(b) b.textContent = 'I understand \u2014 download';
+  return false;
+}
+
 function confirmOfflineLicense(){
   if(_offlineTargetIdx === null) return;
   const u = users[_offlineTargetIdx];
   if(!u) return;
 
-  const machineInput = document.getElementById('offline-machine-id');
   const errorBox = document.getElementById('offline-error');
   const errorMsg = document.getElementById('offline-error-msg');
 
-  const machineId = (machineInput ? machineInput.value : '').trim();
+  /* No standalone field any more. The user-level machineId is derived from the
+     per-app entries: the shared value when every app is on one machine, and
+     the first app's otherwise, so anything reading u.offlineMachineId still
+     gets something meaningful. */
+  const _sharedField = document.getElementById('offline-shared-uuid');
+  const _sameBox = document.getElementById('offline-same-uuid');
+  const machineId = ((_sameBox && _sameBox.checked && _sharedField)
+    ? _sharedField.value
+    : ((document.querySelector('.offline-app-uuid') || {}).value || '')).trim();
 
   // ── Validation (applies to all paths) ────────────────────────────────────
   // No reason field — this is a perpetual, sales-qualified air-gapped
@@ -10387,13 +10669,32 @@ function confirmOfflineLicense(){
     }
     return;
   }
-  if(!machineId){
+  /* Every ticked application needs its own System UUID. The licence is bound
+     to the machine it is issued for, so a missing UUID means a token nothing
+     can activate. Mandatory, per app, with the offender named. */
+  const appRows = _offlineAppUuids();
+  const missing = appRows.filter(r => !r.uuid);
+  if(missing.length){
+    if(errorBox && errorMsg){
+      errorMsg.textContent = 'A System UUID is required for '
+        + missing.map(r => r.app).join(', ')
+        + '. Enter the UUID of the machine each application will run on.';
+      errorBox.style.display = '';
+    }
+    const first = document.querySelector('.offline-app-uuid[data-app="'
+      + missing[0].app.replace(/"/g,'&quot;') + '"]');
+    if(first) first.focus();
+    return;
+  }
+  // The top-level field stays as the fallback for a user with no bundled apps.
+  if(!appRows.length && !machineId){
     if(errorBox && errorMsg){
       errorMsg.textContent = 'System UUID is required. Please enter the target machine\u2019s hardware UUID.';
       errorBox.style.display = '';
     }
     return;
   }
+
   const me = currentUData();
   const adminName = (me && me.name) ? me.name : 'Admin';
   const todayStr = _formatFriendlyDate(new Date());
@@ -10416,7 +10717,25 @@ function confirmOfflineLicense(){
 
   // Path 2 is re-download only for ADMIN-ISSUED offline users. Self-initiated
   // (Roaming) users go to Path 3 so the admin's license becomes authoritative.
+  /* Re-download is deliberately NOT offered. A licence file is a credential:
+     reissuing the same one multiplies the copies in circulation with no way to
+     tell them apart. A lost file is revoked and replaced, not reprinted. */
   if(wasOffline && !isSelfInitiated && !isExpired){
+    if(errorBox && errorMsg){
+      errorMsg.textContent = 'A license has already been downloaded for ' + u.name
+        + '. For security it cannot be downloaded again \u2014 revoke the existing license '
+        + 'and issue a new one if the file has been lost.';
+      errorBox.style.display = '';
+    }
+    return;
+  }
+  // Nothing blocks the issue now, so warn before the first (and only)
+  // download. Placed after the refusal above so an already-issued user
+  // sees the refusal rather than a warning about a download that cannot
+  // happen.
+  if(!_offlineWarnFirst()) return;
+
+  if(false){
     // ── Path 2: Re-download the existing license, for every selected app ──
     if(bundledApps.length){
       if(!u.appConnectivity) u.appConnectivity = {};
@@ -10424,7 +10743,7 @@ function confirmOfflineLicense(){
         const existing = u.appConnectivity[app] || getAppConnectivity(u, app);
         u.appConnectivity[app] = Object.assign({}, existing, {
           state: 'offline',
-          machineId: machineId,
+          machineId: _uuidForApp(app, appRows, machineId),
           lastDownloadedOn: todayStr,
         });
       });
@@ -10480,7 +10799,7 @@ function confirmOfflineLicense(){
     selectedApps.forEach(app => {
       u.appConnectivity[app] = {
         state: 'offline',
-        machineId: machineId,
+        machineId: _uuidForApp(app, appRows, machineId),
         issuedOn: todayStr,
         issuedBy: adminName,
         validUntil: validUntilStr,
